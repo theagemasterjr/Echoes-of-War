@@ -108,6 +108,9 @@ function CameraDirector() {
   // "living camera": slow idle drift + mouse parallax, layered on top of the
   // gsap-owned base position (applied pre-render, removed next frame)
   const applied = useRef(new THREE.Vector3());
+  /** current + previous view kind, so 'in' can tell a title arrival (glide
+   *  already landed) from a chapter return (needs the settle) */
+  const viewTrail = useRef<{ prev: View['kind']; curr: View['kind'] }>({ prev: 'title', curr: 'title' });
   const parallax = useRef({ x: 0, y: 0 });
   const amp = useRef(0);
   const reducedMotion = useRef(false);
@@ -125,15 +128,19 @@ function CameraDirector() {
 
   useEffect(() => {
     // bake the current drift/orbit offset into the base position so tweens
-    // start from what's actually on screen (no snap), then reset the layer
-    camera.position.add(applied.current);
+    // start from what's actually on screen: the offset is already applied to
+    // the camera — zeroing the layer keeps it there (adding it again would
+    // double it and cause a visible jump the moment a transition starts)
     applied.current.set(0, 0, 0);
     amp.current = 0;
 
-    gsap.killTweensOf(camera.position);
-    gsap.killTweensOf(target.current);
+    if (view.kind !== viewTrail.current.curr) {
+      viewTrail.current = { prev: viewTrail.current.curr, curr: view.kind };
+    }
 
     if (phase === 'out' && pending) {
+      gsap.killTweensOf(camera.position);
+      gsap.killTweensOf(target.current);
       if (view.kind === 'map' && pending.kind === 'chapter') {
         // slow, smooth dolly straight into the selected marker — no spin, no
         // sharp acceleration. The CSS zoom (.zoom-dive) covers the moment
@@ -150,27 +157,53 @@ function CameraDirector() {
           duration: DIVE_S, ease: 'power2.inOut',
         });
       } else if (view.kind === 'title') {
-        // opening glide down onto the map — no black overlay for this one
-        gsap.to(camera.position, { x: PRESETS.map.pos[0], y: PRESETS.map.pos[1], z: PRESETS.map.pos[2], duration: 1.6, ease: 'power2.inOut' });
-        gsap.to(target.current, { x: PRESETS.map.target[0], y: PRESETS.map.target[1], z: PRESETS.map.target[2], duration: 1.6, ease: 'power2.inOut' });
+        // opening glide down onto the map — no black overlay for this one.
+        // The delay lets the title text finish fading before anything moves;
+        // keep delay + duration in sync with TransitionLayer's fromTitle ms.
+        gsap.to(camera.position, { x: PRESETS.map.pos[0], y: PRESETS.map.pos[1], z: PRESETS.map.pos[2], duration: 1.7, delay: 1.0, ease: 'power2.inOut' });
+        gsap.to(target.current, { x: PRESETS.map.target[0], y: PRESETS.map.target[1], z: PRESETS.map.target[2], duration: 1.7, delay: 1.0, ease: 'power2.inOut' });
       } else {
         // leaving a chapter: gentle pull back
         gsap.to(camera.position, { z: camera.position.z + 1.2, duration: 1.0, ease: 'power2.in' });
       }
     }
 
-    if (phase === 'idle' || phase === 'titleCard' || phase === 'in') {
-      // view has committed — place camera at its preset (hidden under overlay,
-      // except title->map where the glide already landed here)
+    if (phase === 'titleCard') {
+      // hidden under the black overlay — safe to jump straight to the preset
       const p = presetFor(view);
-      if (phase !== 'in' || view.kind !== 'map') {
+      gsap.killTweensOf(camera.position);
+      camera.position.set(...p.pos);
+      target.current.set(...p.target);
+    }
+
+    if (phase === 'in') {
+      const p = presetFor(view);
+      if (view.kind === 'map') {
+        if (viewTrail.current.prev === 'chapter') {
+          // returning to map: settle from slightly higher for a soft landing
+          gsap.killTweensOf(camera.position);
+          camera.position.set(p.pos[0], p.pos[1] + 0.7, p.pos[2] + 0.5);
+          gsap.to(camera.position, { x: p.pos[0], y: p.pos[1], z: p.pos[2], duration: 1.2, ease: 'power2.out' });
+          target.current.set(...p.target);
+        }
+        // arriving from the title: the opening glide already landed exactly
+        // here (and may still be finishing) — don't touch the camera
+      } else {
+        gsap.killTweensOf(camera.position);
         camera.position.set(...p.pos);
         target.current.set(...p.target);
       }
-      if (view.kind === 'map' && phase === 'in') {
-        // returning to map: settle from slightly higher for a soft landing
-        camera.position.set(p.pos[0], p.pos[1] + 0.7, p.pos[2] + 0.5);
-        gsap.to(camera.position, { x: p.pos[0], y: p.pos[1], z: p.pos[2], duration: 1.2, ease: 'power2.out' });
+    }
+
+    if (phase === 'idle') {
+      // catch instant jumps (debug menu) without cutting a still-running
+      // glide/settle tween short — only snap when actually out of place
+      const p = presetFor(view);
+      if (
+        !gsap.isTweening(camera.position) &&
+        camera.position.distanceTo(new THREE.Vector3(...p.pos)) > 0.6
+      ) {
+        camera.position.set(...p.pos);
         target.current.set(...p.target);
       }
     }

@@ -33,7 +33,7 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'warroom.map': { label: 'Paper world map', source: { kind: 'glb', url: '/models/world-map.glb', scale: 7, offset: [0, 0, 0], castShadow: false } },
   'ch1.marker': { label: 'Miniature 1940s radio', source: { kind: 'glb', url: '/models/radio.glb', scale: 0.012, offset: [0, 0.131, 0.079] } },
   'ch2.marker': { label: 'Miniature Spitfire', source: { kind: 'placeholder', component: P.SpitfireProp } },
-  'ch3.marker': { label: 'Miniature warship', source: { kind: 'placeholder', component: P.ShipProp } },
+  'ch3.marker': { label: 'Miniature warship', source: { kind: 'glb', url: '/models/warship.glb', scale: 0.2, offset: [0, 0.09, 0] } },
   'ch4.marker': { label: 'Miniature medic satchel', source: { kind: 'glb', url: '/models/bandages.glb', scale: 2.4, offset: [-0.01, 0, 0] } },
   'ch5.marker': { label: 'Miniature medic helmet', source: { kind: 'placeholder', component: P.HelmetProp } },
   'ch6.marker': { label: 'Miniature paper lantern', source: { kind: 'glb', url: '/models/lantern.glb', scale: 0.05, offset: [-0.05, 0.03, 0] } },

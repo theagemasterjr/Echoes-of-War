@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/state/appStore';
 import { useSettingsStore } from '@/state/settingsStore';
-import { chapterMeta, CHAPTERS, loadChapter } from '@/chapters/registry';
+import { chapterMeta, loadChapter } from '@/chapters/registry';
 import type { Beat, ChapterId, ChapterModule } from '@/chapters/types';
 import { ConversationUI } from '@/conversation/ConversationUI';
 import { ErrorBoundary } from '@/core/ErrorBoundary';
@@ -27,7 +27,11 @@ function TitleIntro() {
   return (
     <motion.div
       className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-start pt-[9vh] text-center"
-      exit={{ opacity: 0, transition: { duration: 1.2 } }}
+      // fade the title away first — the camera glide waits for this (its 1.0s
+      // delay in SceneRouter), so nothing moves while the text is still up
+      animate={{ opacity: phase === 'out' ? 0 : 1 }}
+      transition={{ duration: 0.9, ease: 'easeOut' }}
+      exit={{ opacity: 0, transition: { duration: 0.2 } }}
     >
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1 }}>
         <div className="text-xs uppercase tracking-[0.5em] text-amber-200/60">1939 – 1945</div>
@@ -45,9 +49,7 @@ function TitleIntro() {
           />
         </h1>
         <p className="mx-auto mt-8 max-w-[46ch] text-sm leading-relaxed text-stone-300/80">
-          An interactive journey through the Second World War. Move across the war-room
-          map, meet six people who lived through it, and hear their stories in your own
-          conversation with each of them.
+          An interactive journey through the Second World War.
         </p>
         <button
           onClick={begin}
@@ -124,7 +126,6 @@ function Hud() {
   const view = useAppStore((s) => s.view);
   const phase = useAppStore((s) => s.phase);
   const returnToMap = useAppStore((s) => s.returnToMap);
-  const gotoChapter = useAppStore((s) => s.gotoChapter);
   const volume = useSettingsStore((s) => s.volume);
   const setVolume = useSettingsStore((s) => s.setVolume);
   const idle = phase === 'idle';
@@ -148,24 +149,6 @@ function Hud() {
           aria-label="Volume"
         />
       </label>
-      {view.kind === 'map' && idle && (
-        <nav
-          aria-label="Chapters"
-          className="pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2"
-        >
-          {CHAPTERS.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => gotoChapter(c.id)}
-              title={`Chapter ${c.index}: ${c.title}`}
-              aria-label={`Open chapter ${c.index}: ${c.title}`}
-              className="h-8 w-8 rounded-full border border-stone-700 bg-stone-950/60 text-xs text-stone-300 backdrop-blur-sm transition hover:border-amber-200/50 hover:text-amber-100"
-            >
-              {c.index}
-            </button>
-          ))}
-        </nav>
-      )}
     </>
   );
 }
