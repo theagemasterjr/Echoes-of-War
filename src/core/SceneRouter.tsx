@@ -74,7 +74,7 @@ const MAP_SURFACE_Y = 0.085;
 const DIVE_S = 2.2;
 
 const PRESETS = {
-  title: { pos: [0, 2.4, 11], target: [0, 1.2, 0] },
+  title: { pos: [0, 9, 21], target: [0, 7, 0] },
   map: { pos: [0, 7.6, 6.6], target: [0, 0, -0.4] },
   chapter: { pos: [0, 1.45, 5.2], target: [0, 0.95, 0] },
 } as const;

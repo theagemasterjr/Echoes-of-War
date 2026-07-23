@@ -26,7 +26,7 @@ function TitleIntro() {
   const phase = useAppStore((s) => s.phase);
   return (
     <motion.div
-      className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center text-center"
+      className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-start pt-[9vh] text-center"
       exit={{ opacity: 0, transition: { duration: 1.2 } }}
     >
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1 }}>
@@ -44,10 +44,15 @@ function TitleIntro() {
             draggable={false}
           />
         </h1>
+        <p className="mx-auto mt-8 max-w-[46ch] text-sm leading-relaxed text-stone-300/80">
+          An interactive journey through the Second World War. Move across the war-room
+          map, meet six people who lived through it, and hear their stories in your own
+          conversation with each of them.
+        </p>
         <button
           onClick={begin}
           disabled={phase !== 'idle'}
-          className="mt-16 rounded-sm border border-amber-200/40 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10 disabled:opacity-40"
+          className="mt-8 rounded-sm border border-amber-200/40 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10 disabled:opacity-40"
         >
           BEGIN
         </button>

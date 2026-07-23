@@ -30,7 +30,7 @@ type AssetSource =
 
 export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'warroom.table': { label: 'War-room table', source: { kind: 'glb', url: '/models/war-table.glb', scale: 18, offset: [0, -3.49, 0], castShadow: false } },
-  'warroom.map': { label: 'Paper world map', source: { kind: 'glb', url: '/models/world-map.glb', scale: 0.026, offset: [-0.05, 0, -0.39], castShadow: false } },
+  'warroom.map': { label: 'Paper world map', source: { kind: 'glb', url: '/models/world-map.glb', scale: 7, offset: [0, 0, 0], castShadow: false } },
   'ch1.marker': { label: 'Miniature 1940s radio', source: { kind: 'glb', url: '/models/radio.glb', scale: 0.012, offset: [0, 0.131, 0.079] } },
   'ch2.marker': { label: 'Miniature Spitfire', source: { kind: 'placeholder', component: P.SpitfireProp } },
   'ch3.marker': { label: 'Miniature warship', source: { kind: 'placeholder', component: P.ShipProp } },
