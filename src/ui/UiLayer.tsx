@@ -31,8 +31,18 @@ function TitleIntro() {
     >
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1 }}>
         <div className="text-xs uppercase tracking-[0.5em] text-amber-200/60">1939 – 1945</div>
-        <h1 className="mt-4 text-6xl font-extralight tracking-[0.18em] text-stone-100">
-          ECHOES OF WAR
+        <h1 className="mt-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/ui/title-logo.png"
+            alt="Echoes of War"
+            className="mx-auto w-[min(560px,80vw)]"
+            style={{
+              filter:
+                'drop-shadow(0 0 14px rgba(255,196,90,0.4)) drop-shadow(0 0 46px rgba(255,160,40,0.2))',
+            }}
+            draggable={false}
+          />
         </h1>
         <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-stone-400">
           Six chapters of the Second World War, told through live conversations with

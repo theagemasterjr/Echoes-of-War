@@ -5,7 +5,7 @@
  * and change that asset's entry to { kind: 'glb', url: '/models/<file>.glb' }.
  * No other code changes, ever. Generation prompts: docs/model-prompts.md.
  */
-import { Suspense, type FC } from 'react';
+import { Suspense, useMemo, type FC } from 'react';
 import type { ThreeElements } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as P from './placeholders';
@@ -16,18 +16,27 @@ export type AssetId = string;
 
 type AssetSource =
   | { kind: 'placeholder'; component: FC<GroupProps> }
-  | { kind: 'glb'; url: string; scale?: number; rotation?: [number, number, number] };
+  | {
+      kind: 'glb';
+      url: string;
+      scale?: number;
+      rotation?: [number, number, number];
+      /** nudges the model inside its slot (recenter / rest on the surface) */
+      offset?: [number, number, number];
+      /** heavy set-dressing models should receive shadows but not cast them —
+       *  casting re-renders their full geometry into the shadow map */
+      castShadow?: boolean;
+    };
 
 export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
-  'warroom.table': { label: 'War-room table', source: { kind: 'placeholder', component: P.Table } },
-  'warroom.map': { label: 'Paper world map', source: { kind: 'placeholder', component: P.MapSheet } },
-  'warroom.lamp': { label: 'Desk lamp', source: { kind: 'placeholder', component: P.Lamp } },
-  'ch1.marker': { label: 'Miniature 1940s radio', source: { kind: 'placeholder', component: P.RadioProp } },
+  'warroom.table': { label: 'War-room table', source: { kind: 'glb', url: '/models/war-table.glb', scale: 18, offset: [0, -3.49, 0], castShadow: false } },
+  'warroom.map': { label: 'Paper world map', source: { kind: 'glb', url: '/models/world-map.glb', scale: 0.026, offset: [-0.05, 0, -0.39], castShadow: false } },
+  'ch1.marker': { label: 'Miniature 1940s radio', source: { kind: 'glb', url: '/models/radio.glb', scale: 0.012, offset: [0, 0.131, 0.079] } },
   'ch2.marker': { label: 'Miniature Spitfire', source: { kind: 'placeholder', component: P.SpitfireProp } },
   'ch3.marker': { label: 'Miniature warship', source: { kind: 'placeholder', component: P.ShipProp } },
-  'ch4.marker': { label: 'Miniature medic satchel', source: { kind: 'placeholder', component: P.MedicSatchelProp } },
-  'ch5.marker': { label: 'Miniature landing craft', source: { kind: 'placeholder', component: P.LandingCraftProp } },
-  'ch6.marker': { label: 'Miniature paper crane', source: { kind: 'placeholder', component: P.PaperCraneProp } },
+  'ch4.marker': { label: 'Miniature medic satchel', source: { kind: 'glb', url: '/models/bandages.glb', scale: 2.4, offset: [-0.01, 0, 0] } },
+  'ch5.marker': { label: 'Miniature medic helmet', source: { kind: 'placeholder', component: P.HelmetProp } },
+  'ch6.marker': { label: 'Miniature paper lantern', source: { kind: 'glb', url: '/models/lantern.glb', scale: 0.05, offset: [-0.05, 0.03, 0] } },
   'ch1.character': { label: 'Polish journalist figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch2.character': { label: 'RAF pilot figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch3.character': { label: 'US sailor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
@@ -37,15 +46,27 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
 };
 
 const Glb: FC<
-  { url: string; scale?: number; rotation?: [number, number, number] } & Omit<
-    GroupProps,
-    'scale' | 'rotation'
-  >
-> = ({ url, scale = 1, rotation = [0, 0, 0], ...props }) => {
+  {
+    url: string;
+    scale?: number;
+    rotation?: [number, number, number];
+    offset?: [number, number, number];
+    castShadow?: boolean;
+  } & Omit<GroupProps, 'scale' | 'rotation'>
+> = ({ url, scale = 1, rotation = [0, 0, 0], offset = [0, 0, 0], castShadow = true, ...props }) => {
   const { scene } = useGLTF(url);
+  const shadowed = useMemo(() => {
+    scene.traverse((o) => {
+      if ((o as { isMesh?: boolean }).isMesh) {
+        o.castShadow = castShadow;
+        o.receiveShadow = true;
+      }
+    });
+    return scene;
+  }, [scene, castShadow]);
   return (
     <group {...props} rotation={rotation}>
-      <primitive object={scene} scale={scale} />
+      <primitive object={shadowed} scale={scale} position={offset} />
     </group>
   );
 };
@@ -54,11 +75,14 @@ export const Asset: FC<{ assetId: AssetId } & Omit<GroupProps, 'id'>> = ({ asset
   const entry = ASSETS[assetId];
   if (!entry) return null;
   if (entry.source.kind === 'glb') {
-    const { url, scale, rotation } = entry.source;
+    const { url, scale, rotation, offset, castShadow } = entry.source;
     const { scale: _s, rotation: _r, ...rest } = props;
     return (
       <Suspense fallback={null}>
-        <Glb url={url} scale={scale} rotation={rotation} {...rest} />
+        <Glb
+          url={url} scale={scale} rotation={rotation} offset={offset}
+          castShadow={castShadow} {...rest}
+        />
       </Suspense>
     );
   }

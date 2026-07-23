@@ -42,23 +42,6 @@ export const MapSheet: FC<GroupProps> = (p) => (
   </group>
 );
 
-export const Lamp: FC<GroupProps> = (p) => (
-  <group {...p}>
-    <mesh position={[0, 0.5, 0]}>
-      <cylinderGeometry args={[0.05, 0.09, 1, 8]} />
-      <meshStandardMaterial color={brass} metalness={0.6} roughness={0.4} />
-    </mesh>
-    <mesh position={[0, 1.05, 0]} rotation={[0, 0, 0.4]}>
-      <coneGeometry args={[0.35, 0.35, 16, 1, true]} />
-      <meshStandardMaterial color="#1d3a2a" side={2} roughness={0.5} />
-    </mesh>
-    <mesh position={[0, 0.98, 0]}>
-      <sphereGeometry args={[0.09, 12, 12]} />
-      <meshStandardMaterial color="#ffe9b0" emissive="#ffca6e" emissiveIntensity={2.2} />
-    </mesh>
-  </group>
-);
-
 /** Shared little base so each marker prop reads as a deliberate game piece. */
 const PropBase: FC<{ color?: string }> = ({ color = '#7a6a4d' }) => (
   <mesh castShadow position={[0, 0.02, 0]}>
@@ -70,13 +53,22 @@ const PropBase: FC<{ color?: string }> = ({ color = '#7a6a4d' }) => (
 export const RadioProp: FC<GroupProps> = (p) => (
   <group {...p}>
     <PropBase />
+    {/* cathedral-style 1930s radio: body + arched top + speaker + dial */}
     <mesh castShadow position={[0, 0.12, 0]}>
-      <boxGeometry args={[0.22, 0.16, 0.12]} />
+      <boxGeometry args={[0.18, 0.16, 0.1]} />
       <meshStandardMaterial color="#4a3325" roughness={0.6} />
     </mesh>
-    <mesh position={[0.08, 0.28, 0]}>
-      <cylinderGeometry args={[0.006, 0.006, 0.18, 6]} />
-      <meshStandardMaterial color={metal} metalness={0.7} />
+    <mesh castShadow position={[0, 0.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.09, 0.09, 0.1, 16, 1, false, 0, Math.PI]} />
+      <meshStandardMaterial color="#4a3325" roughness={0.6} />
+    </mesh>
+    <mesh position={[0, 0.17, 0.051]}>
+      <circleGeometry args={[0.05, 16]} />
+      <meshStandardMaterial color="#26180f" roughness={0.9} />
+    </mesh>
+    <mesh position={[0, 0.08, 0.051]}>
+      <circleGeometry args={[0.02, 12]} />
+      <meshStandardMaterial color={brass} metalness={0.5} roughness={0.4} />
     </mesh>
   </group>
 );
@@ -125,33 +117,48 @@ export const MedicSatchelProp: FC<GroupProps> = (p) => (
   </group>
 );
 
-export const LandingCraftProp: FC<GroupProps> = (p) => (
+export const HelmetProp: FC<GroupProps> = (p) => (
   <group {...p}>
-    <PropBase color="#5d6c74" />
-    <mesh castShadow position={[0, 0.09, 0]}>
-      <boxGeometry args={[0.26, 0.08, 0.12]} />
-      <meshStandardMaterial color="#556058" roughness={0.6} />
+    <PropBase color="#6b5a45" />
+    {/* M1 helmet dome with a small red cross on a white disc */}
+    <mesh castShadow position={[0, 0.1, 0]} scale={[1, 0.62, 1.15]}>
+      <sphereGeometry args={[0.13, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <meshStandardMaterial color="#4f5442" roughness={0.55} />
     </mesh>
-    <mesh castShadow position={[0.13, 0.11, 0]} rotation={[0, 0, -0.5]}>
-      <boxGeometry args={[0.1, 0.02, 0.12]} />
-      <meshStandardMaterial color="#68746b" roughness={0.6} />
+    <mesh position={[0, 0.14, 0.128]} rotation={[0.35, 0, 0]}>
+      <circleGeometry args={[0.035, 16]} />
+      <meshStandardMaterial color="#ddd6c8" roughness={0.7} />
+    </mesh>
+    <mesh position={[0, 0.14, 0.131]} rotation={[0.35, 0, 0]}>
+      <planeGeometry args={[0.04, 0.012]} />
+      <meshStandardMaterial color="#8a2318" roughness={0.7} />
+    </mesh>
+    <mesh position={[0, 0.14, 0.131]} rotation={[0.35, 0, Math.PI / 2]}>
+      <planeGeometry args={[0.04, 0.012]} />
+      <meshStandardMaterial color="#8a2318" roughness={0.7} />
     </mesh>
   </group>
 );
 
-export const PaperCraneProp: FC<GroupProps> = (p) => (
+export const LanternProp: FC<GroupProps> = (p) => (
   <group {...p}>
     <PropBase color="#8d8371" />
-    <group position={[0, 0.12, 0]} rotation={[0, 0.4, 0]}>
-      <mesh castShadow rotation={[0, 0, 0.7]}>
-        <coneGeometry args={[0.05, 0.2, 4]} />
-        <meshStandardMaterial color="#e8e2d4" roughness={0.9} />
-      </mesh>
-      <mesh castShadow rotation={[0, 0, -0.7]} position={[0.06, 0, 0]}>
-        <coneGeometry args={[0.05, 0.2, 4]} />
-        <meshStandardMaterial color="#e8e2d4" roughness={0.9} />
-      </mesh>
-    </group>
+    {/* softly glowing paper lantern: ovoid body + dark caps */}
+    <mesh castShadow position={[0, 0.16, 0]} scale={[1, 1.25, 1]}>
+      <sphereGeometry args={[0.1, 20, 16]} />
+      <meshStandardMaterial
+        color="#f0e6cf" roughness={0.9}
+        emissive="#ffca6e" emissiveIntensity={0.35}
+      />
+    </mesh>
+    <mesh position={[0, 0.3, 0]}>
+      <cylinderGeometry args={[0.035, 0.045, 0.03, 12]} />
+      <meshStandardMaterial color="#3a2e22" roughness={0.7} />
+    </mesh>
+    <mesh position={[0, 0.035, 0]}>
+      <cylinderGeometry args={[0.045, 0.035, 0.03, 12]} />
+      <meshStandardMaterial color="#3a2e22" roughness={0.7} />
+    </mesh>
   </group>
 );
 

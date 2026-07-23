@@ -16,3 +16,49 @@ body {
   outline: 2px solid rgba(214, 185, 122, 0.8);
   outline-offset: 2px;
 }
+
+/* fake motion-blur spin used when diving from the map into a chapter:
+   the whole canvas whips + streaks while the real camera dives, then the
+   black overlay covers the swap. Runs once per transition, costs nothing
+   the rest of the time. */
+@keyframes spin-blur {
+  0% {
+    transform: rotate(0deg) scale(1);
+    filter: blur(0) brightness(1);
+  }
+  45% {
+    filter: blur(10px) brightness(0.85);
+  }
+  100% {
+    transform: rotate(50deg) scale(1.5);
+    filter: blur(26px) brightness(0.6);
+  }
+}
+.spin-blur {
+  animation: spin-blur 0.75s cubic-bezier(0.55, 0, 0.95, 0.45) forwards;
+  will-change: transform, filter;
+}
+
+/* the other half: the showcase arrives at the SAME blur/brightness the whip
+   peaked at and unwinds to rest — one continuous motion through the streak */
+@keyframes spin-blur-in {
+  0% {
+    transform: rotate(-26deg) scale(1.42);
+    filter: blur(24px) brightness(0.6);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    filter: blur(0) brightness(1);
+  }
+}
+.spin-blur-in {
+  animation: spin-blur-in 0.85s cubic-bezier(0.05, 0.75, 0.2, 1) forwards;
+  will-change: transform, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin-blur,
+  .spin-blur-in {
+    animation: none;
+  }
+}

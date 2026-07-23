@@ -7,25 +7,35 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { DebugLayer } from './debug/DebugLayer';
 import { useSecretCode } from './debug/useSecretCode';
 import { useAppStore } from '@/state/appStore';
+import { MusicDirector } from '@/audio/MusicDirector';
 
 export default function App() {
   useSecretCode('debug', () =>
     useAppStore.getState().setDebugOpen(!useAppStore.getState().debugOpen),
   );
+  const phase = useAppStore((s) => s.phase);
+  const pending = useAppStore((s) => s.pending);
+  const view = useAppStore((s) => s.view);
+  const spinning = phase === 'out' && view.kind === 'map' && pending?.kind === 'chapter';
+  const unwinding =
+    phase === 'in' && view.kind === 'chapter' && view.beat === 'overview';
+  const spinClass = spinning ? 'spin-blur' : unwinding ? 'spin-blur-in' : undefined;
 
   return (
     <ErrorBoundary label="The app hit an unexpected error." onReset={() => window.location.reload()}>
-      <div className="fixed inset-0 bg-black">
+      <div className="fixed inset-0 overflow-hidden bg-black">
         <Canvas
           shadows
-          dpr={[1, 1.6]}
+          dpr={[1, 1.5]}
           camera={{ fov: 45, near: 0.1, far: 80, position: [0, 2.4, 11] }}
+          className={spinClass}
         >
           <SceneRouter />
         </Canvas>
         <UiLayer />
         <TransitionLayer />
         <DebugLayer />
+        <MusicDirector />
       </div>
     </ErrorBoundary>
   );

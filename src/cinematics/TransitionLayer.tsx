@@ -24,10 +24,13 @@ export function TransitionLayer() {
   useEffect(() => {
     const { _commit, _setPhase } = useAppStore.getState();
     if (phase === 'out') {
-      const ms = fromTitle ? 1650 : OUT_MS;
+      // the map→chapter whip is much faster than the fade transitions
+      const ms = fromTitle ? 1650 : enteringChapter ? 750 : OUT_MS;
       const t = setTimeout(() => {
         _commit();
-        _setPhase(enteringChapter ? 'titleCard' : 'in');
+        // map → chapter rides the spin-blur straight into the showcase —
+        // no black, no title card (the side panel carries the chapter info)
+        _setPhase('in');
       }, ms);
       return () => clearTimeout(t);
     }
@@ -42,7 +45,8 @@ export function TransitionLayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  const black = phase === 'titleCard' || (phase === 'out' && !fromTitle);
+  // the map→chapter spin replaces the black fade entirely
+  const black = phase === 'titleCard' || (phase === 'out' && !fromTitle && !enteringChapter);
   const card =
     phase === 'titleCard' && view.kind === 'chapter' ? chapterMeta(view.chapterId) : null;
 
