@@ -91,7 +91,11 @@ const ORBIT = {
 type Preset = { pos: readonly [number, number, number]; target: readonly [number, number, number] };
 
 function presetFor(view: View): Preset {
-  return view.kind === 'chapter' ? PRESETS.chapter : PRESETS[view.kind];
+  if (view.kind === 'chapter') return PRESETS.chapter;
+  // the prologue video covers the screen; the camera waits at the title shot
+  // so the glide down to the map can play when the film ends
+  if (view.kind === 'prologue') return PRESETS.title;
+  return PRESETS[view.kind];
 }
 
 /**
@@ -145,8 +149,7 @@ function CameraDirector() {
         // slow, smooth dolly straight into the selected marker — no spin, no
         // sharp acceleration. The CSS zoom (.zoom-dive) covers the moment
         // the scene swaps underneath it, right as this settles on the icon.
-        const meta = chapterMeta(pending.chapterId);
-        const [mx, my, mz] = meta.markerPosition;
+        const [mx, my, mz] = chapterMeta(pending.chapterId).markerPosition;
         const markerY = my + MAP_SURFACE_Y;
         gsap.to(camera.position, {
           x: mx, y: markerY + 0.55, z: mz + 0.6,
@@ -156,13 +159,17 @@ function CameraDirector() {
           x: mx, y: markerY + 0.15, z: mz,
           duration: DIVE_S, ease: 'power2.inOut',
         });
-      } else if (view.kind === 'title') {
+      } else if (
+        (view.kind === 'title' || view.kind === 'prologue') &&
+        pending.kind === 'map'
+      ) {
         // opening glide down onto the map — no black overlay for this one.
-        // The delay lets the title text finish fading before anything moves;
-        // keep delay + duration in sync with TransitionLayer's fromTitle ms.
+        // Runs after the title text (or the prologue film) fades out; the
+        // delay lets that fade finish before anything moves. Keep delay +
+        // duration in sync with TransitionLayer's glideToMap ms.
         gsap.to(camera.position, { x: PRESETS.map.pos[0], y: PRESETS.map.pos[1], z: PRESETS.map.pos[2], duration: 1.7, delay: 1.0, ease: 'power2.inOut' });
         gsap.to(target.current, { x: PRESETS.map.target[0], y: PRESETS.map.target[1], z: PRESETS.map.target[2], duration: 1.7, delay: 1.0, ease: 'power2.inOut' });
-      } else {
+      } else if (view.kind !== 'title' && view.kind !== 'prologue') {
         // leaving a chapter: gentle pull back
         gsap.to(camera.position, { z: camera.position.z + 1.2, duration: 1.0, ease: 'power2.in' });
       }

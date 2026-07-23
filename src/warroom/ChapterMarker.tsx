@@ -41,15 +41,16 @@ export function ChapterMarker({
     const g = anim.current;
     if (!g) return;
     if (active && !still) {
-      // the active piece is alive: slightly larger, hovering, slowly turning
+      // the active piece is alive: hovering and slowly turning, scaled down so
+      // it reads as a game piece rather than dominating the map
       const t = clock.elapsedTime;
-      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, 1.18, 0.04));
+      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, 0.71, 0.04));
       baseY.current = THREE.MathUtils.lerp(baseY.current, 0.04, 0.04);
       g.position.y = baseY.current + Math.sin(t * 1.7) * 0.008;
-      g.rotation.y += delta * 0.45;
+      g.rotation.y += delta * 0.18;
     } else {
       // completed (or reduced motion): settle back down and stop
-      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, active ? 1.12 : 1, 0.08));
+      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, active ? 0.67 : 1, 0.08));
       baseY.current = THREE.MathUtils.lerp(baseY.current, 0, 0.08);
       g.position.y = baseY.current;
       g.rotation.y = THREE.MathUtils.lerp(g.rotation.y % (Math.PI * 2), 0, 0.08);

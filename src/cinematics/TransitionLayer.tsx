@@ -18,7 +18,10 @@ export function TransitionLayer() {
   const pending = useAppStore((s) => s.pending);
   const view = useAppStore((s) => s.view);
 
-  const fromTitle = view.kind === 'title';
+  // the open-air camera glide down to the map: title → map (return visits) or
+  // prologue film → map (first visit) — no black for these
+  const glideToMap =
+    (view.kind === 'title' || view.kind === 'prologue') && pending?.kind === 'map';
   const enteringChapter = pending?.kind === 'chapter' && pending.beat === 'overview';
 
   useEffect(() => {
@@ -26,8 +29,8 @@ export function TransitionLayer() {
     if (phase === 'out') {
       // the map→chapter dive is a slow, smooth zoom — keep in sync with
       // SceneRouter's DIVE_S and the .zoom-dive CSS duration (both 2.2s).
-      // fromTitle = title fade (0.9s) + camera glide (1.0s delay + 1.7s)
-      const ms = fromTitle ? 2750 : enteringChapter ? 2200 : OUT_MS;
+      // glideToMap = title/film fade (0.9s) + camera glide (1.0s delay + 1.7s)
+      const ms = glideToMap ? 2750 : enteringChapter ? 2200 : OUT_MS;
       const t = setTimeout(() => {
         _commit();
         // map → chapter rides the zoom-dive straight into the showcase —
@@ -48,7 +51,7 @@ export function TransitionLayer() {
   }, [phase]);
 
   // the map→chapter zoom replaces the black fade entirely
-  const black = phase === 'titleCard' || (phase === 'out' && !fromTitle && !enteringChapter);
+  const black = phase === 'titleCard' || (phase === 'out' && !glideToMap && !enteringChapter);
   const card =
     phase === 'titleCard' && view.kind === 'chapter' ? chapterMeta(view.chapterId) : null;
 

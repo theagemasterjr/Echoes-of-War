@@ -5,6 +5,7 @@ import { useProgressStore } from './progressStore';
 export type View =
   | { kind: 'title' }
   | { kind: 'map' }
+  | { kind: 'prologue' }
   | { kind: 'chapter'; chapterId: ChapterId; beat: Beat };
 
 export type TransitionPhase = 'idle' | 'out' | 'titleCard' | 'in';
@@ -19,9 +20,11 @@ interface AppState {
 
   begin: () => void;
   gotoChapter: (id: ChapterId, beat?: Beat, instant?: boolean) => void;
+  completePrologue: () => void;
   advanceBeat: () => void;
   completeChapter: () => void;
   returnToMap: (instant?: boolean) => void;
+  returnToTitle: () => void;
   setDebugOpen: (open: boolean) => void;
   setCharacterTestChapter: (id: ChapterId | null) => void;
   /** Called by the transition layer as it walks the phases. */
@@ -38,12 +41,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   debugOpen: false,
   characterTestChapter: null,
 
-  begin: () => set({ pending: { kind: 'map' }, phase: 'out' }),
+  // first BEGIN plays the prologue film; afterwards it goes straight to the map
+  begin: () =>
+    set({
+      pending: useProgressStore.getState().prologueDone ? { kind: 'map' } : { kind: 'prologue' },
+      phase: 'out',
+    }),
 
   gotoChapter: (id, beat = 'overview', instant = false) => {
     const target: View = { kind: 'chapter', chapterId: id, beat };
     if (instant) set({ view: target, pending: null, phase: 'idle' });
     else set({ pending: target, phase: 'out' });
+  },
+
+  completePrologue: () => {
+    useProgressStore.getState().markPrologueDone();
+    get().returnToMap();
   },
 
   advanceBeat: () => {
@@ -64,6 +77,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (instant) set({ view: { kind: 'map' }, pending: null, phase: 'idle' });
     else set({ pending: { kind: 'map' }, phase: 'out' });
   },
+
+  returnToTitle: () => set({ pending: { kind: 'title' }, phase: 'out' }),
 
   setDebugOpen: (debugOpen) => set({ debugOpen }),
   setCharacterTestChapter: (characterTestChapter) => set({ characterTestChapter }),

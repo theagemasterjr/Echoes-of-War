@@ -29,7 +29,10 @@ Ask before big changes or scope cuts; small technical decisions are yours.
   ready). Persistent "AI-generated, may contain errors" label.
 - Hidden debug menu: **type `debug`** — jump to any chapter/beat, reset save,
   character test screen (live node + covered learning points).
-- Opening: short skippable title over the darkened war room.
+- Opening: short skippable title over the darkened war room. The first BEGIN
+  plays a prologue film (founder-provided AI video; placeholder frame + CONTINUE
+  until then), then the camera glides down to the map and Chapter 1 appears.
+  A gold year ticker on the map (1938→1945) tracks story progress.
 
 ## Hard rules
 
