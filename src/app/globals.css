@@ -17,48 +17,50 @@ body {
   outline-offset: 2px;
 }
 
-/* fake motion-blur spin used when diving from the map into a chapter:
-   the whole canvas whips + streaks while the real camera dives, then the
-   black overlay covers the swap. Runs once per transition, costs nothing
+/* smooth zoom used when diving from the map into a chapter: the whole
+   canvas gently scales up in step with the real camera's slow dolly onto
+   the selected marker, with a soft blur only late in the motion to mask
+   the scene swap underneath it. No rotation, no sharp acceleration —
+   one continuous, unhurried zoom. Runs once per transition, costs nothing
    the rest of the time. */
-@keyframes spin-blur {
+@keyframes zoom-dive {
   0% {
-    transform: rotate(0deg) scale(1);
+    transform: scale(1);
     filter: blur(0) brightness(1);
   }
-  45% {
-    filter: blur(10px) brightness(0.85);
+  70% {
+    filter: blur(6px) brightness(0.92);
   }
   100% {
-    transform: rotate(50deg) scale(1.5);
-    filter: blur(26px) brightness(0.6);
+    transform: scale(1.32);
+    filter: blur(14px) brightness(0.8);
   }
 }
-.spin-blur {
-  animation: spin-blur 0.75s cubic-bezier(0.55, 0, 0.95, 0.45) forwards;
+.zoom-dive {
+  animation: zoom-dive 2.2s cubic-bezier(0.45, 0, 0.2, 1) forwards;
   will-change: transform, filter;
 }
 
-/* the other half: the showcase arrives at the SAME blur/brightness the whip
-   peaked at and unwinds to rest — one continuous motion through the streak */
-@keyframes spin-blur-in {
+/* the other half: the showcase arrives at the same blur/brightness the dive
+   peaked at and settles to rest — one continuous zoom through the cut */
+@keyframes zoom-arrive {
   0% {
-    transform: rotate(-26deg) scale(1.42);
-    filter: blur(24px) brightness(0.6);
+    transform: scale(1.26);
+    filter: blur(12px) brightness(0.82);
   }
   100% {
-    transform: rotate(0deg) scale(1);
+    transform: scale(1);
     filter: blur(0) brightness(1);
   }
 }
-.spin-blur-in {
-  animation: spin-blur-in 0.85s cubic-bezier(0.05, 0.75, 0.2, 1) forwards;
+.zoom-arrive {
+  animation: zoom-arrive 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, filter;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spin-blur,
-  .spin-blur-in {
+  .zoom-dive,
+  .zoom-arrive {
     animation: none;
   }
 }

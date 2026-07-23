@@ -84,9 +84,16 @@ class Track {
     this.rafId = requestAnimationFrame(step);
   }
 
+  /** User-driven (slider) volume changes apply instantly — only play()/stop()
+   *  use the fade. Otherwise dragging the slider lags behind the fade ramp. */
   setVolume(v: number) {
     this.masterVolume = v;
-    if (this.target === 'in') this.fadeTo(v);
+    if (this.target !== 'in') return;
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.el) this.el.volume = v;
   }
 
   play() {
