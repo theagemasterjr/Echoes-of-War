@@ -41,6 +41,7 @@ export function WarRoomScene() {
           meta={meta}
           completed={completed.includes(meta.id)}
           disabled={!interactive}
+          showLabel={view.kind === 'map'}
           onSelect={() => gotoChapter(meta.id)}
         />
       ))}

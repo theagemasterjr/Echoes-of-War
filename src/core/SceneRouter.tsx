@@ -68,6 +68,11 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
   );
 }
 
+/** Marker Y sits just above the paper map surface — keep in sync with ChapterMarker.tsx. */
+const MAP_SURFACE_Y = 0.085;
+/** Seconds for the map→chapter dive — keep in sync with TransitionLayer's `enteringChapter` timeout and the .zoom-dive CSS duration. */
+const DIVE_S = 2.2;
+
 const PRESETS = {
   title: { pos: [0, 2.4, 11], target: [0, 1.2, 0] },
   map: { pos: [0, 7.6, 6.6], target: [0, 0, -0.4] },
@@ -105,7 +110,6 @@ function CameraDirector() {
   const applied = useRef(new THREE.Vector3());
   const parallax = useRef({ x: 0, y: 0 });
   const amp = useRef(0);
-  const spinProxy = useRef({ a: 0, r: 0, y: 0 });
   const reducedMotion = useRef(false);
   useEffect(() => {
     reducedMotion.current =
@@ -128,27 +132,23 @@ function CameraDirector() {
 
     gsap.killTweensOf(camera.position);
     gsap.killTweensOf(target.current);
-    gsap.killTweensOf(spinProxy.current);
 
     if (phase === 'out' && pending) {
       if (view.kind === 'map' && pending.kind === 'chapter') {
-        // whip AROUND the table, fast and tightening — the CSS blur peaks as
-        // this accelerates, and the showcase is revealed on the other side
-        const [cx, , cz] = PRESETS.map.target;
-        const dx = camera.position.x - cx;
-        const dz = camera.position.z - cz;
-        const s = spinProxy.current;
-        s.a = Math.atan2(dx, dz);
-        s.r = Math.max(2.5, Math.hypot(dx, dz));
-        s.y = camera.position.y;
-        gsap.to(s, {
-          a: s.a + Math.PI * 1.8, r: 3.4, y: 2.4,
-          duration: 0.75, ease: 'power3.in',
-          onUpdate: () => {
-            camera.position.set(cx + Math.sin(s.a) * s.r, s.y, cz + Math.cos(s.a) * s.r);
-          },
+        // slow, smooth dolly straight into the selected marker — no spin, no
+        // sharp acceleration. The CSS zoom (.zoom-dive) covers the moment
+        // the scene swaps underneath it, right as this settles on the icon.
+        const meta = chapterMeta(pending.chapterId);
+        const [mx, my, mz] = meta.markerPosition;
+        const markerY = my + MAP_SURFACE_Y;
+        gsap.to(camera.position, {
+          x: mx, y: markerY + 0.55, z: mz + 0.6,
+          duration: DIVE_S, ease: 'power2.inOut',
         });
-        gsap.to(target.current, { x: cx, y: 0.3, z: cz, duration: 0.75, ease: 'power3.in' });
+        gsap.to(target.current, {
+          x: mx, y: markerY + 0.15, z: mz,
+          duration: DIVE_S, ease: 'power2.inOut',
+        });
       } else if (view.kind === 'title') {
         // opening glide down onto the map — no black overlay for this one
         gsap.to(camera.position, { x: PRESETS.map.pos[0], y: PRESETS.map.pos[1], z: PRESETS.map.pos[2], duration: 1.6, ease: 'power2.inOut' });

@@ -44,20 +44,13 @@ function TitleIntro() {
             draggable={false}
           />
         </h1>
-        <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-stone-400">
-          Six chapters of the Second World War, told through live conversations with
-          the people who could have lived them.
-        </p>
         <button
           onClick={begin}
           disabled={phase !== 'idle'}
-          className="mt-10 rounded-sm border border-amber-200/40 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10 disabled:opacity-40"
+          className="mt-16 rounded-sm border border-amber-200/40 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10 disabled:opacity-40"
         >
           BEGIN
         </button>
-        <p className="mt-8 text-[11px] text-stone-600">
-          Characters are fictional composites. Their responses are AI-generated and may contain errors.
-        </p>
       </motion.div>
     </motion.div>
   );

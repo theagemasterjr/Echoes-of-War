@@ -16,10 +16,10 @@ export default function App() {
   const phase = useAppStore((s) => s.phase);
   const pending = useAppStore((s) => s.pending);
   const view = useAppStore((s) => s.view);
-  const spinning = phase === 'out' && view.kind === 'map' && pending?.kind === 'chapter';
-  const unwinding =
+  const diving = phase === 'out' && view.kind === 'map' && pending?.kind === 'chapter';
+  const arriving =
     phase === 'in' && view.kind === 'chapter' && view.beat === 'overview';
-  const spinClass = spinning ? 'spin-blur' : unwinding ? 'spin-blur-in' : undefined;
+  const zoomClass = diving ? 'zoom-dive' : arriving ? 'zoom-arrive' : undefined;
 
   return (
     <ErrorBoundary label="The app hit an unexpected error." onReset={() => window.location.reload()}>
@@ -28,7 +28,7 @@ export default function App() {
           shadows
           dpr={[1, 1.5]}
           camera={{ fov: 45, near: 0.1, far: 80, position: [0, 2.4, 11] }}
-          className={spinClass}
+          className={zoomClass}
         >
           <SceneRouter />
         </Canvas>

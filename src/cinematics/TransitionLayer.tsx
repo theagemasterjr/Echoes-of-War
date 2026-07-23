@@ -24,11 +24,12 @@ export function TransitionLayer() {
   useEffect(() => {
     const { _commit, _setPhase } = useAppStore.getState();
     if (phase === 'out') {
-      // the map→chapter whip is much faster than the fade transitions
-      const ms = fromTitle ? 1650 : enteringChapter ? 750 : OUT_MS;
+      // the map→chapter dive is a slow, smooth zoom — keep in sync with
+      // SceneRouter's DIVE_S and the .zoom-dive CSS duration (both 2.2s)
+      const ms = fromTitle ? 1650 : enteringChapter ? 2200 : OUT_MS;
       const t = setTimeout(() => {
         _commit();
-        // map → chapter rides the spin-blur straight into the showcase —
+        // map → chapter rides the zoom-dive straight into the showcase —
         // no black, no title card (the side panel carries the chapter info)
         _setPhase('in');
       }, ms);
@@ -45,7 +46,7 @@ export function TransitionLayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // the map→chapter spin replaces the black fade entirely
+  // the map→chapter zoom replaces the black fade entirely
   const black = phase === 'titleCard' || (phase === 'out' && !fromTitle && !enteringChapter);
   const card =
     phase === 'titleCard' && view.kind === 'chapter' ? chapterMeta(view.chapterId) : null;
