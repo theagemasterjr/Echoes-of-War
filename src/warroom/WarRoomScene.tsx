@@ -18,11 +18,15 @@ export function WarRoomScene() {
   const phase = useAppStore((s) => s.phase);
   const view = useAppStore((s) => s.view);
   const completed = useProgressStore((s) => s.completed);
+  const prologueDone = useProgressStore((s) => s.prologueDone);
   const interactive = phase === 'idle' && view.kind === 'map';
   // the story reveals itself one chapter at a time: the first unfinished
   // chapter is "active" (bigger, hovering, battle effects); finished ones
-  // stay on the map as quiet set pieces; the rest aren't out yet
-  const activeId = CHAPTERS.find((c) => !completed.includes(c.id))?.id;
+  // stay on the map as quiet set pieces; the rest aren't out yet. Until the
+  // prologue film is watched, the dagger is the only thing on the table.
+  const activeId = prologueDone
+    ? CHAPTERS.find((c) => !completed.includes(c.id))?.id
+    : undefined;
 
   return (
     <group>

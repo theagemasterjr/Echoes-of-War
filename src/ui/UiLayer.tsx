@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/state/appStore';
 import { useSettingsStore } from '@/state/settingsStore';
-import { chapterMeta, loadChapter } from '@/chapters/registry';
+import { useProgressStore } from '@/state/progressStore';
+import { chapterMeta, loadChapter, CHAPTERS } from '@/chapters/registry';
 import type { Beat, ChapterId, ChapterModule } from '@/chapters/types';
 import { ConversationUI } from '@/conversation/ConversationUI';
 import { ErrorBoundary } from '@/core/ErrorBoundary';
@@ -13,10 +14,110 @@ export function UiLayer() {
   return (
     <div className="pointer-events-none fixed inset-0 z-20 select-none">
       <AnimatePresence>{view.kind === 'title' && <TitleIntro key="title" />}</AnimatePresence>
+      {view.kind === 'prologue' && <PrologueVideo />}
       {view.kind === 'chapter' && (
         <ChapterBeats key={view.chapterId} chapterId={view.chapterId} beat={view.beat} />
       )}
+      {view.kind === 'map' && <YearTicker />}
       <Hud />
+    </div>
+  );
+}
+
+/** Fullscreen prologue film. Placeholder until the founders' AI-generated
+ *  video exists — then replace the placeholder frame with
+ *  <video src="/video/prologue.mp4" autoPlay onEnded={completePrologue} />
+ *  and drop the CONTINUE button. */
+function PrologueVideo() {
+  const completePrologue = useAppStore((s) => s.completePrologue);
+  const phase = useAppStore((s) => s.phase);
+  return (
+    <motion.div
+      className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-black"
+      initial={{ opacity: 0 }}
+      // fades away first, then the camera glide down to the map plays in the
+      // open (same choreography as the title screen's BEGIN)
+      animate={{ opacity: phase === 'out' ? 0 : 1 }}
+      transition={{ duration: phase === 'out' ? 0.9 : 0.8 }}
+    >
+      <div className="text-center">
+        <div className="text-xs uppercase tracking-[0.4em] text-amber-200/60">Prologue · 1938</div>
+        <div className="mt-5 flex aspect-video w-[min(760px,86vw)] items-center justify-center border border-stone-800 bg-stone-950/80">
+          <p className="max-w-[36ch] text-sm leading-relaxed text-stone-500">
+            Opening film placeholder — the video will play here.
+          </p>
+        </div>
+        <button
+          onClick={completePrologue}
+          disabled={phase !== 'idle'}
+          className="mt-6 rounded-sm border border-amber-200/40 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10 disabled:opacity-40"
+        >
+          CONTINUE
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+/** The story's start year per active chapter — the ticker shows where you are. */
+const CHAPTER_YEAR: Record<ChapterId, number> = {
+  ch1: 1939, ch2: 1940, ch3: 1941, ch4: 1942, ch5: 1944, ch6: 1945,
+};
+const TICKER_YEARS = [1935, 1936, 1937, 1938, 1939, 1940, 1941, 1942, 1943, 1944, 1945, 1946, 1947];
+const YEAR_W = 76; // px per year segment on the ruler
+
+/** Gold year ruler at the top of the map: the current year sits centered under
+ *  a ticked line that fades out toward its neighbours, and slides when the
+ *  story moves forward. */
+function YearTicker() {
+  const prologueDone = useProgressStore((s) => s.prologueDone);
+  const completed = useProgressStore((s) => s.completed);
+  const active = CHAPTERS.find((c) => !completed.includes(c.id));
+  const year = !prologueDone ? 1938 : active ? CHAPTER_YEAR[active.id] : 1945;
+  const offset = -TICKER_YEARS.indexOf(year) * YEAR_W - YEAR_W / 2;
+
+  return (
+    <div className="absolute left-1/2 top-4 -translate-x-1/2 text-center">
+      <div
+        className="w-[300px] overflow-hidden"
+        style={{
+          maskImage: 'linear-gradient(to right, transparent, black 35%, black 65%, transparent)',
+          WebkitMaskImage:
+            'linear-gradient(to right, transparent, black 35%, black 65%, transparent)',
+        }}
+      >
+        <div
+          className="flex transition-transform duration-1000 ease-in-out"
+          style={{ transform: `translateX(calc(50% + ${offset}px))` }}
+        >
+          {TICKER_YEARS.map((y) => (
+            <div key={y} className="shrink-0" style={{ width: YEAR_W }}>
+              <div className="flex h-3 items-end justify-between px-px">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="w-px bg-amber-200/70"
+                    style={{ height: i === 2 ? 12 : 6 }}
+                  />
+                ))}
+              </div>
+              <div
+                className={`mt-1 text-[10px] tracking-[0.2em] transition-colors duration-1000 ${
+                  y === year ? 'text-transparent' : 'text-amber-200/40'
+                }`}
+              >
+                {y}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div
+        className="-mt-4 text-lg font-light tracking-[0.35em] text-amber-200"
+        style={{ textShadow: '0 0 12px rgba(255,196,90,0.45)' }}
+      >
+        {year}
+      </div>
     </div>
   );
 }
@@ -126,8 +227,7 @@ function Hud() {
   const view = useAppStore((s) => s.view);
   const phase = useAppStore((s) => s.phase);
   const returnToMap = useAppStore((s) => s.returnToMap);
-  const volume = useSettingsStore((s) => s.volume);
-  const setVolume = useSettingsStore((s) => s.setVolume);
+  const returnToTitle = useAppStore((s) => s.returnToTitle);
   const idle = phase === 'idle';
 
   return (
@@ -140,15 +240,95 @@ function Hud() {
           ← MAP
         </button>
       )}
-      <label className="pointer-events-auto absolute right-4 top-4 flex items-center gap-2 rounded-sm bg-stone-950/50 px-3 py-1.5 text-stone-400 backdrop-blur-sm">
-        <span className="text-[10px] uppercase tracking-widest">Vol</span>
-        <input
-          type="range" min={0} max={1} step={0.05} value={volume}
-          onChange={(e) => setVolume(Number(e.target.value))}
-          className="h-1 w-20 accent-amber-200/70"
-          aria-label="Volume"
-        />
-      </label>
+      {view.kind === 'map' && idle && (
+        <button
+          onClick={returnToTitle}
+          className="pointer-events-auto absolute left-4 top-4 rounded-sm border border-stone-700 bg-stone-950/60 px-3 py-1.5 text-xs tracking-widest text-stone-300 backdrop-blur-sm transition hover:bg-stone-800"
+        >
+          ← TITLE
+        </button>
+      )}
+      <SettingsMenu />
     </>
+  );
+}
+
+function SettingsMenu() {
+  const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const volume = useSettingsStore((s) => s.volume);
+  const setVolume = useSettingsStore((s) => s.setVolume);
+
+  const resetProgress = () => {
+    useProgressStore.getState().reset();
+    setConfirming(false);
+    setOpen(false);
+    const { view, returnToTitle } = useAppStore.getState();
+    if (view.kind !== 'title') returnToTitle();
+  };
+
+  return (
+    <div className="pointer-events-auto absolute right-4 top-4 flex flex-col items-end">
+      <button
+        onClick={() => {
+          setOpen((o) => !o);
+          setConfirming(false);
+        }}
+        aria-label="Settings"
+        className={`rounded-sm border border-stone-700 bg-stone-950/60 px-2.5 py-1.5 text-sm backdrop-blur-sm transition hover:bg-stone-800 ${
+          open ? 'text-amber-200/90' : 'text-stone-300'
+        }`}
+      >
+        ⚙
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+            className="mt-2 w-56 rounded-md border border-stone-700 bg-stone-950/90 p-4 text-stone-300 shadow-xl backdrop-blur-sm"
+          >
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-[10px] uppercase tracking-widest text-stone-400">Volume</span>
+              <input
+                type="range" min={0} max={1} step={0.05} value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="h-1 w-28 accent-amber-200/70"
+                aria-label="Volume"
+              />
+            </label>
+            <div className="my-3 h-px bg-stone-800" />
+            {confirming ? (
+              <div>
+                <p className="text-xs text-stone-400">Erase all progress and start over?</p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={resetProgress}
+                    className="flex-1 rounded-sm border border-red-900/70 px-2 py-1.5 text-[10px] uppercase tracking-widest text-red-300 transition hover:bg-red-950/50"
+                  >
+                    Yes, reset
+                  </button>
+                  <button
+                    onClick={() => setConfirming(false)}
+                    className="flex-1 rounded-sm border border-stone-700 px-2 py-1.5 text-[10px] uppercase tracking-widest transition hover:bg-stone-800"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirming(true)}
+                className="w-full rounded-sm border border-stone-700 px-2 py-1.5 text-[10px] uppercase tracking-widest transition hover:bg-stone-800"
+              >
+                Reset progress
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
