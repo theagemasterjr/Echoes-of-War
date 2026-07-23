@@ -25,8 +25,9 @@ export function TransitionLayer() {
     const { _commit, _setPhase } = useAppStore.getState();
     if (phase === 'out') {
       // the map→chapter dive is a slow, smooth zoom — keep in sync with
-      // SceneRouter's DIVE_S and the .zoom-dive CSS duration (both 2.2s)
-      const ms = fromTitle ? 1650 : enteringChapter ? 2200 : OUT_MS;
+      // SceneRouter's DIVE_S and the .zoom-dive CSS duration (both 2.2s).
+      // fromTitle = title fade (0.9s) + camera glide (1.0s delay + 1.7s)
+      const ms = fromTitle ? 2750 : enteringChapter ? 2200 : OUT_MS;
       const t = setTimeout(() => {
         _commit();
         // map → chapter rides the zoom-dive straight into the showcase —

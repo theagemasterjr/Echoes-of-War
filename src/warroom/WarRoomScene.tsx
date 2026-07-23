@@ -19,6 +19,10 @@ export function WarRoomScene() {
   const view = useAppStore((s) => s.view);
   const completed = useProgressStore((s) => s.completed);
   const interactive = phase === 'idle' && view.kind === 'map';
+  // the story reveals itself one chapter at a time: the first unfinished
+  // chapter is "active" (bigger, hovering, battle effects); finished ones
+  // stay on the map as quiet set pieces; the rest aren't out yet
+  const activeId = CHAPTERS.find((c) => !completed.includes(c.id))?.id;
 
   return (
     <group>
@@ -35,16 +39,19 @@ export function WarRoomScene() {
       <Asset assetId="warroom.table" position={[0, -0.01, 0]} />
       <Asset assetId="warroom.map" position={[0, 0.005, 0]} />
 
-      {CHAPTERS.map((meta) => (
-        <ChapterMarker
-          key={meta.id}
-          meta={meta}
-          completed={completed.includes(meta.id)}
-          disabled={!interactive}
-          showLabel={view.kind === 'map'}
-          onSelect={() => gotoChapter(meta.id)}
-        />
-      ))}
+      {CHAPTERS.filter((meta) => completed.includes(meta.id) || meta.id === activeId).map(
+        (meta) => (
+          <ChapterMarker
+            key={meta.id}
+            meta={meta}
+            completed={completed.includes(meta.id)}
+            active={meta.id === activeId}
+            disabled={!interactive}
+            showLabel={view.kind === 'map'}
+            onSelect={() => gotoChapter(meta.id)}
+          />
+        ),
+      )}
     </group>
   );
 }

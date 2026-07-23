@@ -1,8 +1,14 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import * as THREE from 'three';
 import type { ChapterMeta } from '@/chapters/types';
 import { Asset } from '@/assets/registry';
+import { BattleFx } from './BattleFx';
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Screen-height tier per chapter, so labels for markers placed close
  *  together on the map (currently 1, 2, 4, 5) don't overlap. Chapters 3
@@ -10,10 +16,12 @@ import { Asset } from '@/assets/registry';
 const LABEL_TIER: Record<number, number> = { 1: 0, 2: 1, 3: 0, 4: 2, 5: 3, 6: 0 };
 
 export function ChapterMarker({
-  meta, completed, onSelect, disabled, showLabel,
+  meta, completed, active, onSelect, disabled, showLabel,
 }: {
   meta: ChapterMeta;
   completed: boolean;
+  /** the one chapter currently "in play" — bigger, hovering, battle effects */
+  active: boolean;
   onSelect: () => void;
   disabled: boolean;
   showLabel: boolean;
@@ -23,6 +31,30 @@ export function ChapterMarker({
   // the GLB scroll map's paper surface sits ~0.08 above the table top
   const MAP_SURFACE_Y = 0.08;
   const BASE_SCALE = 1.25;
+  const still = useMemo(prefersReducedMotion, []);
+  const anim = useRef<THREE.Group>(null);
+  /** smoothed hover height, kept separate from the bob wave so the sine can't
+   *  feed back through the lerp and blow up the amplitude */
+  const baseY = useRef(0);
+
+  useFrame(({ clock }, delta) => {
+    const g = anim.current;
+    if (!g) return;
+    if (active && !still) {
+      // the active piece is alive: slightly larger, hovering, slowly turning
+      const t = clock.elapsedTime;
+      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, 1.18, 0.04));
+      baseY.current = THREE.MathUtils.lerp(baseY.current, 0.04, 0.04);
+      g.position.y = baseY.current + Math.sin(t * 1.7) * 0.008;
+      g.rotation.y += delta * 0.45;
+    } else {
+      // completed (or reduced motion): settle back down and stop
+      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, active ? 1.12 : 1, 0.08));
+      baseY.current = THREE.MathUtils.lerp(baseY.current, 0, 0.08);
+      g.position.y = baseY.current;
+      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y % (Math.PI * 2), 0, 0.08);
+    }
+  });
 
   return (
     <group position={[x, y + MAP_SURFACE_Y + 0.005, z]}>
@@ -42,13 +74,16 @@ export function ChapterMarker({
           document.body.style.cursor = 'default';
         }}
       >
-        <Asset assetId={meta.markerAssetId} />
+        <group ref={anim}>
+          <Asset assetId={meta.markerAssetId} />
+        </group>
         {/* invisible fattened hit area so small props are easy to click */}
         <mesh visible={false} position={[0, 0.15, 0]}>
           <sphereGeometry args={[0.35, 8, 8]} />
           <meshBasicMaterial />
         </mesh>
       </group>
+      {active && !still && <BattleFx />}
       {completed && (
         <mesh rotation={[-Math.PI / 2, 0, 0.5]} position={[0.28, 0.004, 0.18]}>
           <ringGeometry args={[0.06, 0.1, 20]} />
