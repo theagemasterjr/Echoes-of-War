@@ -14,11 +14,14 @@ export function ChapterMarker({
 }) {
   const [hovered, setHovered] = useState(false);
   const [x, y, z] = meta.markerPosition;
+  // the GLB scroll map's paper surface sits ~0.08 above the table top
+  const MAP_SURFACE_Y = 0.08;
+  const BASE_SCALE = 1.25;
 
   return (
-    <group position={[x, y + 0.005, z]}>
+    <group position={[x, y + MAP_SURFACE_Y + 0.005, z]}>
       <group
-        scale={hovered && !disabled ? 1.25 : 1}
+        scale={(hovered && !disabled ? 1.25 : 1) * BASE_SCALE}
         onClick={(e) => {
           e.stopPropagation();
           if (!disabled) onSelect();
@@ -48,7 +51,7 @@ export function ChapterMarker({
       )}
       {hovered && !disabled && (
         <Html position={[0, 0.55, 0]} center distanceFactor={6} style={{ pointerEvents: 'none' }}>
-          <div className="w-52 rounded-md border border-amber-100/20 bg-stone-950/90 px-3 py-2 text-stone-100 shadow-xl backdrop-blur-sm">
+          <div className="w-52 rounded-md border border-amber-100/20 bg-stone-950/95 px-3 py-2 text-stone-100 shadow-xl">
             <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
               Chapter {meta.index} · {meta.dates}
             </div>

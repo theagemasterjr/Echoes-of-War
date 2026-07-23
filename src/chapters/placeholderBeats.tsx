@@ -23,26 +23,29 @@ export function makePlaceholderModule(): ChapterModule {
     Overview: function Overview({ chapterId, onAdvance }: BeatProps) {
       const meta = chapterMeta(chapterId);
       return (
-        <Panel>
-          <div className="text-[10px] uppercase tracking-[0.3em] text-amber-200/50">
-            Placeholder overview — real cinematic scene comes later
+        /* side panel — the 3D showcase orbits the chapter object on the left */
+        <div className="absolute inset-0 flex items-center justify-end p-6 md:pr-14">
+          <div className="w-full max-w-md rounded-md border border-stone-800 bg-stone-950/70 p-8 backdrop-blur-sm">
+            <div className="text-[11px] uppercase tracking-[0.4em] text-amber-200/60">
+              Chapter {meta.index} · {meta.dates}
+            </div>
+            <h2 className="mt-3 text-3xl font-light text-stone-100">{meta.title}</h2>
+            <p className="mt-2 text-sm text-stone-400">
+              {meta.subtitle} · {meta.location}
+            </p>
+            <p className="mt-5 text-sm leading-relaxed text-stone-300">
+              This is where a short scene-setter will live. You are about to speak with{' '}
+              {meta.characterRole.toLowerCase()} — a fictional composite character built
+              from documented experiences of the time.
+            </p>
+            <button
+              onClick={onAdvance}
+              className="mt-8 rounded-sm border border-amber-200/40 px-6 py-2.5 text-xs tracking-[0.25em] text-amber-100 hover:bg-amber-200/10"
+            >
+              TALK TO THE {meta.characterRole.toUpperCase()} →
+            </button>
           </div>
-          <h2 className="mt-4 text-2xl font-light text-stone-100">{meta.title}</h2>
-          <p className="mt-2 text-sm text-stone-400">
-            {meta.subtitle} · {meta.dates} · {meta.location}
-          </p>
-          <p className="mt-4 text-sm leading-relaxed text-stone-300">
-            This is where a 30–60 second scene-setter will play. For now, you are headed
-            straight to a conversation with {meta.characterRole.toLowerCase()} — a fictional
-            composite character.
-          </p>
-          <button
-            onClick={onAdvance}
-            className="mt-8 rounded-sm border border-amber-200/40 px-6 py-2 text-xs tracking-[0.25em] text-amber-100 hover:bg-amber-200/10"
-          >
-            MEET THEM →
-          </button>
-        </Panel>
+        </div>
       );
     },
     Minigame: function Minigame({ chapterId, onComplete }: MinigameProps) {

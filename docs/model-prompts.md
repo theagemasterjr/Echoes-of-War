@@ -31,8 +31,10 @@ This one is a **texture, not a model**: the map is a flat sheet in the app. Gene
 
 Save as `public/models/map-texture.jpg` and tell the developer/Claude to wire it onto the map sheet (one-line material change).
 
-### `warroom.lamp` — desk lamp
-> A 1940s brass banker's desk lamp with a green enamel shade, worn brass with fingerprints and patina, cloth-wrapped cord coiled at the base, bulb visible under the shade, photorealistic.
+### Desk lamp — CUT (optional, not currently in the scene)
+The warm light is a virtual spotlight and doesn't need a physical lamp. If we ever
+want one for atmosphere: a 1940s brass banker's desk lamp with a green enamel shade,
+worn brass, cloth-wrapped cord. Adding it back is a one-line registry entry.
 
 ---
 
@@ -52,11 +54,11 @@ All six should read as **small tabletop game pieces** on a round wooden base coi
 ### `ch4.marker` — medic satchel (Turning the Tide)
 > A miniature Soviet military medical satchel, worn olive canvas with leather straps and a small red cross patch, frost on the fabric…
 
-### `ch5.marker` — landing craft (The Road Back)
-> A miniature Allied LCVP Higgins landing craft, olive-drab steel hull, lowered bow ramp, weathered and sea-worn…
+### `ch5.marker` — medic helmet (The Road Back)
+> A miniature WWII American M1 combat helmet, olive drab steel with chipped paint and a small white circle bearing a red cross, worn chin strap resting beside it…
 
-### `ch6.marker` — paper crane (The Cost of Victory)
-> A miniature origami paper crane, slightly aged white paper with soft creases, delicate and quiet, resting gently…
+### `ch6.marker` — paper lantern (The Cost of Victory)
+> A miniature Japanese paper lantern (chochin), soft cream washi paper gently glowing from within, dark wooden top and bottom rings, quiet and delicate…
 
 ---
 

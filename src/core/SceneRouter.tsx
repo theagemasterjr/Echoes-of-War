@@ -32,8 +32,8 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
     <group>
       <fog attach="fog" args={['#0a0c10', 8, 22]} />
       <color attach="background" args={['#0a0c10']} />
-      <ambientLight intensity={0.4} color="#c9d4e6" />
-      <spotLight position={[2.2, 3.5, 2.8]} angle={0.5} penumbra={0.7} intensity={38} color="#ffe3b8" castShadow />
+      <ambientLight intensity={0.55} color="#c9d4e6" />
+      <spotLight position={[2.2, 3.5, 2.8]} angle={0.55} penumbra={0.7} intensity={48} color="#ffe3b8" castShadow />
       <directionalLight position={[-3, 2, -2]} intensity={0.7} color="#7d8aa3" />
 
       {/* 2D painted backdrop plane — founders swap the material/texture per chapter later */}
@@ -50,6 +50,13 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
         <Float speed={1.4} rotationIntensity={0.04} floatIntensity={0.12} floatingRange={[0, 0.06]}>
           <Asset assetId={meta.characterAssetId} position={[0, 0, 0]} />
         </Float>
+      ) : beat === 'overview' ? (
+        /* showcase pedestal shot — the orbit camera slowly circles this */
+        <group position={[0, ORBIT.target[1] - 0.45, 0]} scale={2.6}>
+          <Float speed={1.1} rotationIntensity={0.05} floatIntensity={0.12}>
+            <Asset assetId={meta.markerAssetId} />
+          </Float>
+        </group>
       ) : (
         <group position={[0, 0.55, 0]} scale={2.6}>
           <Float speed={1.2} rotationIntensity={0.15} floatIntensity={0.3}>
@@ -66,6 +73,15 @@ const PRESETS = {
   map: { pos: [0, 7.6, 6.6], target: [0, 0, -0.4] },
   chapter: { pos: [0, 1.45, 5.2], target: [0, 0.95, 0] },
 } as const;
+
+/** Overview showcase: camera circles the object at a low hero angle. */
+const ORBIT = {
+  target: [0, 1.15, 0] as const,
+  radius: 3.4,
+  pitchDrop: 0.91, // radius * tan(15°) → camera sits ~15° below the object
+  secondsPerLap: 30,
+  screenShift: 0.85, // pushes the object left so the info panel owns the right
+};
 
 type Preset = { pos: readonly [number, number, number]; target: readonly [number, number, number] };
 
@@ -84,6 +100,18 @@ function CameraDirector() {
   const view = useAppStore((s) => s.view);
   const pending = useAppStore((s) => s.pending);
   const phase = useAppStore((s) => s.phase);
+  // "living camera": slow idle drift + mouse parallax, layered on top of the
+  // gsap-owned base position (applied pre-render, removed next frame)
+  const applied = useRef(new THREE.Vector3());
+  const parallax = useRef({ x: 0, y: 0 });
+  const amp = useRef(0);
+  const spinProxy = useRef({ a: 0, r: 0, y: 0 });
+  const reducedMotion = useRef(false);
+  useEffect(() => {
+    reducedMotion.current =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
 
   useEffect(() => {
     camera.position.set(...presetFor(useAppStore.getState().view).pos);
@@ -92,15 +120,35 @@ function CameraDirector() {
   }, []);
 
   useEffect(() => {
+    // bake the current drift/orbit offset into the base position so tweens
+    // start from what's actually on screen (no snap), then reset the layer
+    camera.position.add(applied.current);
+    applied.current.set(0, 0, 0);
+    amp.current = 0;
+
     gsap.killTweensOf(camera.position);
     gsap.killTweensOf(target.current);
+    gsap.killTweensOf(spinProxy.current);
 
     if (phase === 'out' && pending) {
       if (view.kind === 'map' && pending.kind === 'chapter') {
-        // dive toward the selected marker
-        const [mx, , mz] = chapterMeta(pending.chapterId).markerPosition;
-        gsap.to(camera.position, { x: mx, y: 1.7, z: mz + 1.4, duration: 1.15, ease: 'power2.in' });
-        gsap.to(target.current, { x: mx, y: 0, z: mz, duration: 1.15, ease: 'power2.in' });
+        // whip AROUND the table, fast and tightening — the CSS blur peaks as
+        // this accelerates, and the showcase is revealed on the other side
+        const [cx, , cz] = PRESETS.map.target;
+        const dx = camera.position.x - cx;
+        const dz = camera.position.z - cz;
+        const s = spinProxy.current;
+        s.a = Math.atan2(dx, dz);
+        s.r = Math.max(2.5, Math.hypot(dx, dz));
+        s.y = camera.position.y;
+        gsap.to(s, {
+          a: s.a + Math.PI * 1.8, r: 3.4, y: 2.4,
+          duration: 0.75, ease: 'power3.in',
+          onUpdate: () => {
+            camera.position.set(cx + Math.sin(s.a) * s.r, s.y, cz + Math.cos(s.a) * s.r);
+          },
+        });
+        gsap.to(target.current, { x: cx, y: 0.3, z: cz, duration: 0.75, ease: 'power3.in' });
       } else if (view.kind === 'title') {
         // opening glide down onto the map — no black overlay for this one
         gsap.to(camera.position, { x: PRESETS.map.pos[0], y: PRESETS.map.pos[1], z: PRESETS.map.pos[2], duration: 1.6, ease: 'power2.inOut' });
@@ -129,6 +177,56 @@ function CameraDirector() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, view, pending]);
 
-  useFrame(() => camera.lookAt(target.current));
+  useFrame(({ clock, pointer }) => {
+    // overview showcase: absolute orbit placement wins over presets/drift
+    if (view.kind === 'chapter' && view.beat === 'overview' && phase !== 'out') {
+      const t = clock.elapsedTime;
+      const angle = reducedMotion.current ? 0.4 : (t * Math.PI * 2) / ORBIT.secondsPerLap;
+      const [tx, ty, tz] = ORBIT.target;
+      camera.position.set(
+        tx + ORBIT.radius * Math.sin(angle),
+        ty - ORBIT.pitchDrop,
+        tz + ORBIT.radius * Math.cos(angle),
+      );
+      camera.lookAt(tx, ty, tz);
+      camera.translateX(ORBIT.screenShift); // object left, panel right
+      applied.current.set(0, 0, 0);
+      amp.current = 0;
+      return;
+    }
+
+    // remove last frame's offset (no-op if gsap overwrote the position — the
+    // amplitude is eased to 0 during transitions so any residue is negligible)
+    camera.position.sub(applied.current);
+
+    const idleDrift = phase === 'idle' && view.kind !== 'chapter' && !reducedMotion.current;
+    amp.current = THREE.MathUtils.lerp(amp.current, idleDrift ? 1 : 0, 0.03);
+
+    const t = clock.elapsedTime;
+    const p = parallax.current;
+    p.x = THREE.MathUtils.lerp(p.x, pointer.x * 0.24, 0.04);
+    p.y = THREE.MathUtils.lerp(p.y, -pointer.y * 0.12, 0.04);
+
+    // slow sweep around the table (map only): rotate the camera's base offset
+    // about the look target — wide pendulum, so the map never goes upside down
+    let orbitX = 0;
+    let orbitZ = 0;
+    if (view.kind === 'map') {
+      const theta = 0.4 * Math.sin((t * Math.PI * 2) / 70) * amp.current; // ±23°, 70s cycle
+      const bx = camera.position.x - target.current.x;
+      const bz = camera.position.z - target.current.z;
+      orbitX = bx * Math.cos(theta) + bz * Math.sin(theta) - bx;
+      orbitZ = -bx * Math.sin(theta) + bz * Math.cos(theta) - bz;
+    }
+
+    applied.current.set(
+      orbitX + (Math.sin(t * 0.11) * 0.14 + Math.sin(t * 0.047 + 1.3) * 0.09 + p.x) * amp.current,
+      (Math.sin(t * 0.073 + 2.1) * 0.05 + p.y) * amp.current,
+      orbitZ + Math.sin(t * 0.059 + 0.7) * 0.06 * amp.current,
+    );
+
+    camera.position.add(applied.current);
+    camera.lookAt(target.current);
+  });
   return null;
 }
