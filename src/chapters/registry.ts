@@ -2,19 +2,19 @@
 
 /**
  * The one place chapters are registered. Adding/editing a chapter touches its
- * own folder, its tree file, and (at most) its row here â€” nothing else.
+ * own folder, its tree file, and (at most) its row here — nothing else.
  * Marker positions are map-local: the paper map spans x âˆ’6..6, z âˆ’3.25..3.25.
  */
 export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch1', index: 1, title: 'The Spark', subtitle: 'The road to war',
-    dates: '1919 â€“ 1939', location: 'Warsaw, Poland',
+    dates: '1919–1939', location: 'Warsaw, Poland',
     characterName: 'Placeholder: Polish radio journalist', characterRole: 'Radio journalist',
     markerPosition: [0.48, 0, -1.40], markerAssetId: 'ch1.marker', characterAssetId: 'ch1.character',
   },
   {
     id: 'ch2', index: 2, title: 'Standing Alone', subtitle: 'The Battle of Britain',
-    dates: '1940 â€“ 1941', location: 'Southern England',
+    dates: '1940–1941', location: 'Southern England',
     characterName: 'Placeholder: RAF pilot', characterRole: 'RAF fighter pilot',
     markerPosition: [-0.30, 0, -1.42], markerAssetId: 'ch2.marker', characterAssetId: 'ch2.character',
   },
@@ -26,7 +26,7 @@ export const CHAPTERS: ChapterMeta[] = [
   },
   {
     id: 'ch4', index: 4, title: 'Turning the Tide', subtitle: 'Stalingrad',
-    dates: '1942 â€“ 1943', location: 'Stalingrad, USSR',
+    dates: '1942–1943', location: 'Stalingrad, USSR',
     characterName: 'Placeholder: Soviet combat medic', characterRole: 'Combat medic',
     markerPosition: [1.40, 0, -1.14], markerAssetId: 'ch4.marker', characterAssetId: 'ch4.character',
   },

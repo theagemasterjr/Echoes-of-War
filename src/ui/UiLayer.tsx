@@ -88,7 +88,7 @@ function PrologueVideo() {
         />
       )}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.4em] text-amber-200/60">
-        Prologue · 1938
+        Prologue · 1939
       </div>
       {/* one-tap unmute when the browser forced a muted start */}
       {muted && !failed && (
