@@ -33,6 +33,15 @@ export interface ConstraintTree {
   };
   entryNodeId: string;
   nodes: Record<string, StageNode>;
+  /** Learner-facing objectives shown as a checklist; each checks off when all its points are covered. */
+  objectives?: ObjectiveDef[];
+}
+
+/** One row of the "what to listen for" checklist; derived-done client-side. */
+export interface ObjectiveDef {
+  id: string;
+  label: string;
+  pointIds: string[];
 }
 
 export interface StageNode {
@@ -76,4 +85,6 @@ export interface ChatResponse {
   progress: { covered: number; total: number };
   screened?: 'abusive' | 'ai_probe' | 'busy';
   nodeId: string;
+  /** The chapter's objectives — rides every response so the checklist is self-healing. */
+  objectives?: ObjectiveDef[];
 }

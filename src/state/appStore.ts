@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Beat, ChapterId } from '@/chapters/types';
+import { chapterMeta } from '@/chapters/registry';
 import { useProgressStore } from './progressStore';
 
 export type View =
@@ -32,7 +33,7 @@ interface AppState {
   _setPhase: (phase: TransitionPhase) => void;
 }
 
-const BEAT_ORDER: Beat[] = ['overview', 'conversation', 'minigame'];
+export const BEAT_ORDER: Beat[] = ['overview', 'intro', 'conversation', 'minigame'];
 
 export const useAppStore = create<AppState>((set, get) => ({
   view: { kind: 'title' },
@@ -62,7 +63,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   advanceBeat: () => {
     const v = get().view;
     if (v.kind !== 'chapter') return;
-    const next = BEAT_ORDER[BEAT_ORDER.indexOf(v.beat) + 1];
+    let next = BEAT_ORDER[BEAT_ORDER.indexOf(v.beat) + 1];
+    // chapters without an intro film jump straight from overview to conversation
+    if (next === 'intro' && !chapterMeta(v.chapterId).introVideo) {
+      next = BEAT_ORDER[BEAT_ORDER.indexOf('intro') + 1];
+    }
     if (next) set({ view: { ...v, beat: next } });
   },
 

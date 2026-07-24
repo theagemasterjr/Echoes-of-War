@@ -15,7 +15,7 @@ model screens input and checks coverage; a stronger model plays the character.
 
 ```bash
 npm install
-# create .env.local containing:  ANTHROPIC_API_KEY=sk-ant-...
+# create .env.local containing:  OPENAI_API_KEY=sk-...
 npm run dev
 ```
 
@@ -25,7 +25,7 @@ conversations (the character asks you to repeat, by design).
 ## Deploy (Vercel)
 
 1. Import the GitHub repo into Vercel (framework auto-detected: Next.js).
-2. Add the `ANTHROPIC_API_KEY` environment variable in Project Settings.
+2. Add the `OPENAI_API_KEY` environment variable in Project Settings.
 3. Deploy. `/api/health` reports whether the key is present.
 
 ## For the team

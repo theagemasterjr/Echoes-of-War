@@ -7,6 +7,7 @@ import { useProgressStore } from '@/state/progressStore';
 import { chapterMeta, loadChapter, CHAPTERS } from '@/chapters/registry';
 import type { Beat, ChapterId, ChapterModule } from '@/chapters/types';
 import { ConversationUI } from '@/conversation/ConversationUI';
+import { ChapterIntroVideo } from '@/ui/ChapterIntroVideo';
 import { ErrorBoundary } from '@/core/ErrorBoundary';
 
 export function UiLayer() {
@@ -254,7 +255,7 @@ function ChapterBeats({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
       </div>
     );
   }
-  if (beat !== 'conversation' && !mod) return null; // loading hides under the transition black
+  if ((beat === 'overview' || beat === 'minigame') && !mod) return null; // loading hides under the transition black
 
   return (
     <ErrorBoundary
@@ -263,6 +264,7 @@ function ChapterBeats({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
     >
       <div className="pointer-events-auto absolute inset-0">
         {beat === 'overview' && mod && <mod.Overview chapterId={chapterId} onAdvance={advanceBeat} />}
+        {beat === 'intro' && <ChapterIntroVideo chapterId={chapterId} onAdvance={advanceBeat} />}
         {beat === 'conversation' && (
           <ConversationUI chapterId={chapterId} onContinue={advanceBeat} />
         )}

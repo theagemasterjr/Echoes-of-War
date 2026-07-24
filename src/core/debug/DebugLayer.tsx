@@ -5,13 +5,11 @@
  * and the character test screen exercises any constraint tree in a bare chat.
  */
 import { useState } from 'react';
-import { useAppStore } from '@/state/appStore';
+import { useAppStore, BEAT_ORDER } from '@/state/appStore';
 import { useProgressStore } from '@/state/progressStore';
-import { CHAPTERS } from '@/chapters/registry';
-import type { Beat, ChapterId } from '@/chapters/types';
+import { CHAPTERS, chapterMeta } from '@/chapters/registry';
+import type { ChapterId } from '@/chapters/types';
 import { useConversation } from '@/conversation/engine';
-
-const BEATS: Beat[] = ['overview', 'conversation', 'minigame'];
 
 export function DebugLayer() {
   const open = useAppStore((s) => s.debugOpen);
@@ -42,7 +40,9 @@ function DebugMenu() {
                 <td className="py-2 pr-2 text-stone-400">
                   {c.index}. {c.title}
                 </td>
-                {BEATS.map((b) => (
+                {BEAT_ORDER.filter(
+                  (b) => b !== 'intro' || chapterMeta(c.id).introVideo,
+                ).map((b) => (
                   <td key={b} className="py-2 pr-1">
                     <button
                       onClick={() => {

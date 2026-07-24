@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "build:ch1-character": "node scripts/build-ch1-character.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.113.0",
@@ -14,17 +15,23 @@
     "framer-motion": "^12.42.2",
     "gsap": "^3.15.0",
     "next": "16.2.11",
+    "openai": "^6.49.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "three": "^0.185.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.4.1",
+    "@gltf-transform/extensions": "^4.4.1",
+    "@gltf-transform/functions": "^4.4.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.185.1",
+    "meshoptimizer": "^1.2.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

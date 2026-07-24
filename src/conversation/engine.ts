@@ -6,7 +6,8 @@
  */
 import { create } from 'zustand';
 import type { ChapterId } from '@/chapters/types';
-import type { ChatRequest, ChatResponse } from './treeTypes';
+import type { ChatRequest, ChatResponse, ObjectiveDef } from './treeTypes';
+import { voicePlayer } from '@/audio/voicePlayer';
 
 export interface ConvoMessage {
   role: 'player' | 'character';
@@ -20,6 +21,7 @@ interface ConvoState {
   turnsInNode: number;
   messages: ConvoMessage[];
   guided: string[];
+  objectives: ObjectiveDef[];
   progress: { covered: number; total: number };
   status: 'idle' | 'sending' | 'error';
   canContinue: boolean;
@@ -57,9 +59,13 @@ export const useConversation = create<ConvoState>((set, get) => {
         turnsInNode: movedNode ? 0 : req.intro ? s.turnsInNode : s.turnsInNode + 1,
         messages: [...s.messages, { role: 'character', text: r.reply }],
         guided: r.guidedQuestions,
+        objectives: r.objectives ?? s.objectives,
         progress: r.progress,
         canContinue: s.canContinue || r.canContinue,
       });
+      // fire-and-forget voice — deflections get voiced too (in character);
+      // fully additive, silent when no voice key is configured
+      voicePlayer.speak(r.reply, req.chapterId);
     } catch {
       set({ status: 'error' });
     }
@@ -72,12 +78,14 @@ export const useConversation = create<ConvoState>((set, get) => {
     turnsInNode: 0,
     messages: [],
     guided: [],
+    objectives: [],
     progress: { covered: 0, total: 1 },
     status: 'idle',
     canContinue: false,
     lastRequest: null,
 
     start: (chapterId) => {
+      voicePlayer.stop();
       get().reset();
       set({ chapterId });
       dispatch({
@@ -104,11 +112,13 @@ export const useConversation = create<ConvoState>((set, get) => {
       if (req) dispatch(req);
     },
 
-    reset: () =>
+    reset: () => {
+      voicePlayer.stop();
       set({
         chapterId: null, nodeId: '', covered: [], turnsInNode: 0, messages: [],
-        guided: [], progress: { covered: 0, total: 1 }, status: 'idle',
+        guided: [], objectives: [], progress: { covered: 0, total: 1 }, status: 'idle',
         canContinue: false, lastRequest: null,
-      }),
+      });
+    },
   };
 });

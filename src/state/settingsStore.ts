@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { audioManager, type MusicTrackId } from '@/audio/audioManager';
+import { voicePlayer } from '@/audio/voicePlayer';
 
 interface SettingsState {
   volume: number; // 0..1
@@ -16,6 +17,7 @@ export const useSettingsStore = create<SettingsState>()(
       soundtrack: 'main-theme',
       setVolume: (volume) => {
         audioManager.setVolume(volume);
+        voicePlayer.setVolume(volume);
         set({ volume });
       },
       // MusicDirector reacts to this and crossfades to the chosen track.

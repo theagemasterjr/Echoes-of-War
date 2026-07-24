@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { useAppStore } from '@/state/appStore';
 import { useSettingsStore } from '@/state/settingsStore';
 import { audioManager, MUSIC_TRACK_IDS } from './audioManager';
+import { voicePlayer } from './voicePlayer';
 
 export function MusicDirector() {
   const view = useAppStore((s) => s.view);
@@ -44,6 +45,7 @@ export function MusicDirector() {
   // it at last time").
   useEffect(() => {
     audioManager.setVolume(volume);
+    voicePlayer.setVolume(volume);
   }, [volume]);
 
   // Pause the moment the tab is hidden; resume when it's visible again.
