@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/state/appStore';
 import { useSettingsStore } from '@/state/settingsStore';
@@ -24,13 +24,45 @@ export function UiLayer() {
   );
 }
 
-/** Fullscreen prologue film. Placeholder until the founders' AI-generated
- *  video exists — then replace the placeholder frame with
- *  <video src="/video/prologue.mp4" autoPlay onEnded={completePrologue} />
- *  and drop the CONTINUE button. */
+/** Fullscreen prologue film. Plays /video/prologue.mp4 once, then hands off to
+ *  the camera glide down to the map (via completePrologue). The film is a
+ *  low-res export, so it sits in a centered cinematic frame on black rather
+ *  than stretched full-bleed. */
 function PrologueVideo() {
   const completePrologue = useAppStore((s) => s.completePrologue);
   const phase = useAppStore((s) => s.phase);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  // browsers block autoplay-with-sound after a state change (the BEGIN click is
+  // no longer the active gesture by the time this mounts) — try sound first,
+  // fall back to muted playback and offer a one-tap unmute.
+  const [muted, setMuted] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const done = useRef(false);
+
+  const finish = () => {
+    if (done.current) return;
+    done.current = true;
+    completePrologue();
+  };
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.play().catch(() => {
+      v.muted = true;
+      setMuted(true);
+      v.play().catch(() => setFailed(true));
+    });
+  }, []);
+
+  const unmute = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    setMuted(false);
+    v.play().catch(() => {});
+  };
+
   return (
     <motion.div
       className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-black"
@@ -40,19 +72,43 @@ function PrologueVideo() {
       animate={{ opacity: phase === 'out' ? 0 : 1 }}
       transition={{ duration: phase === 'out' ? 0.9 : 0.8 }}
     >
-      <div className="text-center">
+      <div className="flex flex-col items-center text-center">
         <div className="text-xs uppercase tracking-[0.4em] text-amber-200/60">Prologue · 1938</div>
-        <div className="mt-5 flex aspect-video w-[min(760px,86vw)] items-center justify-center border border-stone-800 bg-stone-950/80">
-          <p className="max-w-[36ch] text-sm leading-relaxed text-stone-500">
-            Opening film placeholder — the video will play here.
-          </p>
+        <div className="relative mt-5 w-[min(820px,90vw)] overflow-hidden border border-stone-800 bg-black shadow-[0_0_60px_rgba(0,0,0,0.9)]">
+          {failed ? (
+            <div className="flex aspect-video items-center justify-center">
+              <p className="max-w-[34ch] text-sm leading-relaxed text-stone-500">
+                The opening film couldn’t play. You can continue to the map.
+              </p>
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              src="/video/prologue.mp4"
+              className="aspect-video w-full object-contain"
+              playsInline
+              autoPlay
+              preload="auto"
+              onEnded={finish}
+              onError={() => setFailed(true)}
+            />
+          )}
+          {/* one-tap unmute when the browser forced a muted start */}
+          {muted && !failed && (
+            <button
+              onClick={unmute}
+              className="absolute bottom-3 left-3 rounded-sm border border-amber-200/40 bg-black/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-100/90 backdrop-blur-sm transition hover:bg-amber-200/10"
+            >
+              ♪ Sound on
+            </button>
+          )}
         </div>
         <button
-          onClick={completePrologue}
+          onClick={finish}
           disabled={phase !== 'idle'}
           className="mt-6 rounded-sm border border-amber-200/40 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10 disabled:opacity-40"
         >
-          CONTINUE
+          {failed ? 'CONTINUE' : 'SKIP →'}
         </button>
       </div>
     </motion.div>
