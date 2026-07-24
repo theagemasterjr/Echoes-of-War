@@ -49,9 +49,7 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     source: {
       kind: 'glb', url: '/models/ch1-journalist.glb',
       scale: 4.8, offset: [0, -4.8, 0], castShadow: false,
-      // the exported "Spell_Simple_Idle_Loop" holds a spell-casting pose, so
-      // the talking loop doubles as the idle at low speed (gentle sway)
-      clips: { idle: 'Idle_Talking_Loop', talking: 'Idle_Talking_Loop', idleTimeScale: 0.45 },
+      clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
     },
   },
   'ch2.character': { label: 'RAF pilot figure', source: { kind: 'placeholder', component: P.CharacterBust } },

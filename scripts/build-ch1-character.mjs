@@ -42,7 +42,9 @@ const OUT_BG = 'public/img/ch1-studio.jpg';
  * otherwise draw as black film over the eyes).
  * ------------------------------------------------------------------ */
 const RECIPES = [
-  { m: 'Std_Skin_Head', size: 2048, normal: 1024, rough: 0.55 },
+  // the exporter leaves the head UVs V-flipped vs the texture — mirror it
+  // (normal map dropped: it would need a green-channel invert to match)
+  { m: 'Std_Skin_Head', size: 2048, rough: 0.55, flipV: true },
   { m: 'Std_Skin_Body', size: 1024, rough: 0.55 },
   { m: 'Std_Skin_Arm', size: 1024, rough: 0.55 },
   { m: 'Std_Skin_Leg', size: 512, rough: 0.55 },
@@ -170,9 +172,11 @@ async function main() {
       // sharp applies ops in libvips' fixed internal order, not call order —
       // removeAlpha would strip a freshly joined channel. So: one pipeline per
       // stage, buffers in between.
-      const rgb = await sharp(diffuse)
+      let stage1 = sharp(diffuse)
         .resize(r.size, r.size, { fit: 'inside', withoutEnlargement: true })
-        .removeAlpha().png().toBuffer();
+        .removeAlpha();
+      if (r.flipV) stage1 = stage1.flip();
+      const rgb = await stage1.png().toBuffer();
       const { width, height } = await sharp(rgb).metadata();
       let img = sharp(rgb);
       if (hasAlpha) {
