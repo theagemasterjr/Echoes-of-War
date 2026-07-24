@@ -78,10 +78,11 @@ npm run build:ch1-character -- --src "<exported .glb>" --textures "<.fbm folder>
 ```
 
 Outputs land at `public/models/ch1-journalist.glb` + `public/img/ch1-studio.jpg`.
-Clips in the current file: `Idle_Talking_Loop` (drives both talking and — slowed
-down — idle) and `Spell_Simple_Idle_Loop` (unused: it holds a spell-casting pose).
-If a future export includes a calm standing idle, update `clips.idle` for
-`ch1.character` in `src/assets/registry.tsx`.
+Clips in the current file: `Idle_Loop` (idle), `Idle_Talking_Loop` (while speaking),
+`Idle_FoldArms_Loop` (unused spare). Clip names are wired in `src/assets/registry.tsx`
+(`ch1.character` → `clips`). Note: the export leaves the head texture upside down
+relative to its UVs — the build script flips it (`flipV` on the `Std_Skin_Head` recipe);
+keep that if you rebuild.
 
 **Note for the founders:** the persona and name plate still say *Aleksander Nowak*,
 a man — rename the character (tree + registry + voice) or swap the model to match.
