@@ -1,13 +1,14 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Float } from '@react-three/drei';
+import { Float, useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { useAppStore, type View } from '@/state/appStore';
 import { chapterMeta } from '@/chapters/registry';
 import { WarRoomScene } from '@/warroom/WarRoomScene';
-import { Asset } from '@/assets/registry';
+import { ASSETS, Asset, assetIsAnimated } from '@/assets/registry';
+import { useCharacterSpeaking } from '@/conversation/useCharacterSpeaking';
 import type { Beat, ChapterId } from '@/chapters/types';
 
 /** Everything inside the single persistent <Canvas>. */
@@ -28,6 +29,14 @@ export function SceneRouter() {
 /** Shared 3D staging for every chapter beat: 2D backdrop + focal 3D element. */
 function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat }) {
   const meta = chapterMeta(chapterId);
+  const photo = beat === 'conversation' ? meta.conversationBackdrop : undefined;
+  // warm the conversation assets while the player reads the overview / watches
+  // the intro, so the character doesn't pop in late
+  useEffect(() => {
+    const src = ASSETS[meta.characterAssetId]?.source;
+    if (src?.kind === 'glb') useGLTF.preload(src.url);
+    if (meta.conversationBackdrop) useTexture.preload(meta.conversationBackdrop);
+  }, [meta]);
   return (
     <group>
       <fog attach="fog" args={['#0a0c10', 8, 22]} />
@@ -36,20 +45,27 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
       <spotLight position={[2.2, 3.5, 2.8]} angle={0.55} penumbra={0.7} intensity={48} color="#ffe3b8" castShadow />
       <directionalLight position={[-3, 2, -2]} intensity={0.7} color="#7d8aa3" />
 
-      {/* 2D painted backdrop plane — founders swap the material/texture per chapter later */}
-      <mesh position={[0, 2.2, -4.5]}>
-        <planeGeometry args={[16, 8]} />
-        <meshStandardMaterial color="#141821" roughness={1} />
-      </mesh>
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[20, 14]} />
-        <meshStandardMaterial color="#191713" roughness={0.95} />
-      </mesh>
+      {photo ? (
+        /* chapter-provided photo fills the whole frame behind the character */
+        <Suspense fallback={null}>
+          <PhotoBackdrop url={photo} />
+        </Suspense>
+      ) : (
+        <>
+          {/* 2D painted backdrop plane — founders swap the material/texture per chapter later */}
+          <mesh position={[0, 2.2, -4.5]}>
+            <planeGeometry args={[16, 8]} />
+            <meshStandardMaterial color="#141821" roughness={1} />
+          </mesh>
+          <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+            <planeGeometry args={[20, 14]} />
+            <meshStandardMaterial color="#191713" roughness={0.95} />
+          </mesh>
+        </>
+      )}
 
       {beat === 'conversation' ? (
-        <Float speed={1.4} rotationIntensity={0.04} floatIntensity={0.12} floatingRange={[0, 0.06]}>
-          <Asset assetId={meta.characterAssetId} position={[0, 0, 0]} />
-        </Float>
+        <ConversationCharacter assetId={meta.characterAssetId} />
       ) : beat === 'overview' ? (
         /* showcase pedestal shot — the orbit camera slowly circles this */
         <group position={[0, ORBIT.target[1] - 0.45, 0]} scale={2.6}>
@@ -65,6 +81,37 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
         </group>
       )}
     </group>
+  );
+}
+
+/** Full-frame photo behind the conversation stage. Sized to cover the chapter
+ *  camera's view at its depth (frame there is ~14.3 x 8.05 on a 16:9 window);
+ *  unlit so the photo's own baked light reads as-is. */
+function PhotoBackdrop({ url }: { url: string }) {
+  const tex = useTexture(url);
+  useMemo(() => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+  }, [tex]);
+  return (
+    <mesh position={[0, 0.95, -4.5]}>
+      <planeGeometry args={[16.5, 8.8]} />
+      <meshBasicMaterial map={tex} fog={false} />
+    </mesh>
+  );
+}
+
+/** The character during the live conversation. Animated models are grounded
+ *  (their idle clip carries the life); placeholder busts keep the gentle Float. */
+function ConversationCharacter({ assetId }: { assetId: string }) {
+  const talking = useCharacterSpeaking();
+  if (assetIsAnimated(assetId)) {
+    return <Asset assetId={assetId} position={[0, 0, 0]} talking={talking} />;
+  }
+  return (
+    <Float speed={1.4} rotationIntensity={0.04} floatIntensity={0.12} floatingRange={[0, 0.06]}>
+      <Asset assetId={assetId} position={[0, 0, 0]} />
+    </Float>
   );
 }
 
@@ -152,7 +199,7 @@ function CameraDirector() {
         const [mx, my, mz] = chapterMeta(pending.chapterId).markerPosition;
         const markerY = my + MAP_SURFACE_Y;
         gsap.to(camera.position, {
-          x: mx, y: markerY + 0.55, z: mz + 0.6,
+          x: mx, y: markerY + 0.9, z: mz + 1.15, // eye-tuned: gentler arrival, not blurry-close
           duration: DIVE_S, ease: 'power2.inOut',
         });
         gsap.to(target.current, {

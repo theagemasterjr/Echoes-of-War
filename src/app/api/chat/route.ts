@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ChatRequest, ChatResponse } from '@/conversation/treeTypes';
 import { TREES, totalLearningPoints } from '@/server/trees';
-import { anthropic, CHARACTER_MODEL, REPLY_MAX_TOKENS } from '@/server/anthropic';
+import { chatComplete, CHARACTER_MODEL, REPLY_MAX_TOKENS } from '@/server/openai';
 import { buildCharacterSystem, buildIntroInstruction } from '@/server/prompts';
 import { screenInput } from '@/server/screening';
 import { checkCoverage } from '@/server/coverage';
 import { checkRateLimit } from '@/server/rateLimit';
+import { readCacheFile, writeCacheFile } from '@/server/diskCache';
 
 export const maxDuration = 60;
 
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
     guidedQuestions: node.guidedQuestions,
     progress: { covered: covered.length, total },
     nodeId,
+    objectives: tree.objectives ?? [],
   } satisfies Omit<ChatResponse, 'reply'>;
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local';
@@ -40,13 +42,20 @@ export async function POST(req: NextRequest) {
 
   try {
     if (body.intro) {
-      const res = await anthropic.messages.create({
-        model: CHARACTER_MODEL,
-        max_tokens: REPLY_MAX_TOKENS,
-        system: buildCharacterSystem(tree, node, covered),
-        messages: [{ role: 'user', content: buildIntroInstruction(tree) }],
-      });
-      const reply = res.content[0]?.type === 'text' ? res.content[0].text : '…';
+      // The greeting is the same every visit — generate it once ever and
+      // reuse it (saves both the text call and, downstream, its voice call).
+      const cached = await readCacheFile(`intro-${body.chapterId}.txt`);
+      if (cached && cached.byteLength) {
+        return NextResponse.json({ ...base, reply: cached.toString('utf8') });
+      }
+      const reply =
+        (await chatComplete({
+          model: CHARACTER_MODEL,
+          maxTokens: REPLY_MAX_TOKENS,
+          system: buildCharacterSystem(tree, node, covered),
+          messages: [{ role: 'user', content: buildIntroInstruction(tree) }],
+        })) || '…';
+      if (reply !== '…') writeCacheFile(`intro-${body.chapterId}.txt`, reply);
       return NextResponse.json({ ...base, reply });
     }
 
@@ -64,13 +73,13 @@ export async function POST(req: NextRequest) {
       content: String(m.text).slice(0, 1000),
     }));
 
-    const res = await anthropic.messages.create({
-      model: CHARACTER_MODEL,
-      max_tokens: REPLY_MAX_TOKENS,
-      system: buildCharacterSystem(tree, node, covered),
-      messages: [...history, { role: 'user', content: message }],
-    });
-    const reply = res.content[0]?.type === 'text' ? res.content[0].text : '…';
+    const reply =
+      (await chatComplete({
+        model: CHARACTER_MODEL,
+        maxTokens: REPLY_MAX_TOKENS,
+        system: buildCharacterSystem(tree, node, covered),
+        messages: [...history, { role: 'user', content: message }],
+      })) || '…';
 
     const newlyCoveredIds = await checkCoverage(node, message, reply, covered);
     const merged = [...new Set([...covered, ...newlyCoveredIds])];
@@ -95,6 +104,7 @@ export async function POST(req: NextRequest) {
       guidedQuestions: tree.nodes[nextNodeId].guidedQuestions,
       progress: { covered: merged.length, total },
       nodeId: nextNodeId,
+      objectives: tree.objectives ?? [],
     };
     return NextResponse.json(response);
   } catch (e) {

@@ -1,5 +1,5 @@
 import type { StageNode } from '@/conversation/treeTypes';
-import { anthropic, FAST_MODEL } from './anthropic';
+import { chatComplete, FAST_MODEL } from './openai';
 
 /** Which of the node's still-uncovered learning points did this exchange actually cover? */
 export async function checkCoverage(
@@ -11,9 +11,9 @@ export async function checkCoverage(
   const open = node.learningPoints.filter((p) => !alreadyCovered.includes(p.id));
   if (open.length === 0) return [];
   try {
-    const res = await anthropic.messages.create({
+    const text = await chatComplete({
       model: FAST_MODEL,
-      max_tokens: 100,
+      maxTokens: 100,
       system:
         `You check whether learning points were substantively covered in one exchange of an educational dialogue. ` +
         `Reply ONLY with a JSON array of the ids that were genuinely covered (mentioned meaningfully, not just brushed past). ` +
@@ -25,8 +25,7 @@ export async function checkCoverage(
         },
       ],
     });
-    const text = res.content[0]?.type === 'text' ? res.content[0].text : '[]';
-    const match = text.match(/\[[\s\S]*?\]/);
+    const match = (text || '[]').match(/\[[\s\S]*?\]/);
     const ids: unknown = match ? JSON.parse(match[0]) : [];
     if (!Array.isArray(ids)) return [];
     const valid = new Set(open.map((p) => p.id));

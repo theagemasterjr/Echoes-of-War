@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 
 export type ChapterId = 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6';
-export type Beat = 'overview' | 'conversation' | 'minigame';
+export type Beat = 'overview' | 'intro' | 'conversation' | 'minigame';
 
 export interface MinigameResult {
   chapterId: ChapterId;
@@ -39,4 +39,8 @@ export interface ChapterMeta {
   markerPosition: [number, number, number];
   markerAssetId: string;
   characterAssetId: string;
+  /** Optional intro film shown between overview and conversation (drop-in path under public/). */
+  introVideo?: string;
+  /** Optional photo shown behind the character during the conversation (path under public/). */
+  conversationBackdrop?: string;
 }

@@ -9,8 +9,10 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch1', index: 1, title: 'The Spark', subtitle: 'The road to war',
     dates: '1919–1939', location: 'Warsaw, Poland',
-    characterName: 'Placeholder: Polish radio journalist', characterRole: 'Radio journalist',
+    characterName: 'Aleksander Nowak', characterRole: 'Radio journalist',
     markerPosition: [0.48, 0, -1.40], markerAssetId: 'ch1.marker', characterAssetId: 'ch1.character',
+    introVideo: '/video/ch1-intro.mp4',
+    conversationBackdrop: '/img/ch1-studio.jpg',
   },
   {
     id: 'ch2', index: 2, title: 'Standing Alone', subtitle: 'The Battle of Britain',

@@ -22,7 +22,10 @@ Ask before big changes or scope cuts; small technical decisions are yours.
 - Chapter flow, always: short overview → **live AI conversation** → required fixed
   minigame → completion mark on the map (localStorage save; replay allowed, convo fresh).
 - Camera mostly automatic (presets + one reusable dive/black/title-card/dissolve
-  transition). Audience: **teens/high school**. Typography: clean modern. Sound:
+  transition). Audience: **kids who are excited to learn history, including
+  dyslexic readers** — all player-facing text uses plain everyday words, short
+  sentences, no jargon, and never dramatized word choices; character replies stay
+  short. Typography: clean modern. Sound:
   silent for now (audioManager stub + volume control already wired).
 - Conversation UI is cinematic dialogue (subtitle text, guided-question chips,
   quiet progress circle, CONTINUE lights when coverage is met, player leaves when

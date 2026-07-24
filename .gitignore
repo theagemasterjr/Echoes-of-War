@@ -43,3 +43,6 @@ next-env.d.ts
 # AI instance instructions (not part of the shipped project)
 CLAUDE.md
 AGENTS.md
+
+# synthesized fixed-line audio (regenerates itself)
+.tts-cache/

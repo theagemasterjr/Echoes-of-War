@@ -1,4 +1,4 @@
-import { anthropic, FAST_MODEL } from './anthropic';
+import { chatComplete, FAST_MODEL } from './openai';
 
 export type ScreenVerdict = 'ok' | 'abusive' | 'ai_probe';
 
@@ -10,18 +10,19 @@ When unsure, reply "ok".`;
 
 export async function screenInput(message: string): Promise<ScreenVerdict> {
   try {
-    const res = await anthropic.messages.create({
-      model: FAST_MODEL,
-      max_tokens: 8,
-      system: SCREEN_SYSTEM,
-      messages: [{ role: 'user', content: message }],
-    });
-    const text = res.content[0]?.type === 'text' ? res.content[0].text.toLowerCase() : '';
+    const text = (
+      await chatComplete({
+        model: FAST_MODEL,
+        maxTokens: 8,
+        system: SCREEN_SYSTEM,
+        messages: [{ role: 'user', content: message }],
+      })
+    ).toLowerCase();
     if (text.includes('abusive')) return 'abusive';
     if (text.includes('ai_probe')) return 'ai_probe';
     return 'ok';
   } catch {
-    // screening must never take the character down; Sonnet's own guardrails still hold
+    // screening must never take the character down; the model's own guardrails still hold
     return 'ok';
   }
 }

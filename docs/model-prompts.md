@@ -65,8 +65,35 @@ All six should read as **small tabletop game pieces** on a round wooden base coi
 ## Characters
 One per chapter. Generate as **full-body standing figures, arms relaxed at sides (or a natural at-ease pose), neutral expression**, so they can later be rigged or posed. Roughly 1.7–1.8 units tall. Respectful, dignified, historically grounded — no weapons raised, no wounds, no insignia glorification.
 
-### `ch1.character` — Polish radio journalist (Warsaw, 1939)
-> A photorealistic full-body 1930s Polish radio journalist, man in his thirties, tired intelligent face, rumpled grey three-piece suit with loosened tie, press card in breast pocket, headphones hanging around his neck, standing naturally.
+### `ch1.character` — Polish radio journalist (Warsaw, 1939) — ✅ model delivered
+The founders' model is live in the app (woman in a business suit, idle + talking
+animations, textures baked in). It was prepared from two source pieces — an exported
+`.glb` (geometry + animations, no textures) and the Character Creator `.fbm` texture
+folder — by `scripts/build-ch1-character.mjs`, which matches textures to materials by
+name, fixes transparency, shrinks 63 MB → ~3.6 MB, and also resizes the conversation
+background photo. To redo it (say, after a re-export with a different animation):
+
+```
+npm run build:ch1-character -- --src "<exported .glb>" --textures "<.fbm folder>" --bg "<background image>"
+```
+
+Outputs land at `public/models/ch1-journalist.glb` + `public/img/ch1-studio.jpg`.
+Clips in the current file: `Idle_Talking_Loop` (drives both talking and — slowed
+down — idle) and `Spell_Simple_Idle_Loop` (unused: it holds a spell-casting pose).
+If a future export includes a calm standing idle, update `clips.idle` for
+`ch1.character` in `src/assets/registry.tsx`.
+
+**Note for the founders:** the persona and name plate still say *Aleksander Nowak*,
+a man — rename the character (tree + registry + voice) or swap the model to match.
+
+Original generation prompt, kept in case the model is ever re-generated:
+> A photorealistic full-body 1930s Polish radio journalist, Aleksander Nowak, man in his late thirties, tired intelligent face with a day's stubble, rumpled grey three-piece wool suit with loosened tie and rolled shirtsleeves, press card tucked in the breast pocket, headphones resting around his neck, one hand relaxed at his side, standing naturally at ease. Muted late-1930s palette, film-lighting friendly.
+
+### `ch1.prop.microphone` — 1930s ribbon microphone (optional)
+Optional desk prop for the conversation stage — a period microphone beside the journalist. Not required; the scene reads fine without it.
+> A miniature 1930s ribbon radio microphone, brushed chrome and dark bakelite body with a rounded grille head, mounted on a short weighted desk stand, subtle wear on the metal, a thin cloth-wrapped cable trailing from the base. Photorealistic, muted period materials, tabletop-prop proportions.
+
+Wire-in: add a `'ch1.prop.microphone'` row to `src/assets/registry.tsx` (same one-line `{ kind: 'glb', … }` pattern) once generated.
 
 ### `ch2.character` — RAF pilot (England, 1940)
 > A photorealistic full-body young RAF fighter pilot of 1940, early twenties, fatigue in his eyes, tan Irvin flying jacket over blue-grey uniform, life vest, leather flying helmet held in one hand, standing at ease.
