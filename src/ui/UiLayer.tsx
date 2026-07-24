@@ -25,9 +25,8 @@ export function UiLayer() {
 }
 
 /** Fullscreen prologue film. Plays /video/prologue.mp4 once, then hands off to
- *  the camera glide down to the map (via completePrologue). The film is a
- *  low-res export, so it sits in a centered cinematic frame on black rather
- *  than stretched full-bleed. */
+ *  the camera glide down to the map (via completePrologue). The video fills the
+ *  screen edge-to-edge (letterboxed on black where the aspect doesn't match). */
 function PrologueVideo() {
   const completePrologue = useAppStore((s) => s.completePrologue);
   const phase = useAppStore((s) => s.phase);
@@ -72,45 +71,41 @@ function PrologueVideo() {
       animate={{ opacity: phase === 'out' ? 0 : 1 }}
       transition={{ duration: phase === 'out' ? 0.9 : 0.8 }}
     >
-      <div className="flex flex-col items-center text-center">
-        <div className="text-xs uppercase tracking-[0.4em] text-amber-200/60">Prologue · 1938</div>
-        <div className="relative mt-5 w-[min(820px,90vw)] overflow-hidden border border-stone-800 bg-black shadow-[0_0_60px_rgba(0,0,0,0.9)]">
-          {failed ? (
-            <div className="flex aspect-video items-center justify-center">
-              <p className="max-w-[34ch] text-sm leading-relaxed text-stone-500">
-                The opening film couldn’t play. You can continue to the map.
-              </p>
-            </div>
-          ) : (
-            <video
-              ref={videoRef}
-              src="/video/prologue.mp4"
-              className="aspect-video w-full object-contain"
-              playsInline
-              autoPlay
-              preload="auto"
-              onEnded={finish}
-              onError={() => setFailed(true)}
-            />
-          )}
-          {/* one-tap unmute when the browser forced a muted start */}
-          {muted && !failed && (
-            <button
-              onClick={unmute}
-              className="absolute bottom-3 left-3 rounded-sm border border-amber-200/40 bg-black/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-100/90 backdrop-blur-sm transition hover:bg-amber-200/10"
-            >
-              ♪ Sound on
-            </button>
-          )}
-        </div>
-        <button
-          onClick={finish}
-          disabled={phase !== 'idle'}
-          className="mt-6 rounded-sm border border-amber-200/40 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10 disabled:opacity-40"
-        >
-          {failed ? 'CONTINUE' : 'SKIP →'}
-        </button>
+      {failed ? (
+        <p className="max-w-[34ch] text-center text-sm leading-relaxed text-stone-500">
+          The opening film couldn’t play. You can continue to the map.
+        </p>
+      ) : (
+        <video
+          ref={videoRef}
+          src="/video/prologue.mp4"
+          className="absolute inset-0 h-full w-full object-contain"
+          playsInline
+          autoPlay
+          preload="auto"
+          onEnded={finish}
+          onError={() => setFailed(true)}
+        />
+      )}
+      <div className="absolute top-5 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.4em] text-amber-200/60">
+        Prologue · 1938
       </div>
+      {/* one-tap unmute when the browser forced a muted start */}
+      {muted && !failed && (
+        <button
+          onClick={unmute}
+          className="absolute bottom-6 left-6 rounded-sm border border-amber-200/40 bg-black/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-100/90 backdrop-blur-sm transition hover:bg-amber-200/10"
+        >
+          ♪ Sound on
+        </button>
+      )}
+      <button
+        onClick={finish}
+        disabled={phase !== 'idle'}
+        className="absolute right-6 bottom-6 rounded-sm border border-amber-200/40 bg-black/50 px-8 py-2.5 text-sm tracking-[0.25em] text-amber-100/90 backdrop-blur-sm transition hover:bg-amber-200/10 disabled:opacity-40"
+      >
+        {failed ? 'CONTINUE' : 'SKIP →'}
+      </button>
     </motion.div>
   );
 }
@@ -314,6 +309,8 @@ function SettingsMenu() {
   const [confirming, setConfirming] = useState(false);
   const volume = useSettingsStore((s) => s.volume);
   const setVolume = useSettingsStore((s) => s.setVolume);
+  const soundtrack = useSettingsStore((s) => s.soundtrack);
+  const setSoundtrack = useSettingsStore((s) => s.setSoundtrack);
 
   const resetProgress = () => {
     useProgressStore.getState().reset();
@@ -355,6 +352,24 @@ function SettingsMenu() {
                 aria-label="Volume"
               />
             </label>
+            <div className="mt-3">
+              <span className="text-[10px] uppercase tracking-widest text-stone-400">Soundtrack</span>
+              <div className="mt-1.5 flex gap-2">
+                {([['main-theme', 'Theme I'], ['main-theme-2', 'Theme II']] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setSoundtrack(id)}
+                    className={`flex-1 rounded-sm border px-2 py-1.5 text-[10px] uppercase tracking-widest transition ${
+                      soundtrack === id
+                        ? 'border-amber-200/50 bg-amber-200/5 text-amber-200/90'
+                        : 'border-stone-700 hover:bg-stone-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="my-3 h-px bg-stone-800" />
             {confirming ? (
               <div>

@@ -1,6 +1,6 @@
 /**
- * Audio layer. This fills in the previously-silent stub with the app's one
- * music bed (id 'main-theme', public/audio/main-theme.mp3): looping playback,
+ * Audio layer. This fills in the previously-silent stub with the app's music
+ * beds (public/audio/main-theme*.mp3, selectable in settings): looping playback,
  * smooth fade in/out, and the master volume slider. play()/stop() are still
  * the whole API — callers (MusicDirector, settingsStore) never changed.
  *
@@ -10,11 +10,15 @@
  * file degrades to silence, not a crash.
  */
 
-type TrackId = 'main-theme';
+export type MusicTrackId = 'main-theme' | 'main-theme-2';
+type TrackId = MusicTrackId;
 
 const TRACK_SRC: Record<TrackId, string> = {
   'main-theme': '/audio/main-theme.mp3',
+  'main-theme-2': '/audio/main-theme-2.mp3',
 };
+
+export const MUSIC_TRACK_IDS = Object.keys(TRACK_SRC) as MusicTrackId[];
 
 /** ~1.5-2s fade, per the cinematic transition budget elsewhere in the app. */
 const FADE_MS = 1750;
