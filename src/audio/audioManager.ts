@@ -20,8 +20,10 @@ const TRACK_SRC: Record<TrackId, string> = {
 
 export const MUSIC_TRACK_IDS = Object.keys(TRACK_SRC) as MusicTrackId[];
 
-/** ~1.5-2s fade, per the cinematic transition budget elsewhere in the app. */
-const FADE_MS = 1750;
+/** Slow lush fade-in (cinematic budget), fast fade-out — music must be gone
+ *  before a film's or character's first words, not 2s into them. */
+const FADE_IN_MS = 1750;
+const FADE_OUT_MS = 450;
 
 function isTrackId(id: string): id is TrackId {
   return Object.prototype.hasOwnProperty.call(TRACK_SRC, id);
@@ -68,14 +70,14 @@ class Track {
     }
   }
 
-  private fadeTo(target: number, then?: () => void) {
+  private fadeTo(target: number, durationMs: number, then?: () => void) {
     const el = this.ensure();
     if (!el) return;
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     const start = el.volume;
     const startedAt = performance.now();
     const step = (now: number) => {
-      const t = Math.min(1, (now - startedAt) / FADE_MS);
+      const t = Math.min(1, (now - startedAt) / durationMs);
       const v = start + (target - start) * t;
       if (this.el) this.el.volume = Math.max(0, Math.min(1, v));
       if (t < 1) {
@@ -104,13 +106,23 @@ class Track {
     if (this.target === 'in') return;
     this.target = 'in';
     this.attemptPlay();
-    this.fadeTo(this.masterVolume);
+    this.fadeTo(this.masterVolume, FADE_IN_MS);
   }
 
   stop() {
     if (this.target === 'out') return;
     this.target = 'out';
-    this.fadeTo(0, () => {
+    // never actually started (autoplay was blocked)? silence it outright so a
+    // pending gesture-retry can't blast it in over a film or conversation
+    if (this.el && this.el.paused) {
+      if (this.rafId !== null) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      this.el.volume = 0;
+      return;
+    }
+    this.fadeTo(0, FADE_OUT_MS, () => {
       if (this.target === 'out') this.el?.pause();
     });
   }
