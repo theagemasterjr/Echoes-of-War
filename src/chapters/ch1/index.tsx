@@ -6,6 +6,7 @@
  */
 import type { BeatProps, ChapterModule } from '../types';
 import { TimelineMinigame } from './TimelineMinigame';
+import { TimelineTableScene } from './TimelineTableScene';
 
 function Overview({ onAdvance }: BeatProps) {
   return (
@@ -38,5 +39,5 @@ function Overview({ onAdvance }: BeatProps) {
   );
 }
 
-const chapter: ChapterModule = { Overview, Minigame: TimelineMinigame };
+const chapter: ChapterModule = { Overview, Minigame: TimelineMinigame, MinigameScene: TimelineTableScene };
 export default chapter;
