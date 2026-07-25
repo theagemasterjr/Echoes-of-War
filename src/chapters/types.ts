@@ -23,6 +23,10 @@ export interface MinigameProps {
 export interface ChapterModule {
   Overview: ComponentType<BeatProps>;
   Minigame: ComponentType<MinigameProps>;
+  /** Optional chapter-owned 3D staging for the minigame, rendered inside the
+   *  shared Canvas instead of the default floating-marker stage. Pair with
+   *  `minigameCamera` on the chapter's registry row. */
+  MinigameScene?: ComponentType;
 }
 
 /** Static metadata — lives in the registry so the map never loads chapter code. */
@@ -43,4 +47,7 @@ export interface ChapterMeta {
   introVideo?: string;
   /** Optional photo shown behind the character during the conversation (path under public/). */
   conversationBackdrop?: string;
+  /** Set when the chapter module exports a 3D MinigameScene: where the camera
+   *  sits while that scene plays. Absent = shared DOM minigame staging. */
+  minigameCamera?: { pos: [number, number, number]; target: [number, number, number] };
 }

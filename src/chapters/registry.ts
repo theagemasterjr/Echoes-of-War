@@ -13,6 +13,8 @@ export const CHAPTERS: ChapterMeta[] = [
     markerPosition: [0.48, 0, -1.40], markerAssetId: 'ch1.marker', characterAssetId: 'ch1.character',
     introVideo: '/video/ch1-intro.mp4',
     conversationBackdrop: '/img/ch1-studio.jpg',
+    /* across the war-room table, nearly level (~9° down), close on the figure row */
+    minigameCamera: { pos: [0, 1.7, 6.6], target: [0, 0.55, -0.3] },
   },
   {
     id: 'ch2', index: 2, title: 'Standing Alone', subtitle: 'The Battle of Britain',

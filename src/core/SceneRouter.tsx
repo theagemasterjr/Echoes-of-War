@@ -1,21 +1,23 @@
 'use client';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Float, useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { useAppStore, type View } from '@/state/appStore';
-import { chapterMeta } from '@/chapters/registry';
+import { chapterMeta, loadChapter } from '@/chapters/registry';
 import { WarRoomScene } from '@/warroom/WarRoomScene';
-import { TimelineTableScene } from '@/chapters/ch1/TimelineTableScene';
 import { ASSETS, Asset, assetIsAnimated } from '@/assets/registry';
 import { useCharacterSpeaking } from '@/conversation/useCharacterSpeaking';
 import type { Beat, ChapterId } from '@/chapters/types';
 
-/** Chapters whose minigame plays in 3D on the war-room table (instead of the
- *  shared DOM-over-floating-marker staging). */
-const tableMinigame = (view: View) =>
-  view.kind === 'chapter' && view.beat === 'minigame' && view.chapterId === 'ch1';
+/** Camera for chapters whose minigame plays in its own 3D scene (module
+ *  exports MinigameScene + registry row sets minigameCamera); undefined for
+ *  the shared DOM-over-floating-marker staging. */
+const minigameCamera = (view: View) =>
+  view.kind === 'chapter' && view.beat === 'minigame'
+    ? chapterMeta(view.chapterId).minigameCamera
+    : undefined;
 
 /** Everything inside the single persistent <Canvas>. */
 export function SceneRouter() {
@@ -23,8 +25,8 @@ export function SceneRouter() {
   return (
     <>
       {view.kind === 'chapter' ? (
-        tableMinigame(view) ? (
-          <TimelineTableScene />
+        minigameCamera(view) ? (
+          <ChapterMinigameScene chapterId={view.chapterId} />
         ) : (
           <ChapterStage chapterId={view.chapterId} beat={view.beat} />
         )
@@ -33,6 +35,20 @@ export function SceneRouter() {
       )}
       <CameraDirector />
     </>
+  );
+}
+
+/** The chapter's own 3D minigame staging, lazy-loaded from its module (the
+ *  module is already in flight for the DOM HUD, so this resolves instantly). */
+function ChapterMinigameScene({ chapterId }: { chapterId: ChapterId }) {
+  const Scene = useMemo(
+    () => lazy(() => loadChapter(chapterId).then((m) => ({ default: m.default.MinigameScene! }))),
+    [chapterId],
+  );
+  return (
+    <Suspense fallback={null}>
+      <Scene />
+    </Suspense>
   );
 }
 
@@ -134,9 +150,6 @@ const PRESETS = {
   title: { pos: [0, 9, 21], target: [0, 7, 0] },
   map: { pos: [0, 7.6, 6.6], target: [0, 0, -0.4] },
   chapter: { pos: [0, 1.45, 5.2], target: [0, 0.95, 0] },
-  /** Across the war-room table for the ch1 tabletop minigame — nearly level
-   *  (~9° down), zoomed close on the single figure row. */
-  tableGame: { pos: [0, 1.7, 6.6], target: [0, 0.55, -0.3] },
 } as const;
 
 /** Overview showcase: camera circles the object at a low hero angle. */
@@ -151,7 +164,8 @@ const ORBIT = {
 type Preset = { pos: readonly [number, number, number]; target: readonly [number, number, number] };
 
 function presetFor(view: View): Preset {
-  if (tableMinigame(view)) return PRESETS.tableGame;
+  const game = minigameCamera(view);
+  if (game) return game;
   if (view.kind === 'chapter') return PRESETS.chapter;
   // the prologue video covers the screen; the camera waits at the title shot
   // so the glide down to the map can play when the film ends
@@ -279,10 +293,11 @@ function CameraDirector() {
   }, [phase, view, pending]);
 
   useFrame(({ clock, pointer }) => {
-    // tabletop minigame: absolute placement every frame (immune to preset
+    // 3D minigame scene: absolute placement every frame (immune to preset
     // races) + a slight lean with the mouse
-    if (tableMinigame(view) && phase === 'idle') {
-      const g = PRESETS.tableGame;
+    const game = minigameCamera(view);
+    if (game && phase === 'idle') {
+      const g = game;
       const p = parallax.current;
       const still = reducedMotion.current;
       p.x = THREE.MathUtils.lerp(p.x, still ? 0 : pointer.x * 0.65, 0.05);
