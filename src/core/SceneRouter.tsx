@@ -7,9 +7,15 @@ import gsap from 'gsap';
 import { useAppStore, type View } from '@/state/appStore';
 import { chapterMeta } from '@/chapters/registry';
 import { WarRoomScene } from '@/warroom/WarRoomScene';
+import { TimelineTableScene } from '@/chapters/ch1/TimelineTableScene';
 import { ASSETS, Asset, assetIsAnimated } from '@/assets/registry';
 import { useCharacterSpeaking } from '@/conversation/useCharacterSpeaking';
 import type { Beat, ChapterId } from '@/chapters/types';
+
+/** Chapters whose minigame plays in 3D on the war-room table (instead of the
+ *  shared DOM-over-floating-marker staging). */
+const tableMinigame = (view: View) =>
+  view.kind === 'chapter' && view.beat === 'minigame' && view.chapterId === 'ch1';
 
 /** Everything inside the single persistent <Canvas>. */
 export function SceneRouter() {
@@ -17,7 +23,11 @@ export function SceneRouter() {
   return (
     <>
       {view.kind === 'chapter' ? (
-        <ChapterStage chapterId={view.chapterId} beat={view.beat} />
+        tableMinigame(view) ? (
+          <TimelineTableScene />
+        ) : (
+          <ChapterStage chapterId={view.chapterId} beat={view.beat} />
+        )
       ) : (
         <WarRoomScene />
       )}
@@ -124,6 +134,9 @@ const PRESETS = {
   title: { pos: [0, 9, 21], target: [0, 7, 0] },
   map: { pos: [0, 7.6, 6.6], target: [0, 0, -0.4] },
   chapter: { pos: [0, 1.45, 5.2], target: [0, 0.95, 0] },
+  /** Across the war-room table for the ch1 tabletop minigame — nearly level
+   *  (~9° down), zoomed close on the single figure row. */
+  tableGame: { pos: [0, 1.7, 6.6], target: [0, 0.55, -0.3] },
 } as const;
 
 /** Overview showcase: camera circles the object at a low hero angle. */
@@ -138,6 +151,7 @@ const ORBIT = {
 type Preset = { pos: readonly [number, number, number]; target: readonly [number, number, number] };
 
 function presetFor(view: View): Preset {
+  if (tableMinigame(view)) return PRESETS.tableGame;
   if (view.kind === 'chapter') return PRESETS.chapter;
   // the prologue video covers the screen; the camera waits at the title shot
   // so the glide down to the map can play when the film ends
@@ -265,6 +279,21 @@ function CameraDirector() {
   }, [phase, view, pending]);
 
   useFrame(({ clock, pointer }) => {
+    // tabletop minigame: absolute placement every frame (immune to preset
+    // races) + a slight lean with the mouse
+    if (tableMinigame(view) && phase === 'idle') {
+      const g = PRESETS.tableGame;
+      const p = parallax.current;
+      const still = reducedMotion.current;
+      p.x = THREE.MathUtils.lerp(p.x, still ? 0 : pointer.x * 0.65, 0.05);
+      p.y = THREE.MathUtils.lerp(p.y, still ? 0 : -pointer.y * 0.35, 0.05);
+      camera.position.set(g.pos[0] + p.x, g.pos[1] + p.y, g.pos[2]);
+      camera.lookAt(g.target[0], g.target[1], g.target[2]);
+      applied.current.set(0, 0, 0);
+      amp.current = 0;
+      return;
+    }
+
     // overview showcase: absolute orbit placement wins over presets/drift
     if (view.kind === 'chapter' && view.beat === 'overview' && phase !== 'out') {
       const t = clock.elapsedTime;

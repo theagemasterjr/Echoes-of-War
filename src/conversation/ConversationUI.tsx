@@ -208,11 +208,12 @@ function VoiceModeButton({ onOpen }: { onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      title="Voice mode"
+      title="Talk with your voice instead of typing"
       aria-label="Open voice mode"
-      className="shrink-0 rounded-sm border border-stone-700 px-3 text-sm text-stone-400 transition hover:bg-stone-800"
+      className="flex shrink-0 items-center gap-2 rounded-sm border border-amber-200/50 bg-amber-200/10 px-4 text-amber-100 transition hover:bg-amber-200/20"
     >
-      🎙
+      <span className="text-lg leading-none">🎙</span>
+      <span className="text-xs tracking-widest">VOICE</span>
     </button>
   );
 }

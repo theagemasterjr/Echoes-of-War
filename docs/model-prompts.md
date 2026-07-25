@@ -125,6 +125,26 @@ Wire-in: add a `'ch1.prop.microphone'` row to `src/assets/registry.tsx` (same on
 
 ---
 
+## Chapter 1 timeline figures (`ch1.figure.*`) — 8 wooden game pieces
+
+The chapter 1 minigame is played on the 3D war-room table: eight carved wooden
+figures, one per timeline event. All eight currently share the same turned-wood
+pawn placeholder. Swap each in `src/assets/registry.tsx` (`ch1.figure.<id>` →
+`{ kind: 'glb', url: '/models/<file>.glb', scale, offset }`) — figures should
+read at roughly **0.5 units tall** on a **0.3-unit base**; tune with `scale`.
+
+Shared style suffix for every prompt below:
+> …carved from a single piece of light varnished wood like a 1930s chess piece, simple rounded forms, small round base, subtle tool marks, warm wood grain, tabletop game piece proportions.
+
+- `ch1.figure.versailles` — Treaty of Versailles: *A miniature rolled treaty scroll with a hanging wax seal, standing upright,* + suffix
+- `ch1.figure.depression` — Great Depression: *A miniature dejected man in a long coat and flat cap, shoulders slumped, hands in pockets,* + suffix
+- `ch1.figure.hitler` — Hitler becomes Chancellor: *A miniature speaker's lectern with a tiny eagle emblem on the front,* + suffix (no swastika — keep it suggestive, not literal)
+- `ch1.figure.rhineland` — Rhineland: *A miniature marching soldier with a rifle over his shoulder, mid-stride,* + suffix
+- `ch1.figure.munich` — Munich Agreement: *A miniature folded umbrella standing upright beside a signed paper,* + suffix
+- `ch1.figure.pact` — German–Soviet deal: *Two miniature hands clasped in a handshake rising from a shared base,* + suffix
+- `ch1.figure.invasion` — Invasion of Poland: *A miniature tank with a low turret,* + suffix
+- `ch1.figure.declarations` — Britain and France declare war: *A miniature old radio microphone on a desk stand,* + suffix
+
 ## Later (not needed for the framework)
 - Per-chapter 2D painted backdrops (image generations, not models) — one per chapter scene.
 - Pins, thread spools, small photographs and paper labels to dress the map once the real map texture exists.

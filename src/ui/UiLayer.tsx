@@ -265,7 +265,9 @@ function ChapterBeats({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
       label="This chapter ran into a problem — your progress on the map is safe."
       onReset={() => returnToMap(true)}
     >
-      <div className="pointer-events-auto absolute inset-0">
+      {/* the minigame beat lets taps through to the 3D table — its DOM parts
+          opt back in with pointer-events-auto where needed */}
+      <div className={`absolute inset-0 ${beat === 'minigame' ? 'pointer-events-none' : 'pointer-events-auto'}`}>
         {beat === 'overview' && mod && <mod.Overview chapterId={chapterId} onAdvance={advanceBeat} />}
         {beat === 'intro' && <ChapterIntroVideo chapterId={chapterId} onAdvance={advanceBeat} />}
         {beat === 'conversation' && (
