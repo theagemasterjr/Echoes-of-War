@@ -68,7 +68,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ...base, reply, screened: verdict });
     }
 
-    const rawHistory = (body.history ?? []).slice(-12);
+    // the character reads only the recent exchange; the coverage grader reads
+    // much further back, so a point explained early still gets credited even
+    // if an earlier check missed it
+    const fullHistory = (body.history ?? []).slice(-60);
+    const rawHistory = fullHistory.slice(-12);
     const history = rawHistory.map((m) => ({
       role: m.role === 'player' ? ('user' as const) : ('assistant' as const),
       content: String(m.text).slice(0, 1000),
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest) {
         messages: [...history, { role: 'user', content: message }],
       })) || '…';
 
-    const newlyCoveredIds = await checkCoverage(node, rawHistory, message, reply, covered);
+    const newlyCoveredIds = await checkCoverage(node, fullHistory, message, reply, covered);
     const merged = [...new Set([...covered, ...newlyCoveredIds])];
 
     const nodeCovered = node.learningPoints.filter((p) => merged.includes(p.id)).length;

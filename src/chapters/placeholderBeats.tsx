@@ -11,7 +11,7 @@ import { chapterMeta } from './registry';
 function Panel({ children }: { children: React.ReactNode }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl rounded-md border border-stone-800 bg-stone-950/80 p-8 text-center backdrop-blur-sm">
+      <div className="pointer-events-auto w-full max-w-xl rounded-md border border-stone-800 bg-stone-950/80 p-8 text-center backdrop-blur-sm">
         {children}
       </div>
     </div>

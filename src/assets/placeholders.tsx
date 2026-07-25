@@ -162,6 +162,29 @@ export const LanternProp: FC<GroupProps> = (p) => (
   </group>
 );
 
+/** Turned-wood game piece for the chapter 1 timeline tabletop — a pawn-like
+ *  figure. All eight events share this stand-in until real models land. */
+export const WoodFigure: FC<GroupProps> = (p) => (
+  <group {...p}>
+    <mesh castShadow position={[0, 0.03, 0]}>
+      <cylinderGeometry args={[0.13, 0.155, 0.06, 18]} />
+      <meshStandardMaterial color="#4a3826" roughness={0.75} />
+    </mesh>
+    <mesh castShadow position={[0, 0.23, 0]}>
+      <cylinderGeometry args={[0.055, 0.115, 0.34, 16]} />
+      <meshStandardMaterial color="#6f5638" roughness={0.65} />
+    </mesh>
+    <mesh castShadow position={[0, 0.43, 0]}>
+      <cylinderGeometry args={[0.075, 0.05, 0.06, 16]} />
+      <meshStandardMaterial color="#5d4730" roughness={0.7} />
+    </mesh>
+    <mesh castShadow position={[0, 0.52, 0]}>
+      <sphereGeometry args={[0.078, 18, 14]} />
+      <meshStandardMaterial color="#7a5f3e" roughness={0.6} />
+    </mesh>
+  </group>
+);
+
 /** Stand-in person: simple bust used on every character stage until real models land. */
 export const CharacterBust: FC<GroupProps> = (p) => (
   <group {...p}>

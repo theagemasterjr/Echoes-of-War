@@ -30,9 +30,11 @@ export async function checkCoverage(
       maxTokens: 150,
       system:
         `You grade an educational dialogue. You are given learning points and the conversation so far. ` +
-        `A point counts as covered ONLY if the character has clearly explained its substance somewhere in the conversation — ` +
-        `the key fact actually stated, in the character's own words, well enough that an attentive kid would have learned it. ` +
-        `It may have been explained across more than one turn. A brief passing mention, a vague allusion, or the player merely asking about it does NOT count. ` +
+        `A point counts as covered if the character has explained its substance somewhere in the conversation — ` +
+        `the main idea stated in the character's own words, well enough that an attentive kid would take it away. ` +
+        `The exact wording never matters, dates and side details are not required, and the explanation may be spread across several turns. ` +
+        `If the substance of a point was genuinely discussed, count it — do not withhold credit because it could have been explained more fully. ` +
+        `Do NOT count: the player merely asking about it, a vague allusion, or a mention of only the name with no substance. ` +
         `Reply ONLY with a JSON array of the covered ids. Empty array if none. No other text.`,
       messages: [
         {

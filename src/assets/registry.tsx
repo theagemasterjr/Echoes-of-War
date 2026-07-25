@@ -44,6 +44,16 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'ch4.marker': { label: 'Miniature medic satchel', source: { kind: 'glb', url: '/models/bandages.glb', scale: 2.4, offset: [-0.01, 0, 0] } },
   'ch5.marker': { label: 'Miniature medic helmet', source: { kind: 'placeholder', component: P.HelmetProp } },
   'ch6.marker': { label: 'Miniature paper lantern', source: { kind: 'glb', url: '/models/lantern.glb', scale: 0.05, offset: [-0.05, 0.03, 0] } },
+  // Chapter 1 timeline minigame — one wooden figure per event. Scales are set
+  // from each file's measured bounds so every piece stands ~0.55 units tall.
+  'ch1.figure.versailles': { label: 'Timeline figure — Treaty of Versailles', source: { kind: 'glb', url: '/models/ch1-fig-versailles.glb', scale: 4.7 } },
+  'ch1.figure.depression': { label: 'Timeline figure — Great Depression', source: { kind: 'glb', url: '/models/ch1-fig-depression.glb', scale: 6.1 } },
+  'ch1.figure.hitler': { label: 'Timeline figure — Hitler becomes Chancellor', source: { kind: 'glb', url: '/models/ch1-fig-hitler.glb', scale: 4.6 } },
+  'ch1.figure.rhineland': { label: 'Timeline figure — Rhineland', source: { kind: 'glb', url: '/models/ch1-fig-rhineland.glb', scale: 4.6 } },
+  'ch1.figure.munich': { label: 'Timeline figure — Munich Agreement', source: { kind: 'glb', url: '/models/ch1-fig-munich.glb', scale: 6.1 } },
+  'ch1.figure.pact': { label: 'Timeline figure — German–Soviet pact', source: { kind: 'glb', url: '/models/ch1-fig-pact.glb', scale: 4.9 } },
+  'ch1.figure.invasion': { label: 'Timeline figure — Invasion of Poland', source: { kind: 'glb', url: '/models/ch1-fig-invasion.glb', scale: 4.9 } },
+  'ch1.figure.declarations': { label: 'Timeline figure — War declared', source: { kind: 'glb', url: '/models/ch1-fig-declarations.glb', scale: 5.3 } },
   'ch1.character': {
     label: 'Polish journalist figure',
     source: {

@@ -99,7 +99,9 @@ export const useConversation = create<ConvoState>((set, get) => {
       // 'error' state must go through retry() — a fresh send would put two
       // consecutive player turns in the history and break the API call
       if (!s.chapterId || s.status !== 'idle' || !text.trim()) return;
-      const history = s.messages.slice(-12);
+      // send plenty of history: the character only reads the recent turns, but
+      // the coverage grader reads far back so nothing explained early is lost
+      const history = s.messages.slice(-60);
       set({ messages: [...s.messages, { role: 'player', text }] });
       dispatch({
         chapterId: s.chapterId, nodeId: s.nodeId, coveredPointIds: s.covered,
