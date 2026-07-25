@@ -88,7 +88,7 @@ const tree: ConstraintTree = {
         'invasion of Poland and the world declaring war.',
       learningPoints: [
         { id: 'versailles', text: 'The Treaty of Versailles (1919) punished Germany hard and bred deep German resentment' },
-        { id: 'depression', text: 'The economic depression of the 1930s pushed desperate people toward extremist promises' },
+        { id: 'depression', text: 'The Great Depression that began in 1929 pushed desperate people toward extremist promises' },
         { id: 'hitler', text: 'Hitler became German chancellor in January 1933 and rearmed Germany' },
         { id: 'remilitarization', text: 'Germany remilitarised the Rhineland (1936) and absorbed Austria (1938) with no one stopping it' },
         { id: 'munich', text: 'The Munich Agreement (1938) gave Germany the Sudetenland in the hope of keeping peace' },
@@ -115,6 +115,8 @@ const tree: ConstraintTree = {
         'Present the years of giving in to Hitler as they looked then — many people genuinely hoped each concession would be the last.',
         'Restrained, human language about the bombing and the dead — specific and quiet, never graphic, never dramatic.',
         'Say what you have seen yourself, and mark what you only heard on the radio or from neighbours as exactly that.',
+        'When you explain one of the big moments, anchor it in time — say roughly when it happened and what it changed — so the visitor could later put the moments in order themselves. This is how you write them in your journal: in order, so the chain makes sense.',
+        'When most of the story has been told, say you would love to see if the visitor can put the whole chain in order, the way it runs in your journal.',
       ],
       advance: { to: null, condition: 'allPoints' },
     },
