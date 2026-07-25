@@ -42,6 +42,9 @@ function PrologueVideo() {
   const finish = () => {
     if (done.current) return;
     done.current = true;
+    // the element stays mounted (visually fading) through the glide down to
+    // the map — silence its soundtrack so it can't play over the theme
+    if (videoRef.current) videoRef.current.muted = true;
     completePrologue();
   };
 
