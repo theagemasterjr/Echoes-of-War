@@ -65,7 +65,7 @@ All six should read as **small tabletop game pieces** on a round wooden base coi
 ## Characters
 One per chapter. Generate as **full-body standing figures, arms relaxed at sides (or a natural at-ease pose), neutral expression**, so they can later be rigged or posed. Roughly 1.7–1.8 units tall. Respectful, dignified, historically grounded — no weapons raised, no wounds, no insignia glorification.
 
-### `ch1.character` — Polish radio journalist (Warsaw, 1939) — ✅ model delivered
+### `ch1.character` — Zofia Kowalska, Warsaw student & diarist (1939) — ✅ model delivered
 The founders' model is live in the app (woman in a business suit, idle + talking
 animations, textures baked in). It was prepared from two source pieces — an exported
 `.glb` (geometry + animations, no textures) and the Character Creator `.fbm` texture
@@ -84,10 +84,22 @@ Clips in the current file: `Idle_Loop` (idle), `Idle_Talking_Loop` (while speaki
 relative to its UVs — the build script flips it (`flipV` on the `Std_Skin_Head` recipe);
 keep that if you rebuild.
 
-**Note for the founders:** the persona and name plate still say *Aleksander Nowak*,
-a man — rename the character (tree + registry + voice) or swap the model to match.
+**Character update (2026-07-24):** the persona is now **Zofia Kowalska** — a
+19-year-old Warsaw student and diarist, talking with the player face to face in her
+one-room apartment. The delivered female model now matches the persona. The
+ElevenLabs voice ("Jessica", young female) already fits.
 
-Original generation prompt, kept in case the model is ever re-generated:
+**Two optional swaps for a closer match, whenever you like:**
+1. *Model* — the current model wears a modern business suit; a period outfit would
+   sit better. Suggested Meshy prompt:
+   > A photorealistic full-body young Polish woman, about nineteen, in 1939 Warsaw: simple knee-length wool skirt and hand-knitted cardigan over a plain blouse, low practical shoes, light-brown hair pinned back simply, a small journal held at her side, kind alert face, standing naturally at ease, neutral expression. Muted late-1930s palette, film-lighting friendly.
+2. *Backdrop* — `public/img/ch1-studio.jpg` is still the ruined radio studio; the
+   scene is now her one-room apartment. Generate a new background (small 1930s
+   Warsaw one-room flat: iron bed, table with journal and newspaper clippings, lace
+   curtain, taped window panes, warm lamp) and swap it in with the same build
+   script's `--bg` flag, or just replace the jpg.
+
+Original generation prompt for the first (male journalist) concept, kept for history:
 > A photorealistic full-body 1930s Polish radio journalist, Aleksander Nowak, man in his late thirties, tired intelligent face with a day's stubble, rumpled grey three-piece wool suit with loosened tie and rolled shirtsleeves, press card tucked in the breast pocket, headphones resting around his neck, one hand relaxed at his side, standing naturally at ease. Muted late-1930s palette, film-lighting friendly.
 
 ### `ch1.prop.microphone` — 1930s ribbon microphone (optional)
