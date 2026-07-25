@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ...base, reply, screened: verdict });
     }
 
-    const history = (body.history ?? []).slice(-12).map((m) => ({
+    const rawHistory = (body.history ?? []).slice(-12);
+    const history = rawHistory.map((m) => ({
       role: m.role === 'player' ? ('user' as const) : ('assistant' as const),
       content: String(m.text).slice(0, 1000),
     }));
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
         messages: [...history, { role: 'user', content: message }],
       })) || '…';
 
-    const newlyCoveredIds = await checkCoverage(node, message, reply, covered);
+    const newlyCoveredIds = await checkCoverage(node, rawHistory, message, reply, covered);
     const merged = [...new Set([...covered, ...newlyCoveredIds])];
 
     const nodeCovered = node.learningPoints.filter((p) => merged.includes(p.id)).length;

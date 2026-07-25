@@ -23,14 +23,15 @@ function Overview({ onAdvance }: BeatProps) {
           1939, German forces cross the Polish border — and Europe is at war again.
         </p>
         <p className="mt-3 text-xs text-stone-500">
-          You are about to speak with a radio journalist in Warsaw. They are a fictional
-          composite, built from documented experiences of the time.
+          You are about to meet Zofia, a young woman in Warsaw who keeps a journal of
+          everything happening around her. She is a fictional composite, built from
+          documented experiences of the time.
         </p>
         <button
           onClick={onAdvance}
           className="mt-8 rounded-sm border border-amber-200/40 px-6 py-2.5 text-xs tracking-[0.25em] text-amber-100 hover:bg-amber-200/10"
         >
-          TALK TO THE RADIO JOURNALIST →
+          MEET ZOFIA →
         </button>
       </div>
     </div>

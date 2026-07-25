@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { ChapterId } from '@/chapters/types';
 import { chapterMeta } from '@/chapters/registry';
@@ -17,7 +17,12 @@ export function ConversationUI({
   const convo = useConversation();
   const [draft, setDraft] = useState('');
   const [voiceMode, setVoiceMode] = useState(false);
+  const [lineDone, setLineDone] = useState(false);
   const started = useRef(false);
+  const msgCount = convo.messages.length;
+
+  // a new line starts un-finished; guided chips wait until it has fully played
+  useEffect(() => setLineDone(false), [msgCount]);
 
   useEffect(() => {
     if (!started.current || convo.chapterId !== chapterId) {
@@ -88,7 +93,7 @@ export function ConversationUI({
           {convo.status === 'error' ? (
             <div>
               <p className="italic text-stone-400">
-                …the line crackles. “Say that again? I lost you for a moment.”
+                …they pause, distracted for a moment. “Sorry — say that again?”
               </p>
               <button
                 onClick={() => convo.retry()}
@@ -100,10 +105,11 @@ export function ConversationUI({
           ) : convo.status === 'sending' && lastCharacterLine === '' ? (
             <p className="animate-pulse text-stone-500">…</p>
           ) : (
-            <Typewriter
+            <SubtitleLine
               key={convo.messages.length}
               text={lastCharacterLine}
               className="text-[15px] leading-relaxed text-stone-100"
+              onDone={() => setLineDone(true)}
             />
           )}
           {convo.status === 'sending' && lastCharacterLine !== '' && (
@@ -112,7 +118,7 @@ export function ConversationUI({
         </div>
 
         {/* guided questions */}
-        {convo.status === 'idle' && convo.guided.length > 0 && (
+        {convo.status === 'idle' && lineDone && convo.guided.length > 0 && (
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             {convo.guided.slice(0, 3).map((q) => (
               <button
@@ -365,7 +371,7 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
         )}
         {mode === 'thinking' && <p className="animate-pulse text-stone-500">…</p>}
         {mode === 'speaking' && (
-          <Typewriter
+          <SubtitleLine
             key={msgCount}
             text={lastCharacterLine}
             className="rounded-md bg-stone-950/60 px-4 py-3 text-[15px] leading-relaxed text-stone-100 backdrop-blur-sm"
@@ -403,40 +409,104 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
   );
 }
 
-/** Reveals the text at the speed of the spoken line, so words and voice end
- *  together. Waits briefly for the voice to start; if there is no voice
- *  (no key, error), it falls back to a quick reveal on its own. */
-function Typewriter({ text, className }: { text: string; className?: string }) {
-  const [n, setN] = useState(0);
+/** Split a reply into sentences for subtitle-style delivery. */
+function splitSentences(text: string): string[] {
+  const parts = text.match(/[^.!?…]+[.!?…]+[”"’']?\s*|[^.!?…]+$/g);
+  const out = (parts ?? [text]).map((s) => s.trim()).filter(Boolean);
+  return out.length > 0 ? out : [text];
+}
+
+/** Film-subtitle delivery: only the current sentence is on screen. While the
+ *  voice is playing, sentences advance in step with it (time shared by
+ *  sentence length). With no voice, each sentence waits for a tap, so slow
+ *  readers are never rushed. Calls onDone when the last sentence is shown. */
+function SubtitleLine({
+  text, className, onDone,
+}: {
+  text: string;
+  className?: string;
+  onDone?: () => void;
+}) {
+  const sentences = useMemo(() => splitSentences(text), [text]);
+  const [i, setI] = useState(0);
+  const [tapMode, setTapMode] = useState(false);
+  const iRef = useRef(0);
+  iRef.current = i;
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
+
   useEffect(() => {
-    setN(0);
+    setI(0);
+    setTapMode(false);
     if (!text) return;
-    let iv: ReturnType<typeof setInterval> | null = null;
-    let started = false;
-    const begin = (cps: number) => {
-      if (started) return;
-      started = true;
-      let acc = 0;
-      iv = setInterval(() => {
-        acc += cps * 0.05;
-        setN(Math.min(text.length, Math.floor(acc)));
-        if (acc >= text.length && iv) clearInterval(iv);
-      }, 50);
+    const clear = () => {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
     };
-    const paceToVoice = () => {
-      const d = voicePlayer.durationSec;
-      if (d > 1) begin(Math.max(6, text.length / d));
+    const total = sentences.reduce((a, s) => a + s.length, 0) || 1;
+    const pace = (fromIdx: number, durSec: number) => {
+      clear();
+      setTapMode(false);
+      let at = 0;
+      for (let k = fromIdx; k < sentences.length - 1; k++) {
+        at += (sentences[k].length / total) * durSec * 1000;
+        const next = k + 1;
+        timers.current.push(setTimeout(() => setI(next), at));
+      }
     };
     const un = voicePlayer.subscribe((e) => {
-      if (e === 'start') paceToVoice();
+      // voice arrived (possibly late): pace the rest of the line to it
+      if (e === 'start' && voicePlayer.durationSec > 1) pace(iRef.current, voicePlayer.durationSec);
+      // voice finished: whatever the timing drift, land on the last sentence
+      if (e === 'end') {
+        clear();
+        setI(sentences.length - 1);
+      }
     });
-    const fallback = setTimeout(() => begin(80), 1200);
-    if (voicePlayer.speaking) paceToVoice();
+    if (voicePlayer.speaking && voicePlayer.durationSec > 1) {
+      pace(0, voicePlayer.durationSec);
+    } else {
+      // give the voice a moment to arrive; if it doesn't, the reader sets the pace
+      timers.current.push(
+        setTimeout(() => {
+          if (!voicePlayer.speaking) setTapMode(true);
+        }, 1400),
+      );
+    }
     return () => {
-      if (iv) clearInterval(iv);
+      clear();
       un();
-      clearTimeout(fallback);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
-  return <p className={className}>{text.slice(0, n)}</p>;
+
+  const last = i >= sentences.length - 1;
+  useEffect(() => {
+    if (last) doneRef.current?.();
+  }, [last]);
+
+  return (
+    <div
+      onClick={() => {
+        if (tapMode && !last) setI((v) => Math.min(v + 1, sentences.length - 1));
+      }}
+      className={tapMode && !last ? 'cursor-pointer select-none' : undefined}
+    >
+      <motion.p
+        key={i}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.25 }}
+        className={className}
+      >
+        {sentences[i] ?? ''}
+      </motion.p>
+      {tapMode && !last && (
+        <p className="mt-1 animate-pulse text-[10px] tracking-widest text-stone-500">
+          TAP FOR MORE ▸
+        </p>
+      )}
+    </div>
+  );
 }
