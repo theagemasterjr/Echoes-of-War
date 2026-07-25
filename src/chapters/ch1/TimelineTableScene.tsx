@@ -2,18 +2,19 @@
 /**
  * Chapter 1 minigame, 3D staging — the carved wooden figures standing in one
  * row on the war-room table (no map dressing). The row starts shuffled; the
- * player swaps figures until they run earliest → latest. All text lives in
- * the 2D HUD (TimelineMinigame.tsx) — the table only shows the figures.
+ * player swaps figures until they run earliest → latest. Each figure has a
+ * 2D card anchored right under it (screen-anchored Html, same as the map's
+ * chapter labels); the check button and summary live in TimelineMinigame.tsx.
  * Tap a figure then tap another to swap, or drag one across the row.
  * Rules and content live in timelineStore.ts.
  */
 import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
-import { useCursor } from '@react-three/drei';
+import { Html, useCursor } from '@react-three/drei';
 import * as THREE from 'three';
 import { Asset } from '@/assets/registry';
-import { EVENTS, useTimelineStore, type TimelineEvent } from './timelineStore';
+import { EVENTS, eventById, useTimelineStore, type TimelineEvent } from './timelineStore';
 
 /** Column layout of the single figure row — keep in sync with the HUD strip. */
 export const SPACING = 1.3;
@@ -101,7 +102,73 @@ export function TimelineTableScene() {
           onPointerDown={startDrag}
         />
       ))}
+      {EVENTS.map((_, i) => (
+        <ColumnCard key={i} index={i} />
+      ))}
     </group>
+  );
+}
+
+/** The 2D card anchored under each column's figure — same screen-anchored
+ *  Html technique as the chapter labels on the map. Shows whichever event
+ *  currently stands at this column; tap two cards to swap them. */
+function ColumnCard({ index }: { index: number }) {
+  const id = useTimelineStore((s) => s.order[index]);
+  const selected = useTimelineStore((s) => s.selected);
+  const isLocked = useTimelineStore((s) => s.locked.includes(s.order[index]));
+  const isWrong = useTimelineStore((s) => s.lastWrong.includes(s.order[index]));
+  const event = eventById(id);
+  const isSel = selected === id;
+
+  const onClick = () => {
+    const { locked, selected: sel, select, swapById } = useTimelineStore.getState();
+    if (locked.includes(id)) return;
+    if (sel && sel !== id) swapById(sel, id);
+    else select(sel === id ? null : id);
+  };
+
+  return (
+    <Html
+      position={[colX(index), -0.06, ROW_Z + 0.62]}
+      center
+      distanceFactor={6}
+      zIndexRange={[15, 0]}
+      style={{ pointerEvents: 'none' }}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={isLocked}
+        style={{ pointerEvents: 'auto' }}
+        className={`flex w-40 flex-col items-center rounded-sm border px-2 py-1.5 text-center backdrop-blur-sm transition ${
+          isLocked
+            ? 'border-emerald-600/50 bg-emerald-950/70'
+            : isSel
+              ? 'border-amber-300 bg-stone-950/85'
+              : isWrong
+                ? 'border-red-800/80 bg-stone-950/75 hover:border-red-500/80'
+                : 'border-stone-600 bg-stone-950/75 hover:border-amber-200/60'
+        }`}
+      >
+        <span className="text-[9px] uppercase tracking-widest text-stone-500">
+          {index + 1}{index === 0 ? ' · earliest' : index === EVENTS.length - 1 ? ' · latest' : ''}
+        </span>
+        <span className={`mt-0.5 text-xs leading-snug ${isLocked ? 'text-emerald-200' : isSel ? 'text-amber-100' : 'text-stone-200'}`}>
+          {isLocked ? '✓ ' : ''}{event.label}
+        </span>
+        {isLocked && (
+          <>
+            <span className="mt-0.5 text-[10px] font-medium text-amber-200/80">{event.date}</span>
+            <span className="mt-0.5 text-[10px] leading-snug text-stone-400">{event.why}</span>
+          </>
+        )}
+        {!isLocked && isSel && (
+          <span className="mt-0.5 text-[9px] uppercase tracking-widest text-amber-200/70">
+            tap another to swap
+          </span>
+        )}
+      </button>
+    </Html>
   );
 }
 
