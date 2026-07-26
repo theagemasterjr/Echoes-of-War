@@ -22,7 +22,8 @@ export function TransitionLayer() {
   // prologue film → map (first visit) — no black for these
   const glideToMap =
     (view.kind === 'title' || view.kind === 'prologue') && pending?.kind === 'map';
-  const enteringChapter = pending?.kind === 'chapter' && pending.beat === 'overview';
+  // entering a chapter from the map rides the push-in straight into its film
+  const enteringChapter = view.kind === 'map' && pending?.kind === 'chapter';
 
   useEffect(() => {
     const { _commit, _setPhase } = useAppStore.getState();

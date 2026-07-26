@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "build:ch1-character": "node scripts/build-ch1-character.mjs"
+    "build:ch1-character": "node scripts/build-ch1-character.mjs",
+    "build:briefs": "node scripts/build-brief-audio.mjs",
+    "set:backdrop": "node scripts/set-backdrop.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.113.0",

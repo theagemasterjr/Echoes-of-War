@@ -92,13 +92,6 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
 
       {beat === 'conversation' ? (
         <ConversationCharacter assetId={meta.characterAssetId} />
-      ) : beat === 'overview' ? (
-        /* showcase pedestal shot — the orbit camera slowly circles this */
-        <group position={[0, ORBIT.target[1] - 0.45, 0]} scale={2.6}>
-          <Float speed={1.1} rotationIntensity={0.05} floatIntensity={0.12}>
-            <Asset assetId={meta.markerAssetId} />
-          </Float>
-        </group>
       ) : (
         <group position={[0, 0.55, 0]} scale={2.6}>
           <Float speed={1.2} rotationIntensity={0.15} floatIntensity={0.3}>
@@ -110,18 +103,58 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
   );
 }
 
-/** Full-frame photo behind the conversation stage. Sized to cover the chapter
- *  camera's view at its depth (frame there is ~14.3 x 8.05 on a 16:9 window);
- *  unlit so the photo's own baked light reads as-is. */
+/** How far behind the camera's eye the backdrop hangs. Matches where the old
+ *  fixed plane sat (z = -4.5 from the chapter camera), which is comfortably
+ *  behind the character without the scene lights reaching it. */
+const BACKDROP_DISTANCE = 9.75;
+
+/** Full-frame photo behind the conversation stage; unlit, so the photo's own
+ *  baked light reads as-is.
+ *
+ *  It hangs square to the camera and is resized every frame to exactly fill
+ *  the frame at its depth. It used to be a fixed 16.5 x 8.8 rectangle sized
+ *  for a 16:9 window — on a window of another shape (a wide one especially)
+ *  the frame reached past its edges and the empty scene showed through as
+ *  black bands. Fitting it to the camera makes that impossible at any size.
+ *  The photo is cropped to fill, never stretched. */
 function PhotoBackdrop({ url }: { url: string }) {
   const tex = useTexture(url);
+  const mesh = useRef<THREE.Mesh>(null);
+  const eye = useMemo(() => new THREE.Vector3(), []);
+  const at = useMemo(() => new THREE.Vector3(), []);
+
   useMemo(() => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.needsUpdate = true;
   }, [tex]);
+
+  useFrame(({ camera, viewport }) => {
+    const m = mesh.current;
+    if (!m) return;
+    camera.getWorldDirection(eye);
+    at.copy(camera.position).addScaledVector(eye, BACKDROP_DISTANCE);
+    m.position.copy(at);
+    m.quaternion.copy(camera.quaternion);
+
+    const frame = viewport.getCurrentViewport(camera, at);
+    m.scale.set(frame.width, frame.height, 1);
+
+    // cover-crop: show the largest slice of the photo that fills the frame,
+    // centred, so a wide window trims the top and bottom rather than
+    // squashing the room
+    const img = tex.image as { width?: number; height?: number } | undefined;
+    if (img?.width && img?.height && frame.height > 0) {
+      const photo = img.width / img.height;
+      const screen = frame.width / frame.height;
+      if (screen > photo) tex.repeat.set(1, photo / screen);
+      else tex.repeat.set(screen / photo, 1);
+      tex.offset.set((1 - tex.repeat.x) / 2, (1 - tex.repeat.y) / 2);
+    }
+  });
+
   return (
-    <mesh position={[0, 0.95, -4.5]}>
-      <planeGeometry args={[16.5, 8.8]} />
+    <mesh ref={mesh}>
+      <planeGeometry args={[1, 1]} />
       <meshBasicMaterial map={tex} fog={false} />
     </mesh>
   );
@@ -143,23 +176,17 @@ function ConversationCharacter({ assetId }: { assetId: string }) {
 
 /** Marker Y sits just above the paper map surface — keep in sync with ChapterMarker.tsx. */
 const MAP_SURFACE_Y = 0.085;
-/** Seconds for the map→chapter dive — keep in sync with TransitionLayer's `enteringChapter` timeout and the .zoom-dive CSS duration. */
+/** Seconds for the map→chapter push-in — keep in sync with TransitionLayer's `enteringChapter` timeout and the .zoom-dive CSS duration. */
 const DIVE_S = 2.2;
+/** How far the push-in travels toward the marker (0 = no move, 1 = right onto
+ *  it). Small on purpose: past ~0.35 the paper map visibly loses detail. */
+const DIVE_AMOUNT = 0.26;
 
 const PRESETS = {
   title: { pos: [0, 9, 21], target: [0, 7, 0] },
   map: { pos: [0, 7.6, 6.6], target: [0, 0, -0.4] },
   chapter: { pos: [0, 1.45, 5.2], target: [0, 0.95, 0] },
 } as const;
-
-/** Overview showcase: camera circles the object at a low hero angle. */
-const ORBIT = {
-  target: [0, 1.15, 0] as const,
-  radius: 3.4,
-  pitchDrop: 0.91, // radius * tan(15°) → camera sits ~15° below the object
-  secondsPerLap: 30,
-  screenShift: 0.85, // pushes the object left so the info panel owns the right
-};
 
 type Preset = { pos: readonly [number, number, number]; target: readonly [number, number, number] };
 
@@ -221,17 +248,25 @@ function CameraDirector() {
       gsap.killTweensOf(camera.position);
       gsap.killTweensOf(target.current);
       if (view.kind === 'map' && pending.kind === 'chapter') {
-        // slow, smooth dolly straight into the selected marker — no spin, no
-        // sharp acceleration. The CSS zoom (.zoom-dive) covers the moment
-        // the scene swaps underneath it, right as this settles on the icon.
+        // A restrained push-in toward the chosen marker: the camera leans in
+        // and commits to that spot, then the film takes over. Deliberately
+        // stops well short of the map — pushing closer only reveals the
+        // paper texture's resolution and the map goes soft.
         const [mx, my, mz] = chapterMeta(pending.chapterId).markerPosition;
         const markerY = my + MAP_SURFACE_Y;
+        const near = (from: number, to: number) => from + (to - from) * DIVE_AMOUNT;
         gsap.to(camera.position, {
-          x: mx, y: markerY + 0.9, z: mz + 1.15, // eye-tuned: gentler arrival, not blurry-close
+          x: near(camera.position.x, mx),
+          y: near(camera.position.y, markerY + 1.1),
+          z: near(camera.position.z, mz + 1.4),
           duration: DIVE_S, ease: 'power2.inOut',
         });
         gsap.to(target.current, {
-          x: mx, y: markerY + 0.15, z: mz,
+          // the look-at travels further than the camera does, so the move
+          // reads as "this place", not just "closer"
+          x: near(target.current.x, mx) + (mx - target.current.x) * 0.35,
+          y: near(target.current.y, markerY + 0.15),
+          z: near(target.current.z, mz) + (mz - target.current.z) * 0.35,
           duration: DIVE_S, ease: 'power2.inOut',
         });
       } else if (
@@ -304,23 +339,6 @@ function CameraDirector() {
       p.y = THREE.MathUtils.lerp(p.y, still ? 0 : -pointer.y * 0.35, 0.05);
       camera.position.set(g.pos[0] + p.x, g.pos[1] + p.y, g.pos[2]);
       camera.lookAt(g.target[0], g.target[1], g.target[2]);
-      applied.current.set(0, 0, 0);
-      amp.current = 0;
-      return;
-    }
-
-    // overview showcase: absolute orbit placement wins over presets/drift
-    if (view.kind === 'chapter' && view.beat === 'overview' && phase !== 'out') {
-      const t = clock.elapsedTime;
-      const angle = reducedMotion.current ? 0.4 : (t * Math.PI * 2) / ORBIT.secondsPerLap;
-      const [tx, ty, tz] = ORBIT.target;
-      camera.position.set(
-        tx + ORBIT.radius * Math.sin(angle),
-        ty - ORBIT.pitchDrop,
-        tz + ORBIT.radius * Math.cos(angle),
-      );
-      camera.lookAt(tx, ty, tz);
-      camera.translateX(ORBIT.screenShift); // object left, panel right
       applied.current.set(0, 0, 0);
       amp.current = 0;
       return;

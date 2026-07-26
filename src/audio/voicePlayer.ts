@@ -68,6 +68,15 @@ export const voicePlayer = {
     return durationSec;
   },
 
+  /** How far into the line the voice is, in seconds. The subtitle reads this
+   *  every tick and picks the sentence being spoken, so the words track the
+   *  voice exactly instead of running on pre-computed timers that drift. */
+  get currentTime() {
+    if (!el || !playing) return 0;
+    const t = el.currentTime;
+    return isFinite(t) ? t : 0;
+  },
+
   /** Hear 'start'/'end' of spoken lines (used by voice mode). Returns unsubscribe. */
   subscribe(cb: (e: VoiceEvent) => void) {
     listeners.add(cb);
@@ -77,7 +86,9 @@ export const voicePlayer = {
   stop() {
     token++;
     playing = false; // silent — no 'end' event for a manual stop
+    durationSec = 0;
     try {
+      if (el) el.onended = null; // the pause below must not read as a natural end
       el?.pause();
     } catch {}
     revoke();
@@ -87,6 +98,14 @@ export const voicePlayer = {
     const audio = ensureEl();
     if (!audio || !text.trim()) return;
     const mine = ++token; // this call owns playback until the next speak/stop
+    // A newer line supersedes whatever is still talking: cut it now, and clear
+    // the old duration so the incoming subtitle never paces itself to it.
+    playing = false;
+    durationSec = 0;
+    try {
+      audio.onended = null;
+      audio.pause();
+    } catch {}
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -104,12 +123,18 @@ export const voicePlayer = {
 
       audio.onended = () => {
         playing = false;
+        durationSec = 0;
         emit('end');
+      };
+      // duration is what the subtitle divides the line by, so take it the
+      // moment the header is parsed rather than hoping play() has it
+      audio.onloadedmetadata = () => {
+        if (mine === token && isFinite(audio.duration)) durationSec = audio.duration;
       };
 
       await audio.play();
       if (mine === token) {
-        durationSec = isFinite(audio.duration) ? audio.duration : 0;
+        if (!durationSec && isFinite(audio.duration)) durationSec = audio.duration;
         playing = true;
         emit('start');
       }

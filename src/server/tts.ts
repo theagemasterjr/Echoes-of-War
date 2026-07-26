@@ -16,6 +16,16 @@ const TTS_MODEL = 'eleven_flash_v2_5';
 const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // 'cgSgspJ2msm6clMCkdW9' = ElevenLabs stock "Jessica" (young, bright, warm female — founder's pick).
   ch1: process.env.ELEVENLABS_VOICE_CH1 ?? 'cgSgspJ2msm6clMCkdW9',
+  // 'JBFqnCBsd6RMkjVDRZzb' = ElevenLabs stock "George" (British male).
+  // TODO(founder): verify this voice id in your ElevenLabs library (a wrong id
+  // just means silence) and pick the young-British-male voice you like —
+  // setting ELEVENLABS_VOICE_CH2 overrides it without a code change.
+  ch2: process.env.ELEVENLABS_VOICE_CH2 ?? 'JBFqnCBsd6RMkjVDRZzb',
+  // 'TxGEqnHWrfWFTfGW9XjX' = ElevenLabs stock "Josh" (young American male).
+  // TODO(founder): verify this voice id in your ElevenLabs library (a wrong id
+  // just means silence) and pick the young-American-male voice you like —
+  // setting ELEVENLABS_VOICE_CH3 overrides it without a code change.
+  ch3: process.env.ELEVENLABS_VOICE_CH3 ?? 'TxGEqnHWrfWFTfGW9XjX',
 };
 
 export function voiceFor(chapterId: ChapterId): string | undefined {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Beat, ChapterId } from '@/chapters/types';
 import { chapterMeta } from '@/chapters/registry';
+import { hasBrief } from '@/content/briefs';
 import { useProgressStore } from './progressStore';
 
 export type View =
@@ -33,7 +34,18 @@ interface AppState {
   _setPhase: (phase: TransitionPhase) => void;
 }
 
-export const BEAT_ORDER: Beat[] = ['overview', 'intro', 'conversation', 'minigame'];
+/** The one chapter flow, shared by all six: intro film → mission brief →
+ *  live conversation → minigame. */
+export const BEAT_ORDER: Beat[] = ['intro', 'brief', 'conversation', 'minigame'];
+
+/** The beats a chapter actually runs. A chapter with no intro film, or no
+ *  mission brief written yet, simply skips that beat — adding either one later
+ *  is a content edit, never a code change. */
+export function beatsFor(id: ChapterId): Beat[] {
+  return BEAT_ORDER.filter(
+    (b) => (b !== 'intro' || !!chapterMeta(id).introVideo) && (b !== 'brief' || hasBrief(id)),
+  );
+}
 
 export const useAppStore = create<AppState>((set, get) => ({
   view: { kind: 'title' },
@@ -49,8 +61,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       phase: 'out',
     }),
 
-  gotoChapter: (id, beat = 'overview', instant = false) => {
-    const target: View = { kind: 'chapter', chapterId: id, beat };
+  gotoChapter: (id, beat, instant = false) => {
+    const target: View = { kind: 'chapter', chapterId: id, beat: beat ?? beatsFor(id)[0] };
     if (instant) set({ view: target, pending: null, phase: 'idle' });
     else set({ pending: target, phase: 'out' });
   },
@@ -63,11 +75,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   advanceBeat: () => {
     const v = get().view;
     if (v.kind !== 'chapter') return;
-    let next = BEAT_ORDER[BEAT_ORDER.indexOf(v.beat) + 1];
-    // chapters without an intro film jump straight from overview to conversation
-    if (next === 'intro' && !chapterMeta(v.chapterId).introVideo) {
-      next = BEAT_ORDER[BEAT_ORDER.indexOf('intro') + 1];
-    }
+    const beats = beatsFor(v.chapterId);
+    const next = beats[beats.indexOf(v.beat) + 1];
     if (next) set({ view: { ...v, beat: next } });
   },
 

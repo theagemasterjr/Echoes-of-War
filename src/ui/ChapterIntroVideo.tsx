@@ -1,12 +1,14 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { ChapterId } from '@/chapters/types';
 import { chapterMeta } from '@/chapters/registry';
+import { BufferedVideo } from '@/media/BufferedVideo';
 
 /**
  * Chapter intro film — the beat between the overview panel and the live
- * conversation. Clones the PrologueVideo autoplay ladder (sound → muted +
+ * conversation. Plays the copy already buffered in the background (see
+ * `videoCache`), with the same autoplay ladder as the prologue (sound → muted +
  * one-tap unmute → placeholder frame). When the chapter has no `introVideo`
  * (or the file 404s), a styled "coming soon" frame stands in with CONTINUE.
  * SKIP always advances; onEnded advances once. Beat swaps are instant (no
@@ -31,17 +33,6 @@ export function ChapterIntroVideo({
     done.current = true;
     onAdvance();
   };
-
-  useEffect(() => {
-    if (!src) return;
-    const v = videoRef.current;
-    if (!v) return;
-    v.play().catch(() => {
-      v.muted = true;
-      setMuted(true);
-      v.play().catch(() => setFailed(true));
-    });
-  }, [src]);
 
   const unmute = () => {
     const v = videoRef.current;
@@ -68,15 +59,13 @@ export function ChapterIntroVideo({
           </p>
         </div>
       ) : (
-        <video
-          ref={videoRef}
-          src={src}
+        <BufferedVideo
+          src={src!}
+          elementRef={videoRef}
           className="absolute inset-0 h-full w-full object-contain"
-          playsInline
-          autoPlay
-          preload="auto"
           onEnded={finish}
           onError={() => setFailed(true)}
+          onMuted={() => setMuted(true)}
         />
       )}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.4em] text-amber-200/60">

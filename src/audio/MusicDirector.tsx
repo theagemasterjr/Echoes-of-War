@@ -23,12 +23,10 @@ export function MusicDirector() {
   const soundtrack = useSettingsStore((s) => s.soundtrack);
 
   const effectiveView = pending ?? view;
-  // music carries through title, map AND the chapter showcase — it fades for
-  // the prologue film (which has its own soundtrack) and once the player
-  // commits to the conversation (or the minigame after it)
-  const shouldPlay =
-    effectiveView.kind !== 'prologue' &&
-    (effectiveView.kind !== 'chapter' || effectiveView.beat === 'overview');
+  // the theme belongs to the title screen and the map. It fades the moment a
+  // chapter is chosen: the intro film carries its own sound, and the mission
+  // brief's narration needs the room to itself.
+  const shouldPlay = effectiveView.kind !== 'prologue' && effectiveView.kind !== 'chapter';
 
   useEffect(() => {
     // fade out whichever track isn't selected (covers switching in settings)

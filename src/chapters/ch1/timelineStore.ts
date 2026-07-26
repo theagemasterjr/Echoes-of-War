@@ -14,26 +14,33 @@ export interface TimelineEvent {
   label: string;
   date: string;
   why: string;
-  /** Which "Things to learn about" topic this event belongs to. */
+  /** Which Objectives row this event belongs to. */
   group: string;
+  /**
+   * The learning point in src/content/trees/ch1.ts that teaches this event.
+   * NOTHING in this minigame may exist without one: the player is only ever
+   * asked to order moments the character has already explained. Adding a
+   * figure here means adding or extending that point (and its cues) there.
+   */
+  teachesPointId: string;
 }
 
-// Content mirrors the conversation's "Things to learn about" checklist —
-// same four topics, told as eight moments in order. Dates verified.
+// The four Objectives, told as eight moments to put in order. Every row names
+// the learning point it comes from — see the note on teachesPointId. Dates verified.
 export const EVENTS: TimelineEvent[] = [
-  { id: 'versailles', order: 1, group: 'The Treaty of Versailles', label: 'Treaty of Versailles', date: '28 June 1919', why: 'The treaty ended World War I and punished Germany hard. Many Germans felt it was unfair.' },
-  { id: 'depression', order: 2, group: 'Germany under the treaty', label: 'The Great Depression hits Germany', date: 'October 1929', why: 'Jobs and savings vanished. Angry, struggling people started listening to extreme leaders.' },
-  { id: 'hitler', order: 3, group: 'Hitler’s rise to power', label: 'Hitler becomes Chancellor', date: '30 January 1933', why: 'Hitler promised to undo the treaty and began rebuilding Germany’s army.' },
-  { id: 'rhineland', order: 4, group: 'Hitler’s rise to power', label: 'German troops enter the Rhineland', date: '7 March 1936', why: 'The treaty said this land must stay free of troops. Hitler sent them in — and no one stopped him.' },
-  { id: 'munich', order: 5, group: 'Hitler’s rise to power', label: 'Munich Agreement', date: '30 September 1938', why: 'Britain and France let Germany take part of Czechoslovakia, hoping that would keep the peace. It did not.' },
-  { id: 'pact', order: 6, group: 'How Poland was conquered', label: 'Germany and the Soviet Union make a deal', date: '23 August 1939', why: 'The two promised not to fight each other. Poland was now in danger from both sides.' },
-  { id: 'invasion', order: 7, group: 'How Poland was conquered', label: 'Germany invades Poland', date: '1 September 1939', why: 'German forces attacked at dawn. World War II in Europe began.' },
-  { id: 'declarations', order: 8, group: 'How Poland was conquered', label: 'Britain and France declare war', date: '3 September 1939', why: 'They had promised to protect Poland. The war grew bigger.' },
+  { id: 'versailles', order: 1, group: 'The Treaty of Versailles', teachesPointId: 'versailles-terms', label: 'Treaty of Versailles', date: '28 June 1919', why: 'The treaty ended World War I and punished Germany hard. Many Germans felt it was unfair.' },
+  { id: 'depression', order: 2, group: 'Germany under the treaty', teachesPointId: 'depression', label: 'The Great Depression hits Germany', date: 'October 1929', why: 'Jobs and savings vanished. Angry, struggling people started listening to extreme leaders.' },
+  { id: 'hitler', order: 3, group: 'Hitler’s rise to power', teachesPointId: 'hitler-power', label: 'Hitler becomes Chancellor', date: '30 January 1933', why: 'Hitler promised to undo the treaty and began rebuilding Germany’s army.' },
+  { id: 'rhineland', order: 4, group: 'Hitler’s rise to power', teachesPointId: 'rhineland-austria', label: 'German troops enter the Rhineland', date: '7 March 1936', why: 'The treaty said this land must stay free of troops. Hitler sent them in — and no one stopped him.' },
+  { id: 'munich', order: 5, group: 'Hitler’s rise to power', teachesPointId: 'munich-prague', label: 'Munich Agreement', date: '30 September 1938', why: 'Britain and France let Germany take part of Czechoslovakia, hoping that would keep the peace. It did not.' },
+  { id: 'pact', order: 6, group: 'How Poland was conquered', teachesPointId: 'pact', label: 'Germany and the Soviet Union make a deal', date: '23 August 1939', why: 'The two promised not to fight each other. Poland was now in danger from both sides.' },
+  { id: 'invasion', order: 7, group: 'How Poland was conquered', teachesPointId: 'invasion', label: 'Germany invades Poland', date: '1 September 1939', why: 'German forces attacked at dawn. World War II in Europe began.' },
+  { id: 'declarations', order: 8, group: 'How Poland was conquered', teachesPointId: 'declarations', label: 'Britain and France declare war', date: '3 September 1939', why: 'They had promised to protect Poland. The war grew bigger.' },
 ];
 
 export const eventById = (id: string) => EVENTS.find((e) => e.id === id)!;
 
-/** End-of-chapter summary — one short line per "Things to learn about" topic.
+/** End-of-chapter summary — one short line per Objectives topic.
  *  Kept under 700 characters so the voice can read the whole thing. */
 export const SUMMARY: { topic: string; line: string }[] = [
   { topic: 'The Treaty of Versailles', line: 'The treaty ended World War I and punished Germany. Many Germans felt it was unfair.' },

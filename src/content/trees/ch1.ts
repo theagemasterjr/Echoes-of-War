@@ -13,6 +13,14 @@ import type { ConstraintTree } from '@/conversation/treeTypes';
  * single open stage — every learning point is reachable from the first turn,
  * and she steers gently toward whatever has not come up yet.
  *
+ * THE TEN LEARNING POINTS ARE THE CHAPTER'S CONTRACT. The four objectives on
+ * screen are groups of them, and the eight figures in the timeline minigame
+ * are drawn from them one-for-one (see src/chapters/ch1/timelineStore.ts,
+ * where each event names the point that teaches it). Nothing is asked in the
+ * minigame that Zofia has not explained here. If you add a figure to the
+ * minigame, add or extend the point that teaches it — and the other way
+ * round.
+ *
  * Every date below is checked. Anything she could not plausibly know in the
  * moment is marked TODO(founder) for review. Founders edit this file — never
  * engine code.
@@ -40,13 +48,14 @@ const tree: ConstraintTree = {
   },
   knowledge: {
     knows: [
-      'The Treaty of Versailles (signed 28 June 1919) and the deep German resentment of it — from her clippings and school',
-      'The economic depression of the 1930s and how it hollowed out ordinary lives in Poland and Germany',
-      'Hitler becoming German chancellor on 30 January 1933, and the rearmament that followed, as reported news she clipped',
-      'The remilitarisation of the Rhineland (7 March 1936) and the Anschluss with Austria (12–13 March 1938), as reported news',
-      'The Munich Agreement (30 September 1938) handing Germany the Sudetenland, and Germany seizing the rest of Czechoslovakia and entering Prague on 15 March 1939',
+      'The Treaty of Versailles (signed 28 June 1919): Germany lost territory, its army was capped, it had to pay reparations, and it had to accept blame for the war — and how deeply Germans resented all of it',
+      'The economic depression that began in 1929 and how it hollowed out ordinary lives in Poland and Germany — lost jobs, lost savings, hungry families',
+      'How desperate people in Germany turned to leaders who promised to tear up the treaty and make the country strong again',
+      'Hitler becoming German chancellor on 30 January 1933, and the rearmament that followed — an army, weapons and an air force the treaty had forbidden',
+      'The remilitarisation of the Rhineland (7 March 1936) and the Anschluss with Austria (12–13 March 1938), as reported news — and that no country moved to stop either',
+      'The Munich Agreement (30 September 1938) handing Germany the Sudetenland in the hope of peace, and Germany seizing the rest of Czechoslovakia and entering Prague on 15 March 1939',
       'The British guarantee to Poland of 31 March 1939 — her street celebrated it',
-      'The Molotov–Ribbentrop pact announced on 23–24 August 1939 between Germany and the Soviet Union',
+      'The Molotov–Ribbentrop pact announced on 23–24 August 1939 between Germany and the Soviet Union, and what it meant for Poland to have both those neighbours agreeing with each other',
       'The German invasion that began on 1 September 1939 — news of Wieluń bombed at dawn and the guns at Westerplatte, and the air-raid sirens and bombs she has heard herself over Warsaw',
       'What she sees and hears daily: refugees arriving from the west, queues for bread, taped windows, cellars used as shelters, rumours that outrun the news',
       'That Britain and France declared war on Germany on 3 September 1939 — the crowds cheered outside the British embassy',
@@ -72,10 +81,10 @@ const tree: ConstraintTree = {
   },
   entryNodeId: 'talk',
   objectives: [
-    { id: 'obj-versailles', label: 'The Treaty of Versailles', pointIds: ['versailles'] },
-    { id: 'obj-germany', label: 'Germany under the treaty', pointIds: ['depression'] },
-    { id: 'obj-hitler', label: 'Hitler’s rise to power', pointIds: ['hitler', 'remilitarization', 'munich', 'prague'] },
-    { id: 'obj-poland', label: 'How Poland was conquered', pointIds: ['guarantee', 'pact', 'sept1', 'civilians', 'declarations', 'reflection'] },
+    { id: 'obj-versailles', label: 'The Treaty of Versailles', pointIds: ['versailles-terms', 'versailles-anger'] },
+    { id: 'obj-germany', label: 'Germany under the treaty', pointIds: ['depression', 'extremism'] },
+    { id: 'obj-hitler', label: 'Hitler’s rise to power', pointIds: ['hitler-power', 'rhineland-austria', 'munich-prague'] },
+    { id: 'obj-poland', label: 'How Poland was conquered', pointIds: ['pact', 'invasion', 'declarations'] },
   ],
   nodes: {
     talk: {
@@ -87,25 +96,65 @@ const tree: ConstraintTree = {
         'The full story runs from Versailles through Hitler’s rise and the failed attempts to keep peace, to the ' +
         'invasion of Poland and the world declaring war.',
       learningPoints: [
-        { id: 'versailles', text: 'The Treaty of Versailles (1919) punished Germany hard and bred deep German resentment' },
-        { id: 'depression', text: 'The Great Depression that began in 1929 pushed desperate people toward extremist promises' },
-        { id: 'hitler', text: 'Hitler became German chancellor in January 1933 and rearmed Germany' },
-        { id: 'remilitarization', text: 'Germany remilitarised the Rhineland (1936) and absorbed Austria (1938) with no one stopping it' },
-        { id: 'munich', text: 'The Munich Agreement (1938) gave Germany the Sudetenland in the hope of keeping peace' },
-        { id: 'prague', text: 'In March 1939 Germany seized the rest of Czechoslovakia — giving in had not brought peace' },
-        { id: 'guarantee', text: 'Britain promised on 31 March 1939 to defend Poland’s independence' },
-        { id: 'pact', text: 'The Molotov–Ribbentrop pact (August 1939) meant Germany no longer feared a war on two fronts' },
-        { id: 'sept1', text: 'Germany invaded Poland on 1 September 1939 — Wieluń, Westerplatte, and air raids on Warsaw' },
-        { id: 'civilians', text: 'Ordinary people faced air raids, refugee columns, queues, and rumours that outran the news' },
-        { id: 'declarations', text: 'Britain and France declared war on Germany on 3 September 1939' },
-        { id: 'reflection', text: 'The war came through years of small steps that each seemed survivable at the time' },
+        {
+          id: 'versailles-terms',
+          text: 'The Treaty of Versailles (1919) ended the last war and made Germany give up land, keep only a small army, pay for the damage, and accept the blame',
+          cues: ['versailles', 'treaty', '1919', 'reparations', 'pay for the war', 'paid for the war', 'war guilt', 'blame for the war', 'took the blame', 'lost land', 'gave up land', 'territory', 'colonies', 'small army', 'limit the army', 'army was capped', 'disarm', 'peace treaty', 'peace deal', 'last war', 'great war', 'first world war'],
+        },
+        {
+          id: 'versailles-anger',
+          text: 'Germans felt humiliated and cheated by the treaty, and that anger did not fade — it was still there years later',
+          cues: ['humiliated', 'humiliation', 'unfair', 'unjust', 'cheated', 'insulted', 'shamed', 'shame', 'resentment', 'resented', 'bitter', 'bitterness', 'angry', 'anger', 'hated the treaty', 'hate the treaty', 'punished too hard', 'too harsh', 'never forgave', 'wounded pride'],
+        },
+        {
+          id: 'depression',
+          text: 'The depression that began in 1929 wiped out jobs and savings in Germany — ordinary families were hungry and frightened',
+          cues: ['depression', '1929', 'crash', 'slump', 'hard times', 'no work', 'out of work', 'lost their jobs', 'jobless', 'unemployed', 'unemployment', 'savings', 'money was worthless', 'wages', 'poverty', 'poor', 'hungry', 'hunger', 'queues for food', 'factories closed', 'banks closed'],
+        },
+        {
+          id: 'extremism',
+          text: 'Desperate people listened to leaders who promised to tear up the treaty and make Germany strong again',
+          cues: ['desperate', 'desperation', 'frightened people', 'strong again', 'great again', 'tear up the treaty', 'undo the treaty', 'extreme', 'extremist', 'blamed someone', 'scapegoat', 'nazi', 'nazis', 'nazi party', 'voted for', 'votes', 'elections', 'rallies', 'followers', 'listened to him', 'easy answers', 'someone to blame'],
+        },
+        {
+          id: 'hitler-power',
+          text: 'Hitler became Germany’s chancellor in January 1933, and set about rebuilding the army the treaty had forbidden',
+          cues: ['hitler', 'chancellor', '1933', 'came to power', 'took power', 'took charge', 'leader of germany', 'rearm', 'rearmament', 'rebuilt the army', 'rebuilding the army', 'built up the army', 'new weapons', 'making weapons', 'air force', 'conscription', 'against the treaty', 'broke the treaty', 'not allowed to have'],
+        },
+        {
+          id: 'rhineland-austria',
+          text: 'German troops marched into the Rhineland in 1936 and Germany took in Austria in 1938 — and no country moved to stop either one',
+          cues: ['rhineland', '1936', 'marched in', 'sent troops', 'moved troops', 'austria', 'austrians', 'anschluss', 'vienna', '1938', 'no one stopped', 'nobody stopped', 'did nothing', 'let him', 'looked away', 'unopposed', 'without a fight', 'german speaking'],
+        },
+        {
+          id: 'munich-prague',
+          text: 'At Munich in 1938 Britain and France let Germany take part of Czechoslovakia hoping it would be the last demand; in March 1939 Germany took the rest anyway',
+          cues: ['munich', 'sudetenland', 'czechoslovakia', 'czech', 'chamberlain', 'peace in our time', 'handed over', 'gave away', 'gave in', 'giving in', 'appease', 'appeasement', 'hoped it would be enough', 'last demand', 'prague', 'march 1939', 'took the rest', 'broke his word', 'broke his promise', 'promise meant nothing'],
+        },
+        {
+          id: 'pact',
+          text: 'In August 1939 Germany and the Soviet Union agreed not to fight each other, which left Poland with a danger on both sides',
+          cues: ['pact', 'agreement with', 'soviet', 'soviets', 'soviet union', 'russia', 'russians', 'stalin', 'molotov', 'ribbentrop', 'august', 'shook hands', 'not to fight each other', 'two fronts', 'both sides', 'from the east', 'our other neighbour', 'surrounded'],
+        },
+        {
+          id: 'invasion',
+          text: 'Germany invaded Poland at dawn on 1 September 1939 — bombs on Wieluń, the guns at Westerplatte, air raids over Warsaw, and people crowding into cellars and queues',
+          cues: ['invaded', 'invasion', 'attacked', 'crossed the border', '1 september', 'first of september', 'that morning', 'at dawn', 'wielun', 'westerplatte', 'gdansk', 'danzig', 'bombs', 'bombing', 'bombers', 'air raid', 'sirens', 'shelter', 'cellar', 'refugees', 'queues', 'taped windows', 'tanks came'],
+        },
+        {
+          id: 'declarations',
+          text: 'Britain and France declared war on Germany on 3 September 1939, keeping the promise Britain had made to defend Poland',
+          cues: ['declared war', 'declare war', 'declaration of war', 'britain declared', 'france declared', '3 september', 'third of september', 'kept their promise', 'promised to defend', 'promised to protect', 'guarantee', 'came in on our side', 'embassy', 'crowds cheered', 'now at war', 'joined the war', 'they are in the war', 'not alone now'],
+        },
       ],
       guidedQuestions: [
-        'What happened when the war started?',
+        'What was the Treaty of Versailles?',
+        'How did Germans feel about that treaty?',
+        'What happened to ordinary people in Germany?',
+        'How did Hitler get into power?',
+        'Why did nobody stop him earlier?',
         'Why did Germany attack Poland?',
-        'How has your life changed?',
-        'Why did nobody stop Hitler earlier?',
-        'What do you keep in your journal?',
+        'What happened when the war started?',
         'What did Britain and France do?',
       ],
       behaviorRules: [
@@ -115,7 +164,9 @@ const tree: ConstraintTree = {
         'Present the years of giving in to Hitler as they looked then — many people genuinely hoped each concession would be the last.',
         'Restrained, human language about the bombing and the dead — specific and quiet, never graphic, never dramatic.',
         'Say what you have seen yourself, and mark what you only heard on the radio or from neighbours as exactly that.',
-        'When you explain one of the big moments, anchor it in time — say roughly when it happened and what it changed — so the visitor could later put the moments in order themselves. This is how you write them in your journal: in order, so the chain makes sense.',
+        'Anchor every big moment in time — roughly when it happened, and what changed because of it. Your visitor will be asked to put these moments in order afterwards, so an answer that leaves out when something happened has not finished the job.',
+        'Never leave a moment as only a name. “The Munich Agreement” on its own teaches nothing — say what was handed over, who agreed to it, and what people hoped it would buy.',
+        'The chain matters more than any single date: the treaty bred anger, hard times made people desperate, desperate people gave Hitler power, each thing he took without a fight made the next one easier, the deal with the Soviets removed his last worry, and then the tanks came here. Keep returning to how one thing led to the next.',
         'When most of the story has been told, say you would love to see if the visitor can put the whole chain in order, the way it runs in your journal.',
       ],
       advance: { to: null, condition: 'allPoints' },

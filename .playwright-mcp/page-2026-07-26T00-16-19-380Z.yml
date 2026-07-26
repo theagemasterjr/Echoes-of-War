@@ -1,0 +1,12 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e7] [cursor=pointer]
+  - alert [ref=f1e11]
+  - generic [ref=f1e12]:
+    - generic:
+      - generic [ref=f1e17]:
+        - generic [ref=f1e18]: 1939 – 1945
+        - heading [level=1] [ref=f1e19]:
+          - img "Echoes of War" [ref=f1e20]
+        - paragraph [ref=f1e21]: An interactive journey through the Second World War.
+        - button "BEGIN" [disabled] [ref=f1e22]
+      - button "Settings" [ref=f1e24]: ⚙
