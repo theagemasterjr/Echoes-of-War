@@ -4,29 +4,94 @@
  * Jump menu reaches every chapter and beat instantly (for demo recording),
  * and the character test screen exercises any constraint tree in a bare chat.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore, BEAT_ORDER } from '@/state/appStore';
 import { useProgressStore } from '@/state/progressStore';
-import { CHAPTERS, chapterMeta } from '@/chapters/registry';
-import type { ChapterId } from '@/chapters/types';
+import { CHAPTERS, chapterMeta, loadChapter } from '@/chapters/registry';
+import type { ChapterId, SummaryEntry } from '@/chapters/types';
 import { useConversation } from '@/conversation/engine';
+import { ChapterSummary } from '@/ui/ChapterSummary';
 
 export function DebugLayer() {
   const open = useAppStore((s) => s.debugOpen);
   const testChapter = useAppStore((s) => s.characterTestChapter);
+  const summaryChapter = useAppStore((s) => s.summaryChapter);
+  // the summary jump wins over everything: it is meant to be reachable from
+  // any screen, at any point in a chapter
+  if (summaryChapter) return <SummaryJump chapterId={summaryChapter} />;
   if (testChapter) return <CharacterTest chapterId={testChapter} />;
   if (!open) return null;
   return <DebugMenu />;
 }
 
+/**
+ * The real summary screen, opened straight from the debug menu — same
+ * component the minigame ends on (ui/ChapterSummary), so the black screen and
+ * the narrated take are exactly what a player gets. Closing it drops back to
+ * whatever the game was already showing; nothing about the player's progress
+ * or the current beat is touched.
+ */
+function SummaryJump({ chapterId }: { chapterId: ChapterId }) {
+  const [summary, setSummary] = useState<SummaryEntry[] | null>(null);
+  const [missing, setMissing] = useState(false);
+  const close = () => useAppStore.getState().setSummaryChapter(null);
+
+  useEffect(() => {
+    let live = true;
+    loadChapter(chapterId)
+      .then((m) => {
+        if (!live) return;
+        const s = m.default.summary;
+        if (s && s.length > 0) setSummary(s);
+        else setMissing(true);
+      })
+      .catch(() => live && setMissing(true));
+    return () => {
+      live = false;
+    };
+  }, [chapterId]);
+
+  if (missing) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-stone-300">
+        <p className="text-sm">Chapter {chapterMeta(chapterId).index} has no summary yet.</p>
+        <button
+          onClick={close}
+          className="mt-4 rounded border border-stone-700 px-4 py-2 text-xs tracking-widest hover:bg-stone-800"
+        >
+          close
+        </button>
+      </div>
+    );
+  }
+  if (!summary) return <div className="fixed inset-0 z-50 bg-black" />;
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <ChapterSummary
+        chapterId={chapterId}
+        summary={summary}
+        onFinish={close}
+        finishLabel="CLOSE →"
+      />
+      <button
+        onClick={close}
+        className="pointer-events-auto absolute left-4 top-4 rounded-sm border border-stone-700 bg-stone-950/70 px-3 py-1.5 text-[10px] uppercase tracking-widest text-stone-400 hover:bg-stone-800"
+      >
+        ← debug
+      </button>
+    </div>
+  );
+}
+
 function DebugMenu() {
-  const { gotoChapter, returnToMap, setDebugOpen, setCharacterTestChapter } =
+  const { gotoChapter, returnToMap, setDebugOpen, setCharacterTestChapter, setSummaryChapter } =
     useAppStore.getState();
   const reset = useProgressStore((s) => s.reset);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="w-[540px] rounded-md border border-stone-700 bg-stone-950 p-5 text-stone-200">
+      <div className="w-[660px] rounded-md border border-stone-700 bg-stone-950 p-5 text-stone-200">
         <div className="flex items-center justify-between">
           <h2 className="text-sm uppercase tracking-widest text-amber-200/80">Debug</h2>
           <button onClick={() => setDebugOpen(false)} className="text-xs text-stone-500 hover:text-stone-200">
@@ -55,6 +120,19 @@ function DebugMenu() {
                     </button>
                   </td>
                 ))}
+                <td className="py-2 pr-1">
+                  {/* the real summary screen, right now — no need to play the
+                      conversation or the minigame to reach it */}
+                  <button
+                    onClick={() => {
+                      setDebugOpen(false);
+                      setSummaryChapter(c.id);
+                    }}
+                    className="rounded border border-amber-200/40 px-2 py-1 text-amber-100 hover:bg-amber-200/10"
+                  >
+                    summary
+                  </button>
+                </td>
                 <td className="py-2">
                   <button
                     onClick={() => setCharacterTestChapter(c.id)}

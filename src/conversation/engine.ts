@@ -56,7 +56,8 @@ interface ConvoState {
   messages: ConvoMessage[];
   guided: string[];
   objectives: ObjectiveDef[];
-  /** Ids of objectives the player has already said out loud. Only ever grows. */
+  /** Ids of ticked objectives — either the player said the words, or the
+   *  character's answer explained the concept. Only ever grows. */
   objectivesDone: string[];
   status: 'idle' | 'sending' | 'error';
   canContinue: boolean;
@@ -87,6 +88,10 @@ export const useConversation = create<ConvoState>((set, get) => {
       // the player may have left for another chapter while this was in flight
       if (s.chapterId !== req.chapterId) return;
       const movedNode = r.advanceTo !== null && r.advanceTo !== s.nodeId;
+      // Objectives the character's own answer explained tick off here, next to
+      // the ones the player's words already ticked. Both only ever add — a row
+      // that is checked stays checked.
+      const said = r.objectivesCovered ?? [];
       set({
         status: 'idle',
         nodeId: r.nodeId,
@@ -95,6 +100,10 @@ export const useConversation = create<ConvoState>((set, get) => {
         messages: [...s.messages, { role: 'character', text: r.reply }],
         guided: r.guidedQuestions,
         objectives: r.objectives ?? s.objectives,
+        objectivesDone:
+          said.length > 0
+            ? Array.from(new Set([...s.objectivesDone, ...said]))
+            : s.objectivesDone,
         canContinue: s.canContinue || r.canContinue,
       });
       // fire-and-forget voice — deflections get voiced too (in character);
@@ -140,16 +149,16 @@ export const useConversation = create<ConvoState>((set, get) => {
       // message even leaves for the server. Typed input and voice input both
       // arrive here, so this is the one place it has to happen.
       const hits = matchObjectives(s.objectives, text);
-      set({
-        messages: [...s.messages, { role: 'player', text }],
-        objectivesDone:
-          hits.length > 0
-            ? Array.from(new Set([...s.objectivesDone, ...hits]))
-            : s.objectivesDone,
-      });
+      const objectivesDone =
+        hits.length > 0
+          ? Array.from(new Set([...s.objectivesDone, ...hits]))
+          : s.objectivesDone;
+      set({ messages: [...s.messages, { role: 'player', text }], objectivesDone });
       dispatch({
         chapterId: s.chapterId, nodeId: s.nodeId, coveredPointIds: s.covered,
         turnsInNode: s.turnsInNode, history, message: text,
+        // rows already ticked are not worth grading again
+        objectivesDone,
       });
     },
 

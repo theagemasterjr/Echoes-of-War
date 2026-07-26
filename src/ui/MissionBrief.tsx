@@ -6,6 +6,11 @@
  * type themselves onto the screen exactly in step with the narrator, then the
  * accept button fades in.
  *
+ * Skipping does NOT throw the briefing away: it stops the voice and the typing
+ * on the spot and puts the whole brief on screen at once, scrollable, with
+ * I ACCEPT at the end — so a player who does not want to be read to can still
+ * read every word of the mission. See `finish` below.
+ *
  * The voice starts by itself: this screen is only ever reached by a click
  * (the chapter pin, the film's continue button), which is the permission a
  * browser asks for. There is no "sound on" button anywhere — if a browser
@@ -77,6 +82,9 @@ export function MissionBrief({
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(0);
   const [finished, setFinished] = useState(false);
+  /** The player pressed skip: the whole brief is on screen at once and the
+   *  screen becomes a plain scrollable page they can read at their own pace. */
+  const [skipped, setSkipped] = useState(false);
   const [audio, setAudio] = useState<BriefAudioChapter | null>(null);
   const [ready, setReady] = useState(false);
   const reducedMotion = useMemo(
@@ -140,12 +148,20 @@ export function MissionBrief({
     };
   }, [chapterId, lines]);
 
+  /**
+   * Skip. The narrator stops mid-word and the typing stops with it — but the
+   * brief is not taken away: every line goes up at once and the screen turns
+   * into something the player can scroll through and read properly, with
+   * I ACCEPT waiting at the bottom. Skipping the voice is not the same as
+   * skipping the mission.
+   */
   const finish = () => {
     if (doneRef.current) return;
     doneRef.current = true;
     narrationAudio()?.pause(); // pause, never clear src — clearing raises a media error
     setIndex(lines.length - 1);
     setRevealed(lines[lines.length - 1]?.length ?? 0);
+    setSkipped(true);
     setFinished(true);
   };
 
@@ -370,6 +386,11 @@ export function MissionBrief({
   const acceptRef = useRef<HTMLButtonElement>(null);
   const [scrollY, setScrollY] = useState(0);
   useLayoutEffect(() => {
+    // once skipped, the page scrolls normally — the stack sits where it is
+    if (skipped) {
+      setScrollY(0);
+      return;
+    }
     const stack = stackRef.current;
     const line = lineRefs.current[index];
     if (!stack || !line) return;
@@ -377,7 +398,7 @@ export function MissionBrief({
     // shift it by how far this line's centre is from the stack's own centre
     const y = stack.offsetHeight / 2 - (line.offsetTop + line.offsetHeight / 2);
     setScrollY((v) => (Math.abs(v - y) > 0.5 ? y : v));
-  }, [index, finished]);
+  }, [index, finished, skipped]);
 
   // the button can't use autoFocus — it is mounted (invisibly) from the start
   useEffect(() => {
@@ -397,17 +418,25 @@ export function MissionBrief({
   if (!brief) return null;
 
   return (
-    <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-black px-6">
+    <div
+      className={`pointer-events-auto absolute inset-0 flex flex-col items-center bg-black px-6 ${
+        skipped ? 'justify-start overflow-y-auto py-14' : 'justify-center overflow-hidden'
+      }`}
+    >
       {/* The whole stack slides up as the narrator moves on (see the
           useLayoutEffect above): the line being spoken is always held at the
           middle of the screen, so the last line — "Do you accept the
-          mission?" — ends centered with the accept button right under it. */}
+          mission?" — ends centered with the accept button right under it.
+          Once skipped the sliding stops, `my-auto` keeps a short brief
+          centered, and a long one simply scrolls. */}
       <motion.div
         ref={stackRef}
         initial={false}
         animate={{ y: scrollY }}
-        transition={{ duration: reducedMotion ? 0 : 0.7, ease: 'easeOut' }}
-        className="flex w-full max-w-2xl flex-col items-center gap-5 text-center"
+        transition={{ duration: reducedMotion || skipped ? 0 : 0.7, ease: 'easeOut' }}
+        className={`flex w-full max-w-2xl flex-col items-center gap-5 text-center ${
+          skipped ? 'my-auto' : ''
+        }`}
         role="region"
         aria-label="Mission brief"
         aria-live="polite"
@@ -418,8 +447,10 @@ export function MissionBrief({
             arrived made the flex centring re-jump the stack half a line each
             time, which read as the text bouncing up and down. */}
         {lines.map((line, i) => {
-          const upcoming = i > index;
-          const current = i === index && !finished;
+          // skipped: every line is whole, on screen, and fully readable —
+          // this is the view the player skipped in order to read
+          const upcoming = !skipped && i > index;
+          const current = !skipped && i === index && !finished;
           const text = upcoming ? '' : current ? line.slice(0, revealed) : line;
           return (
             <motion.p
@@ -430,9 +461,17 @@ export function MissionBrief({
               aria-hidden={upcoming}
               initial={false}
               animate={{
-                opacity: upcoming ? 0 : finished || !current ? (i === lines.length - 1 ? 1 : 0.32) : 1,
+                opacity: skipped
+                  ? 1
+                  : upcoming
+                    ? 0
+                    : finished || !current
+                      ? i === lines.length - 1
+                        ? 1
+                        : 0.32
+                      : 1,
               }}
-              transition={{ duration: reducedMotion ? 0 : 0.6 }}
+              transition={{ duration: reducedMotion || skipped ? 0 : 0.6 }}
               className="relative text-xl font-light leading-relaxed tracking-wide text-stone-100 md:text-2xl"
             >
               {/* the full line, invisible, holds the final size from the first
@@ -452,7 +491,10 @@ export function MissionBrief({
           ref={acceptRef}
           initial={false}
           animate={{ opacity: finished ? 1 : 0 }}
-          transition={{ duration: reducedMotion ? 0 : 1.1, delay: finished && !reducedMotion ? 0.5 : 0 }}
+          transition={{
+            duration: reducedMotion || skipped ? 0 : 1.1,
+            delay: finished && !reducedMotion && !skipped ? 0.5 : 0,
+          }}
           disabled={!finished}
           aria-hidden={!finished}
           style={{ pointerEvents: finished ? 'auto' : 'none' }}

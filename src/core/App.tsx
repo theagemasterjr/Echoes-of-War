@@ -28,7 +28,16 @@ export default function App() {
   const freeze = filmPlaying && phase === 'idle';
 
   return (
-    <ErrorBoundary label="The app hit an unexpected error." onReset={() => window.location.reload()}>
+    /* Recovers IN PLACE. This used to reload the whole page, which threw the
+       player back to the title screen (the view isn't saved anywhere) — one
+       hiccup anywhere in the app and you were starting over from BEGIN. Now
+       it re-mounts the tree and puts you on the map, where your progress
+       already is. */
+    <ErrorBoundary
+      label="The app hit an unexpected error."
+      resetLabel="Return to the map"
+      onReset={() => useAppStore.getState().returnToMap(true)}
+    >
       <div className="fixed inset-0 overflow-hidden bg-black">
         <Canvas
           shadows

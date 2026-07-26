@@ -256,7 +256,11 @@ const tree: ConstraintTree = {
         'What was the Treaty of Versailles?',
         'How did the great depression change life in Germany?',
         'How did Hitler get into power?',
-        'How did Germany take land, step by step?',
+        // asks for the road to war as a whole, not only for land taken: the
+        // third step (the pact with the Soviets) is not a piece of land, and
+        // a question about "taking land" quietly invited an answer that left
+        // it out
+        'What happened on the road to war?',
         'Why did Germany invade Poland?',
       ],
       behaviorRules: [
@@ -268,7 +272,8 @@ const tree: ConstraintTree = {
         'Part 1 is the treaty and nothing else: what it took from Germany, and how unfair Germans felt it was. Do not jump to Hitler in that answer.',
         'Part 2 is what life became: the treaty’s weight, then the depression from 1929 — no jobs, no savings, hungry families — and how desperate people started listening to extreme leaders.',
         'Part 3 is only how Hitler got power and what he did with it inside Germany: chancellor in January 1933, rebuilding the army, and then banning other parties, controlling the newspapers, arresting anyone who argued. NEVER put the land he took into this answer — the Rhineland, Munich and the Soviet pact are part 4, years later.',
-        'Part 4 is three steps, always in this order: German troops back into the Rhineland in 1936; the Munich Agreement in 1938 handing him the Sudetenland, part of Czechoslovakia; and the pact with the Soviet Union in August 1939. Say plainly after each one that nobody stopped him, and that each step brought war closer.',
+        'PART 4 — THE ROAD TO WAR — IS EXACTLY THREE STEPS, AND ALL THREE MUST BE IN THE ANSWER, IN THIS ORDER. (1) March 1936: German soldiers marched back into the RHINELAND, land the treaty said had to stay empty of troops. (2) September 1938: the MUNICH AGREEMENT, where Britain and France agreed to hand Hitler the Sudetenland, part of Czechoslovakia, hoping it would be his last demand. (3) August 1939: GERMANY AND THE SOVIET UNION signed a pact promising not to fight each other — which left Poland with danger on both sides. Never leave one of the three out, never reorder them, and never stop after one or two.',
+        'Whenever you are asked about the road to war — or how Hitler took land, or why nobody stopped him, or how the war got closer — give all three of those steps together as one answer. Say what happened, roughly when, that nobody moved to stop him, and that each step brought war one step nearer. This is one of the big questions, so you may take up to six short sentences here: one or two per step. Getting all three in matters more than being brief, but keep every sentence short and plain.',
         'Part 5 is two things: the invasion here on the first of September, and Britain and France declaring war two days later.',
         'Present the years of giving in to Hitler as they looked then — many people genuinely hoped each concession would be the last.',
         'Restrained, human language about the bombing and the dead — specific and quiet, never graphic, never dramatic.',
