@@ -20,9 +20,9 @@ import type { ConstraintTree, StageNode } from '@/conversation/treeTypes';
  * at once. Tom answers whatever is asked, but keeps drawing the talk back to
  * the stage he is on.
  *
- * THE THIRTEEN LEARNING POINTS ARE THE CHAPTER'S CONTRACT. The eight cards in
- * the timeline minigame are drawn from them (see src/chapters/ch2/timelineStore.ts,
- * where each event names the point that teaches it). Nothing is asked in the
+ * THE THIRTEEN LEARNING POINTS ARE THE CHAPTER'S CONTRACT. The five moments
+ * in the matching minigame are drawn from them (see src/chapters/ch2/matchStore.ts,
+ * where each moment names the point that teaches it). Nothing is asked in the
  * minigame that Tom has not explained here.
  *
  * HOUSE STYLE: every answer must be complete but SHORT. These chapters are
@@ -33,7 +33,7 @@ import type { ConstraintTree, StageNode } from '@/conversation/treeTypes';
  * 1940, but that was a secret German decision — Tom must NEVER claim the
  * invasion was called off. He only knows it has not come yet. The chapter's
  * closing summary says it in the narrator's voice instead
- * (src/chapters/ch2/timelineStore.ts).
+ * (src/chapters/ch2/matchStore.ts).
  *
  * Every date below is checked. Founders edit this file — never engine code.
  */
