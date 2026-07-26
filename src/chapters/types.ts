@@ -1,7 +1,10 @@
 import type { ComponentType } from 'react';
 
 export type ChapterId = 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6';
-export type Beat = 'overview' | 'intro' | 'conversation' | 'minigame';
+/** Every chapter runs the same beats: intro film → mission brief → live
+ *  conversation → minigame. A chapter missing a film or a brief simply skips
+ *  that beat (see appStore.beatsFor) — no chapter needs its own flow. */
+export type Beat = 'intro' | 'brief' | 'conversation' | 'minigame';
 
 export interface MinigameResult {
   chapterId: ChapterId;
@@ -21,7 +24,6 @@ export interface MinigameProps {
 
 /** What each chapter folder default-exports. Only DOM beats live here — 3D staging is shared. */
 export interface ChapterModule {
-  Overview: ComponentType<BeatProps>;
   Minigame: ComponentType<MinigameProps>;
   /** Optional chapter-owned 3D staging for the minigame, rendered inside the
    *  shared Canvas instead of the default floating-marker stage. Pair with

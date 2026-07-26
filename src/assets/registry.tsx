@@ -39,6 +39,8 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'warroom.table': { label: 'War-room table', source: { kind: 'glb', url: '/models/war-table.glb', scale: 18, offset: [0, -3.49, 0], castShadow: false } },
   'warroom.map': { label: 'Paper world map', source: { kind: 'glb', url: '/models/world-map.glb', scale: 7, offset: [0, 0, 0], castShadow: false } },
   'ch1.marker': { label: 'Miniature 1940s radio', source: { kind: 'glb', url: '/models/radio.glb', scale: 0.012, offset: [0, 0.131, 0.079] } },
+  // Drop-in when the founder's model lands in public/models/ch2-spitfire.glb:
+  // 'ch2.marker': { label: 'Miniature Spitfire', source: { kind: 'glb', url: '/models/ch2-spitfire.glb', scale: 1 } },  // eye-tune scale/offset like the other markers
   'ch2.marker': { label: 'Miniature Spitfire', source: { kind: 'placeholder', component: P.SpitfireProp } },
   'ch3.marker': { label: 'Miniature warship', source: { kind: 'glb', url: '/models/warship.glb', scale: 0.2, offset: [0, 0.09, 0] } },
   'ch4.marker': { label: 'Miniature medic satchel', source: { kind: 'glb', url: '/models/bandages.glb', scale: 2.4, offset: [-0.01, 0, 0] } },
@@ -58,7 +60,10 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     label: 'Polish journalist figure',
     source: {
       kind: 'glb', url: '/models/ch1-journalist.glb',
-      scale: 4.8, offset: [0, -4.8, 0], castShadow: false,
+      // model stands 1.81 units tall with her feet on its own origin; this puts
+      // the top of her head at y = 2.48, framed waist-up by the chapter camera
+      scale: 4.76, offset: [0, -6.13, 0], castShadow: false,
+      // both clips are purpose-made loops, so each plays at its own pace
       clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
     },
   },
@@ -70,7 +75,27 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
     },
   },
+  // Reserved for the chapter 2 minigame scene the founder may build later
+  // (flying helmet + goggles on a deckchair). Registered so the swap is ready,
+  // but NOT currently rendered anywhere — drawing it is a future scene's job.
+  'ch2.prop.helmet': { label: 'Flying helmet on a deckchair', source: { kind: 'placeholder', component: P.HelmetProp } },
+  // Drop-in when the founder's animated sailor lands in public/models/ch3-sailor.glb —
+  // needs baked idle + talking clips; fill `clips` with the REAL clip names from the
+  // file, matching the ch1.character entry above:
+  // 'ch3.character': {
+  //   label: 'US sailor figure',
+  //   source: {
+  //     kind: 'glb', url: '/models/ch3-sailor.glb',
+  //     scale: 4.8, offset: [0, -4.8, 0], castShadow: false,
+  //     clips: { idle: '<idle clip name>', talking: '<talking clip name>' },
+  //   },
+  // },
   'ch3.character': { label: 'US sailor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  // Reserved for the chapter 3 minigame scene the founder may build later.
+  // Registered so the swaps are ready, but NEITHER is currently rendered
+  // anywhere — drawing them is a future scene's job.
+  'ch3.prop.dixiecup': { label: 'Sailor’s cap and dungarees on a footlocker', source: { kind: 'placeholder', component: P.HelmetProp } },
+  'ch3.prop.globe': { label: '1941 desk globe — the “one world” object', source: { kind: 'placeholder', component: P.LanternProp } },
   'ch4.character': { label: 'Soviet medic figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch5.character': { label: 'Allied medical worker figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },

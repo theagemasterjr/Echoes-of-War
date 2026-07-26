@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import type { ChatRequest, ChatResponse } from '@/conversation/treeTypes';
 import { TREES, totalLearningPoints } from '@/server/trees';
@@ -44,7 +45,15 @@ export async function POST(req: NextRequest) {
     if (body.intro) {
       // The greeting is the same every visit — generate it once ever and
       // reuse it (saves both the text call and, downstream, its voice call).
-      const cached = await readCacheFile(`intro-${body.chapterId}.txt`);
+      // Keyed on the character's own prompt, so the moment a founder edits the
+      // persona in the tree the old greeting is dropped and a fresh one is
+      // generated — otherwise a renamed character keeps introducing herself
+      // by her previous name forever.
+      const system = buildCharacterSystem(tree, node, covered);
+      const instruction = buildIntroInstruction(tree);
+      const key = createHash('sha1').update(`${system}\n${instruction}`).digest('hex').slice(0, 12);
+      const file = `intro-${body.chapterId}-${key}.txt`;
+      const cached = await readCacheFile(file);
       if (cached && cached.byteLength) {
         return NextResponse.json({ ...base, reply: cached.toString('utf8') });
       }
@@ -52,10 +61,10 @@ export async function POST(req: NextRequest) {
         (await chatComplete({
           model: CHARACTER_MODEL,
           maxTokens: REPLY_MAX_TOKENS,
-          system: buildCharacterSystem(tree, node, covered),
-          messages: [{ role: 'user', content: buildIntroInstruction(tree) }],
+          system,
+          messages: [{ role: 'user', content: instruction }],
         })) || '…';
-      if (reply !== '…') writeCacheFile(`intro-${body.chapterId}.txt`, reply);
+      if (reply !== '…') writeCacheFile(file, reply);
       return NextResponse.json({ ...base, reply });
     }
 

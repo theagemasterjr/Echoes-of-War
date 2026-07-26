@@ -8,25 +8,45 @@
  * Tap a figure then tap another to swap, or drag one across the row.
  * Rules and content live in timelineStore.ts.
  */
-import { useEffect, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Html, useCursor } from '@react-three/drei';
 import * as THREE from 'three';
 import { Asset } from '@/assets/registry';
 import { EVENTS, eventById, useTimelineStore, type TimelineEvent } from './timelineStore';
 
-/** Column layout of the single figure row — keep in sync with the HUD strip. */
-export const SPACING = 1.3;
+/** Roomiest the row ever gets; narrow windows tighten it (see useRowLayout). */
+const SPACING_MAX = 1.3;
 export const ROW_Z = -0.3;
-export const colX = (i: number) => (i - (EVENTS.length - 1) / 2) * SPACING;
-/** Approximate world half-width the row spans on screen at the row's depth —
- *  used to map pointer x → column while dragging (precision not needed). */
-const POINTER_HALF_WIDTH = 6.0;
+const colX = (i: number, spacing: number) => (i - (EVENTS.length - 1) / 2) * spacing;
+
+/**
+ * Fit the whole row on screen, whatever the window. Measures how wide the
+ * camera actually sees at the row's depth and divides that among the eight
+ * figures, so no figure (or its card) is ever cut off at the edges. The cards
+ * are scaled by the same factor, so a tighter row never turns into overlapping
+ * labels — the spacing and the label size move together.
+ */
+function useRowLayout() {
+  const camera = useThree((s) => s.camera);
+  const width = useThree((s) => s.size.width);
+  const height = useThree((s) => s.size.height);
+  return useMemo(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const distance = Math.abs(cam.position.z - ROW_Z) || 1;
+    const visibleH = 2 * distance * Math.tan(((cam.fov ?? 45) * Math.PI) / 360);
+    const visibleW = visibleH * (width / Math.max(1, height));
+    // 0.88 keeps a margin at both ends so the end figures never touch the edge
+    const spacing = Math.min(SPACING_MAX, (visibleW * 0.88) / EVENTS.length);
+    return { spacing, cardScale: spacing / SPACING_MAX, halfWidth: visibleW / 2 };
+  }, [camera, width, height]);
+}
 
 export function TimelineTableScene() {
   const reset = useTimelineStore((s) => s.reset);
   useEffect(() => reset(), [reset]); // fresh shuffle every time the player arrives
+  const { spacing, cardScale, halfWidth } = useRowLayout();
 
   const dragX = useRef(0);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -36,7 +56,13 @@ export function TimelineTableScene() {
 
   // While dragging, follow the pointer horizontally along the row.
   useFrame(({ pointer }) => {
-    if (dragInfo.current.id) dragX.current = THREE.MathUtils.clamp(pointer.x * POINTER_HALF_WIDTH, colX(0), colX(EVENTS.length - 1));
+    if (dragInfo.current.id) {
+      dragX.current = THREE.MathUtils.clamp(
+        pointer.x * halfWidth,
+        colX(0, spacing),
+        colX(EVENTS.length - 1, spacing),
+      );
+    }
   });
 
   // Release anywhere ends the drag: a still pointer is a tap (toggle select),
@@ -55,7 +81,7 @@ export function TimelineTableScene() {
           if (selected && selected !== d.id) swapById(selected, d.id);
           else select(selected === d.id ? null : d.id);
         } else {
-          const col = Math.round(dragX.current / SPACING + (EVENTS.length - 1) / 2);
+          const col = Math.round(dragX.current / spacing + (EVENTS.length - 1) / 2);
           const target = order[THREE.MathUtils.clamp(col, 0, EVENTS.length - 1)];
           swapById(d.id, target);
         }
@@ -99,24 +125,28 @@ export function TimelineTableScene() {
           event={event}
           dragging={draggingId === event.id}
           dragX={dragX}
+          spacing={spacing}
+          cardScale={cardScale}
           onPointerDown={startDrag}
         />
-      ))}
-      {EVENTS.map((_, i) => (
-        <ColumnCard key={i} index={i} />
       ))}
     </group>
   );
 }
 
-/** The 2D card anchored under each column's figure — same screen-anchored
- *  Html technique as the chapter labels on the map. Shows whichever event
- *  currently stands at this column; tap two cards to swap them. */
-function ColumnCard({ index }: { index: number }) {
-  const id = useTimelineStore((s) => s.order[index]);
+/** The 2D card under a figure. It is a child of the figure's own group, so it
+ *  is anchored to the piece itself rather than to a column: same x, same z,
+ *  only lower. That keeps it exactly under its piece at any window size and
+ *  through every camera lean — anchoring it nearer the camera (as a separate
+ *  column marker would) makes the outer cards splay away from their pieces in
+ *  perspective. It rides along through swaps and drags for the same reason. */
+const CARD_OFFSET: [number, number, number] = [0, -0.42, 0];
+
+function PieceCard({ id, cardScale }: { id: string; cardScale: number }) {
+  const index = useTimelineStore((s) => s.order.indexOf(id));
   const selected = useTimelineStore((s) => s.selected);
-  const isLocked = useTimelineStore((s) => s.locked.includes(s.order[index]));
-  const isWrong = useTimelineStore((s) => s.lastWrong.includes(s.order[index]));
+  const isLocked = useTimelineStore((s) => s.locked.includes(id));
+  const isWrong = useTimelineStore((s) => s.lastWrong.includes(id));
   const event = eventById(id);
   const isSel = selected === id;
 
@@ -129,9 +159,10 @@ function ColumnCard({ index }: { index: number }) {
 
   return (
     <Html
-      position={[colX(index), -0.06, ROW_Z + 0.62]}
+      position={CARD_OFFSET}
       center
-      distanceFactor={6}
+      /* shrinks in step with the row's spacing, so cards never crowd each other */
+      distanceFactor={6 * cardScale}
       zIndexRange={[15, 0]}
       style={{ pointerEvents: 'none' }}
     >
@@ -179,11 +210,15 @@ function WoodenPiece({
   event,
   dragging,
   dragX,
+  spacing,
+  cardScale,
   onPointerDown,
 }: {
   event: TimelineEvent;
   dragging: boolean;
   dragX: React.RefObject<number>;
+  spacing: number;
+  cardScale: number;
   onPointerDown: (id: string, e: ThreeEvent<PointerEvent>) => void;
 }) {
   const group = useRef<THREE.Group>(null);
@@ -197,7 +232,7 @@ function WoodenPiece({
   useFrame(({ clock }, delta) => {
     const g = group.current;
     if (!g) return;
-    let tx = colX(index);
+    let tx = colX(index, spacing);
     let ty = 0;
     if (dragging) {
       tx = dragX.current;
@@ -223,6 +258,7 @@ function WoodenPiece({
   return (
     <group ref={group}>
       <Asset assetId={`ch1.figure.${event.id}`} />
+      <PieceCard id={event.id} cardScale={cardScale} />
       {/* fat invisible grip so small fingers can grab the figure */}
       {!locked && (
         <mesh

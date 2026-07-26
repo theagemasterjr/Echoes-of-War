@@ -50,7 +50,8 @@ ${node.behaviorRules.map((r) => `- ${r}`).join('\n')}`,
       ? `## Steer the conversation
 The player is free to ask about anything, in any order — always answer what they actually asked first.
 These things have not come up yet. When a natural opening appears, bring ONE of them in — a passing remark, a memory, a question back to the player. Never as a list, never forced, never more than one new thread at a time:
-${uncovered.map((p) => `- ${p.text}`).join('\n')}`
+${uncovered.map((p) => `- ${p.text}`).join('\n')}
+When you do bring one in, actually explain it: what happened, roughly when, and what changed because of it. Naming a thing is not explaining it — a player who has only heard its name has learned nothing. These are the things the player is meant to walk away understanding, so each one has to land properly at some point in this conversation, in your own plain words.`
       : `Everything important has come up; converse freely within your bounds.`,
   ].join('\n\n');
 }

@@ -18,16 +18,22 @@ export const CHAPTERS: ChapterMeta[] = [
   },
   {
     id: 'ch2', index: 2, title: 'Standing Alone', subtitle: 'The Battle of Britain',
-    dates: '1940–1941', location: 'Southern England',
-    characterName: 'Placeholder: RAF pilot', characterRole: 'RAF fighter pilot',
-    markerPosition: [-0.30, 0, -1.42], markerAssetId: 'ch2.marker', characterAssetId: 'ch2.character',
+    /* dates end at 1940: Tom's knowledge is locked to late September 1940 (ch3 covers 1941) */
+    dates: '1940', location: 'Kent, England',
+    characterName: 'Tom Ashcroft', characterRole: 'Spitfire pilot',
+    /* nudged north-west of ch5's Normandy marker (was [-0.30, 0, -1.42], nearly on top of it) */
+    markerPosition: [-0.52, 0, -1.66], markerAssetId: 'ch2.marker', characterAssetId: 'ch2.character',
+    introVideo: '/video/ch2-intro.mp4',
     conversationBackdrop: '/img/ch2-hangar.jpg',
   },
   {
     id: 'ch3', index: 3, title: 'A World at War', subtitle: 'Pearl Harbor and a global conflict',
     dates: '1941', location: 'Pearl Harbor, Hawaii',
-    characterName: 'Placeholder: US Navy sailor', characterRole: 'US Navy sailor',
-    markerPosition: [-4.93, 0, -0.16], markerAssetId: 'ch3.marker', characterAssetId: 'ch3.character',
+    characterName: 'Ray Doyle', characterRole: 'US Navy sailor',
+    /* recalibrated to the current map texture — the old [-4.93, 0, -0.16] sat on the west paper roll */
+    markerPosition: [-4.4, 0, 0.0], markerAssetId: 'ch3.marker', characterAssetId: 'ch3.character',
+    introVideo: '/video/ch3-intro.mp4',
+    // conversationBackdrop: '/img/ch3-harbor.jpg',  // uncomment once the file exists — a missing image breaks the 3D stage rather than degrading
   },
   {
     id: 'ch4', index: 4, title: 'Turning the Tide', subtitle: 'Stalingrad',

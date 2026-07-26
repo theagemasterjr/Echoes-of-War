@@ -1,17 +1,21 @@
 /**
  * Bakes the founder-exported Ch1 journalist model into a web-ready GLB.
  *
- * Input (defaults; override with --src / --textures / --bg):
- *   - GLB exported from the animation tool: geometry + skeleton + two clips
- *     ("Spell_Simple_Idle_Loop" = idle, "Idle_Talking_Loop" = talking),
- *     but NO textures and the skeleton left outside the scene graph.
+ * Input (defaults; override with --idle / --talking / --textures):
+ *   - TWO GLBs of the SAME character exported from the animation tool, each
+ *     carrying one clip: an idle loop and a talking loop. They share geometry,
+ *     skeleton and node names; only the clip differs. Neither has textures,
+ *     and both drag along ~1800 unused morph targets (most of the file size).
  *   - Character Creator ".fbm" folder with the texture files (…_Diffuse/
  *     _Normal/_Opacity). Material names in the GLB match the file stems.
- *   - Background still for the conversation stage.
  *
  * Output:
- *   - public/models/ch1-journalist.glb   (textures baked, welded, meshopt)
- *   - public/img/ch1-studio.jpg          (resized conversation backdrop)
+ *   - public/models/ch1-journalist.glb   (one model, both clips, textures
+ *     baked, morphs stripped, welded, meshopt)
+ *
+ * The conversation backdrop is NOT this script's job — `scripts/set-backdrop.mjs`
+ * owns that file. (It used to be built here too, which quietly overwrote a
+ * newer backdrop every time the model was rebuilt.)
  *
  * Run:  node scripts/build-ch1-character.mjs
  */
@@ -28,11 +32,18 @@ const arg = (name, dflt) => {
   return i > -1 ? process.argv[i + 1] : dflt;
 };
 const HOME = process.env.HOME;
-const SRC = arg('src', `${HOME}/Downloads/exported-model (2).glb (use this).glb`);
+const ANIMDIR = `${HOME}/Downloads/ImageToStl.com_e5bc7ded7a13447da844fa55950c34f3`;
+const SRC_IDLE = arg('idle', `${ANIMDIR}/Idle.glb`);
+const SRC_TALK = arg('talking', `${ANIMDIR}/Talking.glb`);
 const TEXDIR = arg('textures', `${HOME}/Downloads/Realisticgirl_Fbx/Business girl.fbm (use this)`);
-const BG = arg('bg', `${HOME}/Downloads/ChatGPT Image Jul 24, 2026, 05_11_16 PM.png`);
 const OUT_GLB = 'public/models/ch1-journalist.glb';
-const OUT_BG = 'public/img/ch1-studio.jpg';
+/** clip names the asset registry looks for (ASSETS['ch1.character'].clips) */
+const IDLE_CLIP = 'Idle_Loop';
+const TALK_CLIP = 'Idle_Talking_Loop';
+/** the one real clip in each source file; everything else is a 1-frame stub */
+const isPoseClip = (a) => a.listChannels().length > 1 && clipDuration(a) > 0.5;
+const clipDuration = (a) =>
+  Math.max(0, ...a.listSamplers().map((s) => s.getInput()?.getMax([])[0] ?? 0));
 
 /* ------------------------------------------------------------------ *
  * Per-material recipe. Key = material name prefix (longest match wins).
@@ -42,9 +53,10 @@ const OUT_BG = 'public/img/ch1-studio.jpg';
  * otherwise draw as black film over the eyes).
  * ------------------------------------------------------------------ */
 const RECIPES = [
-  // the exporter leaves the head UVs V-flipped vs the texture — mirror it
-  // (normal map dropped: it would need a green-channel invert to match)
-  { m: 'Std_Skin_Head', size: 2048, rough: 0.55, flipV: true },
+  // head UVs come out the right way up from this exporter (the earlier one
+  // V-flipped them and needed `flipV: true` here — check the mouth if you
+  // re-export: a flip mismatch smears the lips down onto the chin)
+  { m: 'Std_Skin_Head', size: 2048, normal: 1024, rough: 0.55 },
   { m: 'Std_Skin_Body', size: 1024, rough: 0.55 },
   { m: 'Std_Skin_Arm', size: 1024, rough: 0.55 },
   { m: 'Std_Skin_Leg', size: 512, rough: 0.55 },
@@ -105,33 +117,100 @@ async function buildTexture(doc, key, build) {
   return tex;
 }
 
+/**
+ * Rebuilds `srcAnim` inside `doc`, re-pointing every channel at the same-named
+ * node there. The two exports share one rig, so matching on name is exact —
+ * we assert full coverage rather than trusting it.
+ */
+function copyAnimationInto(doc, srcAnim, name) {
+  const byName = new Map(doc.getRoot().listNodes().map((n) => [n.getName(), n]));
+  const buffer = doc.getRoot().listBuffers()[0];
+  const anim = doc.createAnimation(name);
+  const samplers = new Map();
+  let copied = 0;
+  const missing = new Set();
+
+  for (const ch of srcAnim.listChannels()) {
+    // morph-target tracks are dead weight here — the targets get stripped below
+    if (ch.getTargetPath() === 'weights') continue;
+    const target = byName.get(ch.getTargetNode()?.getName());
+    if (!target) {
+      missing.add(ch.getTargetNode()?.getName());
+      continue;
+    }
+    const srcSampler = ch.getSampler();
+    let sampler = samplers.get(srcSampler);
+    if (!sampler) {
+      const cloneAccessor = (acc) =>
+        doc
+          .createAccessor()
+          .setArray(acc.getArray().slice())
+          .setType(acc.getType())
+          .setNormalized(acc.getNormalized())
+          .setBuffer(buffer);
+      sampler = doc
+        .createAnimationSampler()
+        .setInput(cloneAccessor(srcSampler.getInput()))
+        .setOutput(cloneAccessor(srcSampler.getOutput()))
+        .setInterpolation(srcSampler.getInterpolation());
+      anim.addSampler(sampler);
+      samplers.set(srcSampler, sampler);
+    }
+    anim.addChannel(
+      doc.createAnimationChannel().setTargetNode(target).setTargetPath(ch.getTargetPath()).setSampler(sampler),
+    );
+    copied++;
+  }
+  if (missing.size) throw new Error(`rig mismatch — no node named: ${[...missing].join(', ')}`);
+  console.log(`clip "${name}": ${copied} channels, ${clipDuration(anim).toFixed(2)}s`);
+  return anim;
+}
+
 async function main() {
   await MeshoptEncoder.ready;
   const io = new NodeIO()
     .registerExtensions(ALL_EXTENSIONS)
     .registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
 
-  const doc = await io.read(SRC);
+  const doc = await io.read(SRC_IDLE);
   const root = doc.getRoot();
   doc.createExtension(EXTTextureWebP).setRequired(true);
 
-  /* -- 1. attach the orphaned skeleton to the scene ------------------- */
-  const scene = root.listScenes()[0];
-  const inScene = new Set(scene.listChildren());
-  const skeletonRoots = root
-    .listNodes()
-    .filter((n) => !inScene.has(n) && n.getParentNode() === null && n.listChildren().length > 0);
-  for (const n of skeletonRoots) {
-    scene.addChild(n);
-    console.log(`attached skeleton root "${n.getName()}" to scene`);
-  }
+  /* -- 1. one model, both clips --------------------------------------- */
+  // The idle export is the base; the talking export contributes only its clip.
+  const talkDoc = await io.read(SRC_TALK);
+  const srcIdle = root.listAnimations().find(isPoseClip);
+  const srcTalk = talkDoc.getRoot().listAnimations().find(isPoseClip);
+  if (!srcIdle) throw new Error(`no animated clip in ${SRC_IDLE}`);
+  if (!srcTalk) throw new Error(`no animated clip in ${SRC_TALK}`);
+  for (const a of root.listAnimations()) if (a !== srcIdle) a.dispose(); // 1-frame stubs
+  srcIdle.setName(IDLE_CLIP); // already in this document — just rename it
+  for (const ch of srcIdle.listChannels()) if (ch.getTargetPath() === 'weights') ch.dispose();
+  console.log(`clip "${IDLE_CLIP}": ${srcIdle.listChannels().length} channels, ${clipDuration(srcIdle).toFixed(2)}s`);
+  copyAnimationInto(doc, srcTalk, TALK_CLIP);
 
-  /* -- 2. drop unused vertex attributes (tangents/colors bloat) ------- */
+  /* -- 2. drop morph targets and unused vertex attributes -------------- */
+  // ~1800 shape keys ride along from Character Creator, driven by nothing but
+  // 1-frame stub clips — they are the bulk of the 53 MB source files.
+  let morphs = 0;
+  for (const mesh of root.listMeshes()) {
+    for (const prim of mesh.listPrimitives()) {
+      for (const t of prim.listTargets()) {
+        prim.removeTarget(t);
+        t.dispose();
+        morphs++;
+      }
+    }
+    mesh.setWeights([]);
+  }
+  for (const node of root.listNodes()) node.setWeights([]);
+  if (morphs) console.log(`dropped ${morphs} morph targets`);
+
   const dropped = new Set();
   for (const mesh of root.listMeshes())
     for (const prim of mesh.listPrimitives())
       for (const sem of prim.listSemantics())
-        if (sem === 'TANGENT' || sem.startsWith('COLOR_')) {
+        if (sem === 'TANGENT' || sem.startsWith('COLOR_') || sem === 'TEXCOORD_1') {
           const acc = prim.getAttribute(sem);
           prim.setAttribute(sem, null);
           acc?.dispose();
@@ -140,6 +219,9 @@ async function main() {
   if (dropped.size) console.log('dropped attributes:', [...dropped].join(', '));
 
   /* -- 3. bake textures per material ---------------------------------- */
+  // the exporter writes a KHR_materials_specular block we fully override below
+  for (const ext of root.listExtensionsUsed())
+    if (ext.extensionName === 'KHR_materials_specular') ext.dispose();
   for (const mat of root.listMaterials()) {
     const name = mat.getName();
     const r = recipeFor(name) ?? { size: 512, rough: 0.7 };
@@ -199,7 +281,7 @@ async function main() {
       return { data, mime: 'image/webp' };
     });
     mat.setBaseColorTexture(tex);
-    mat.getBaseColorTextureInfo()?.setMinFilter(TextureInfo.MinFilter.LINEAR_MIPMAP_LINEAR);
+    mat.getBaseColorTextureInfo()?.setMinFilter(TextureInfo.MinFilter.LINEAR_MIPMAP_LINEAR).setTexCoord(0);
 
     if (hasAlpha && r.alpha === 'mask') {
       mat.setAlphaMode('MASK').setAlphaCutoff(r.cutoff ?? 0.4).setDoubleSided(true);
@@ -220,6 +302,7 @@ async function main() {
           return { data, mime: 'image/webp' };
         });
         mat.setNormalTexture(ntex);
+        mat.getNormalTextureInfo()?.setTexCoord(0);
       }
     }
     console.log(
@@ -243,11 +326,7 @@ async function main() {
   fs.mkdirSync(path.dirname(OUT_GLB), { recursive: true });
   await io.write(OUT_GLB, doc);
   console.log(`${OUT_GLB}: ${(fs.statSync(OUT_GLB).size / 1e6).toFixed(1)} MB`);
-
-  /* -- 5. conversation backdrop --------------------------------------- */
-  fs.mkdirSync(path.dirname(OUT_BG), { recursive: true });
-  await sharp(BG).resize(1920, null, { withoutEnlargement: true }).jpeg({ quality: 80 }).toFile(OUT_BG);
-  console.log(`${OUT_BG}: ${(fs.statSync(OUT_BG).size / 1e6).toFixed(2)} MB`);
+  console.log('clips shipped:', root.listAnimations().map((a) => `${a.getName()} (${clipDuration(a).toFixed(2)}s)`).join(', '));
 }
 
 main().catch((e) => {

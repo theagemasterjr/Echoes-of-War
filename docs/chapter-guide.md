@@ -1,7 +1,18 @@
 # Chapter Guide — how to fill in a chapter (for the founders)
 
 Every chapter is a self-contained shell. Filling one in **never** touches shared systems
-or other chapters. Each chapter has exactly three places you edit:
+or other chapters.
+
+**Every chapter plays the same four beats**, and the app builds them for you:
+
+> chapter pin clicked → small push-in on the map → **intro film** → **mission brief** →
+> **live conversation** → **minigame** → back to the map
+
+A chapter with no film, or no mission brief written yet, simply skips that beat. So
+"adding chapter 4's opening" means writing its lines in `src/content/briefs.json` and
+dropping its film in `public/video/` — never changing code.
+
+Each chapter has these places you edit:
 
 ## 1. The character (the heart) — `src/content/trees/chN.ts`
 One file per chapter defines the whole character: who they are, what they know,
@@ -21,15 +32,67 @@ and the route the conversation takes. **`ch1.ts` is the worked example — copy 
   - `advance` — when to move on: `allPoints`, `minPoints` (with `minPoints: 2`), or
     `minTurns` (with `minTurns: 3`). The last node has `to: null` — meeting its
     condition lights up the player's CONTINUE button.
-- `objectives` (optional) — the learner-facing checklist shown on the left during the
-  conversation ("what to listen for"). Each objective has an `id`, a short `label`, and
-  a `pointIds` list; it checks off when all its points are covered. Keep the union of all
-  objectives' `pointIds` equal to the full set of learning points, and tune the node
-  `advance` conditions so the last objective checks off right as CONTINUE lights up.
-  Omit `objectives` entirely and the panel simply doesn't show (as in ch2–ch6).
+  - `learningPoints[].cues` — **the words that make a topic tick off.** List the
+    everyday words, names and phrasings a character might use when genuinely
+    explaining that point — synonyms and related terms, not just the textbook name
+    ("humiliated", "unfair", "never forgave" as well as "Versailles"). Two different
+    cues in one answer mark the point covered, so a kid never has to say the formal
+    term to get credit, and one stray word can never tick it off by mistake. A fast
+    model reads the whole conversation as a second opinion, so a point explained
+    across several turns still counts. Keep cues specific to their own point — a bare
+    "Britain" would fire on any answer that mentions Britain.
+- `objectives` (optional) — the Objectives panel shown on the left during the
+  conversation. Each objective has an `id`, a short `label`, and a `pointIds` list; it
+  fills as its points are covered and ticks off, with a gold flash, when they all are.
+  Keep the union of all objectives' `pointIds` equal to the full set of learning points,
+  and tune the node `advance` conditions so the last objective checks off right as
+  CONTINUE lights up. Omit `objectives` entirely and the panel simply doesn't show.
+
+**The minigame may only test what the character teaches.** Every card in a chapter's
+minigame names the learning point that teaches it (`teachesPointId` — see
+`src/chapters/ch1/timelineStore.ts`). If you add a card, add or widen the point that
+teaches it; if you drop a point, drop its card. That is what stops a player finishing
+all four objectives and then meeting something nobody explained.
+
+## The mission brief — `src/content/briefs.json`
+The black screen with the narrator, right after the intro film. Add an entry for the
+chapter and write its `lines` — one short sentence each, spoken and typed onto the
+screen in order, ending with the question the I ACCEPT button answers.
+
+The narrator is the same voice in every chapter — ElevenLabs **"Elderon"**. There are
+two ways to give a chapter its voice, and **the recorded one is preferred** because the
+free ElevenLabs plan can't reach Elderon from the API (the website can).
+
+**Recorded by hand — how chapter 1 was done:**
+1. On the ElevenLabs website, pick the **Elderon** voice and paste the chapter's whole
+   brief — all the lines, in order, as one block.
+2. Download the mp3 and save it as `public/audio/brief/narration/chN.mp3`
+   (`ch1.mp3`, `ch4.mp3`, …).
+3. Run `npm run build:briefs`.
+
+The recording ships exactly as you exported it — never re-encoded, never cut up. The
+script only works out where each written line falls inside it, by listening for the
+pauses, so the words type themselves in time with the voice. It prints each line's
+timing so you can sanity-check it; if a line looks wildly too fast or slow, the pause
+after it was probably too short — re-record with a clearer break between lines.
+
+**Generated instead:** with no such file, `npm run build:briefs` sends each line to the
+API one at a time. On a free plan that path can't use Elderon, so it says so and uses a
+stand-in ("George"). Chapter 2 currently works this way.
+
+Either way, run:
+
+```
+npm run build:briefs
+```
+
+and commit what appears under `public/audio/brief/`. Only what actually changed is
+re-made — everything else is reused for free, and **the game never calls ElevenLabs
+while it is running.** A chapter with no recording yet still plays: the words appear at
+a steady reading pace, silently.
 
 ## Optional: intro film — `src/chapters/registry.ts`
-A chapter can play a short film between its overview and the conversation. Add an
+A chapter can open with a short film. Add an
 `introVideo: '/video/chN-intro.mp4'` field to that chapter's row and drop the mp4 at
 `public/video/chN-intro.mp4`. Until the file exists a styled "coming soon" frame stands
 in with a CONTINUE button, and chapters with no `introVideo` skip the beat entirely.
@@ -51,13 +114,12 @@ app is fully functional and simply silent.
 *test character* on that chapter. You'll see the active node, covered learning
 points, and can probe the boundaries. Edit the file, save, reopen the test.
 
-## 2. The overview and minigame — `src/chapters/chN/index.tsx`
-The chapter folder exports two screens: `Overview` (the 30–60s scene-setter) and
-`Minigame` (the check-your-understanding activity). They're currently labeled
-placeholders. Chapter 1 shows the pattern — the minigame just has to call
-`onComplete({ chapterId, completed: true })` when done; the overview calls
-`onAdvance()` to move to the conversation. Ask Claude to build the real ones
-from your content — describe the activity in plain language.
+## 2. The minigame — `src/chapters/chN/index.tsx`
+The chapter folder exports one screen: `Minigame`, the check-your-understanding
+activity that follows the conversation. It just has to call
+`onComplete({ chapterId, completed: true })` when the player is done. Chapters 1 and 2
+show the pattern. Ask Claude to build the real one from your content — describe the
+activity in plain language, and say which learning points it tests.
 
 ## 3. The models — `docs/model-prompts.md`
 Generate the chapter's marker miniature and character in Meshy using the prompts
@@ -68,6 +130,41 @@ Characters that come with animations get one extra field on their registry entry
 `clips: { idle: '<clip name>', talking: '<clip name>' }`. The idle plays on its own
 and the talking clip takes over while the character is speaking. Chapter 1 shows the
 pattern (see the ch1 section of `docs/model-prompts.md` for the full build steps).
+
+## Chapter 2 — a second worked example
+Chapter 2 (Standing Alone — Tom Ashcroft, sergeant pilot, late September 1940) is now
+built to the same shape as chapter 1: a single open conversation node with every
+learning point live from turn one, four on-screen objectives, a mission brief in
+`briefs.json`, and a 2D card-timeline minigame (`src/chapters/ch2/`). Use either
+chapter as the model when filling in ch3–ch6.
+
+Still for the founder to drop in (everything works with placeholders until then):
+- `public/models/ch2-spitfire.glb`, `ch2-pilot.glb` (needs idle + talking clips),
+  `ch2-helmet.glb` — see the Chapter 2 drop-in checklist in `docs/model-prompts.md`.
+- `public/video/ch2-intro.mp4` — the intro film.
+- `public/img/ch2-airfield.jpg` — optional conversation backdrop (then uncomment its
+  line in `src/chapters/registry.ts`; do not uncomment before the file exists).
+- The pilot's voice: set `ELEVENLABS_VOICE_CH2` in `.env.local` (and Vercel), or verify
+  the stock "George" id in `src/server/tts.ts`. Wrong or missing = silent subtitles.
+- Its mission brief is currently in the stand-in narrator voice. To put it in Elderon
+  like chapter 1: record the lines on the ElevenLabs site, save the mp3 as
+  `public/audio/brief/narration/ch2.mp3`, and run `npm run build:briefs`.
+
+## Chapter 3 — same pattern
+Chapter 3 (A World at War — Ray Doyle, Seaman First Class, mid-December 1941) follows
+the same shape: a single open conversation node, four objectives, a mission brief in
+`briefs.json`, and a 2D card-timeline minigame (`src/chapters/ch3/`).
+
+Still for the founder to drop in (everything works with placeholders until then):
+- `public/models/ch3-sailor.glb` (needs idle + talking clips) and the two reserved
+  props `ch3-dixiecup.glb` / `ch3-globe.glb` — see the Chapter 3 drop-in checklist in
+  `docs/model-prompts.md`. The warship map marker is already real.
+- `public/video/ch3-intro.mp4` — the intro film.
+- `public/img/ch3-harbor.jpg` — optional conversation backdrop (then uncomment its
+  line in `src/chapters/registry.ts`; do not uncomment before the file exists).
+- The sailor's voice: set `ELEVENLABS_VOICE_CH3` in `.env.local` (and Vercel), or verify
+  the stock "Josh" id in `src/server/tts.ts`. Wrong or missing = silent subtitles.
+- After editing the ch3 brief text, run `npm run build:briefs` to give it a voice.
 
 ## Rules of the road
 - Don't edit files outside your chapter's tree file, chapter folder, and the asset registry.

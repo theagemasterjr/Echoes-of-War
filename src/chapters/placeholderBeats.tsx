@@ -5,7 +5,7 @@
  * components — see docs/chapter-guide.md. This file is shared scaffolding,
  * not chapter content.
  */
-import type { BeatProps, ChapterModule, MinigameProps } from './types';
+import type { ChapterModule, MinigameProps } from './types';
 import { chapterMeta } from './registry';
 
 function Panel({ children }: { children: React.ReactNode }) {
@@ -20,34 +20,6 @@ function Panel({ children }: { children: React.ReactNode }) {
 
 export function makePlaceholderModule(): ChapterModule {
   return {
-    Overview: function Overview({ chapterId, onAdvance }: BeatProps) {
-      const meta = chapterMeta(chapterId);
-      return (
-        /* side panel — the 3D showcase orbits the chapter object on the left */
-        <div className="absolute inset-0 flex items-center justify-end p-6 md:pr-14">
-          <div className="w-full max-w-md rounded-md border border-stone-800 bg-stone-950/70 p-8 backdrop-blur-sm">
-            <div className="text-[11px] uppercase tracking-[0.4em] text-amber-200/60">
-              Chapter {meta.index} · {meta.dates}
-            </div>
-            <h2 className="mt-3 text-3xl font-light text-stone-100">{meta.title}</h2>
-            <p className="mt-2 text-sm text-stone-400">
-              {meta.subtitle} · {meta.location}
-            </p>
-            <p className="mt-5 text-sm leading-relaxed text-stone-300">
-              This is where a short scene-setter will live. You are about to speak with{' '}
-              {meta.characterRole.toLowerCase()} — a fictional composite character built
-              from documented experiences of the time.
-            </p>
-            <button
-              onClick={onAdvance}
-              className="mt-8 rounded-sm border border-amber-200/40 px-6 py-2.5 text-xs tracking-[0.25em] text-amber-100 hover:bg-amber-200/10"
-            >
-              TALK TO THE {meta.characterRole.toUpperCase()} →
-            </button>
-          </div>
-        </div>
-      );
-    },
     Minigame: function Minigame({ chapterId, onComplete }: MinigameProps) {
       const meta = chapterMeta(chapterId);
       return (

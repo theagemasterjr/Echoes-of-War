@@ -1,0 +1,50 @@
+{
+  "_readme": [
+    "MISSION BRIEFS — the narrated screen the player sees after a chapter's intro film.",
+    "Founders edit this file. One entry per chapter id (ch1…ch6); a chapter with no entry",
+    "simply skips the brief screen and goes straight into the conversation.",
+    "",
+    "'lines' are spoken and typed onto the black screen one at a time, in order.",
+    "Keep each line one short sentence — it has to land on its own.",
+    "'accept' is the wording on the button at the end (defaults to 'I ACCEPT').",
+    "",
+    "After editing, run:  npm run build:briefs",
+    "That regenerates ONLY the lines whose wording changed and saves them under",
+    "public/audio/brief/. The game never calls ElevenLabs while it is running."
+  ],
+  "chapters": {
+    "ch1": {
+      "lines": [
+        "Your objective: understand how one treaty set the world on fire.",
+        "Learn what the Treaty of Versailles demanded of Germany.",
+        "Learn how those terms broke a nation, and left its people desperate.",
+        "Learn how that desperation carried Adolf Hitler to power.",
+        "And learn how it ended — with German tanks crossing into Poland.",
+        "Do you accept the mission?"
+      ],
+      "accept": "I ACCEPT"
+    },
+    "ch2": {
+      "lines": [
+        "Your objective: understand the summer Britain stood alone.",
+        "Learn how the army escaped at Dunkirk, and how France fell.",
+        "Learn why Germany had to destroy the RAF before it could invade.",
+        "Learn how radar and fewer than three thousand pilots held the line.",
+        "And learn how the bombers turned on London — and were beaten back.",
+        "Do you accept the mission?"
+      ],
+      "accept": "I ACCEPT"
+    },
+    "ch3": {
+      "lines": [
+        "Your objective: understand how the war became the whole world's war.",
+        "Learn why Japan struck at America across the Pacific.",
+        "Learn what happened at Pearl Harbor on the seventh of December.",
+        "Learn how America answered — and how Germany answered America.",
+        "And learn how separate wars became one world war.",
+        "Do you accept the mission?"
+      ],
+      "accept": "I ACCEPT"
+    }
+  }
+}

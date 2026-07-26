@@ -4,10 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/state/appStore';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useProgressStore } from '@/state/progressStore';
-import { chapterMeta, loadChapter, CHAPTERS } from '@/chapters/registry';
+import { loadChapter, CHAPTERS } from '@/chapters/registry';
 import type { Beat, ChapterId, ChapterModule } from '@/chapters/types';
 import { ConversationUI } from '@/conversation/ConversationUI';
 import { ChapterIntroVideo } from '@/ui/ChapterIntroVideo';
+import { BufferedVideo } from '@/media/BufferedVideo';
+import { PROLOGUE_VIDEO } from '@/media/VideoPreloader';
+import { MissionBrief } from '@/ui/MissionBrief';
 import { ErrorBoundary } from '@/core/ErrorBoundary';
 
 export function UiLayer() {
@@ -26,7 +29,8 @@ export function UiLayer() {
 }
 
 /** Fullscreen prologue film. Plays /video/prologue.mp4 once, then hands off to
- *  the camera glide down to the map (via completePrologue). The video fills the
+ *  the camera glide down to the map (via completePrologue). The film is already
+ *  buffered by the VideoPreloader, so it opens on its first frame. It fills the
  *  screen edge-to-edge (letterboxed on black where the aspect doesn't match). */
 function PrologueVideo() {
   const completePrologue = useAppStore((s) => s.completePrologue);
@@ -47,16 +51,6 @@ function PrologueVideo() {
     if (videoRef.current) videoRef.current.muted = true;
     completePrologue();
   };
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.play().catch(() => {
-      v.muted = true;
-      setMuted(true);
-      v.play().catch(() => setFailed(true));
-    });
-  }, []);
 
   const unmute = () => {
     const v = videoRef.current;
@@ -80,15 +74,13 @@ function PrologueVideo() {
           The opening film couldn’t play. You can continue to the map.
         </p>
       ) : (
-        <video
-          ref={videoRef}
-          src="/video/prologue.mp4"
+        <BufferedVideo
+          src={PROLOGUE_VIDEO}
+          elementRef={videoRef}
           className="absolute inset-0 h-full w-full object-contain"
-          playsInline
-          autoPlay
-          preload="auto"
           onEnded={finish}
           onError={() => setFailed(true)}
+          onMuted={() => setMuted(true)}
         />
       )}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.4em] text-amber-200/60">
@@ -258,7 +250,7 @@ function ChapterBeats({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
       </div>
     );
   }
-  if ((beat === 'overview' || beat === 'minigame') && !mod) return null; // loading hides under the transition black
+  if (beat === 'minigame' && !mod) return null; // loading hides under the transition black
 
   return (
     <ErrorBoundary
@@ -268,8 +260,8 @@ function ChapterBeats({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
       {/* the minigame beat lets taps through to the 3D table — its DOM parts
           opt back in with pointer-events-auto where needed */}
       <div className={`absolute inset-0 ${beat === 'minigame' ? 'pointer-events-none' : 'pointer-events-auto'}`}>
-        {beat === 'overview' && mod && <mod.Overview chapterId={chapterId} onAdvance={advanceBeat} />}
         {beat === 'intro' && <ChapterIntroVideo chapterId={chapterId} onAdvance={advanceBeat} />}
+        {beat === 'brief' && <MissionBrief chapterId={chapterId} onAccept={advanceBeat} />}
         {beat === 'conversation' && (
           <ConversationUI chapterId={chapterId} onContinue={advanceBeat} />
         )}
@@ -287,6 +279,11 @@ function Hud() {
   const returnToMap = useAppStore((s) => s.returnToMap);
   const returnToTitle = useAppStore((s) => s.returnToTitle);
   const idle = phase === 'idle';
+
+  // The mission brief owns the whole screen: black, the words, and the one
+  // button that answers its question. No back button, no settings gear —
+  // nothing on that screen is clickable except its own skip and I ACCEPT.
+  if (view.kind === 'chapter' && view.beat === 'brief') return null;
 
   return (
     <>

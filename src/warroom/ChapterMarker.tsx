@@ -5,6 +5,7 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ChapterMeta } from '@/chapters/types';
 import { Asset } from '@/assets/registry';
+import { prioritizeVideo } from '@/media/videoCache';
 import { BattleFx } from './BattleFx';
 
 const prefersReducedMotion = () =>
@@ -69,6 +70,9 @@ export function ChapterMarker({
           e.stopPropagation();
           setHovered(true);
           document.body.style.cursor = disabled ? 'default' : 'pointer';
+          // they're looking at this chapter — its film goes to the front of
+          // the download queue so it's ready if they click
+          if (meta.introVideo) prioritizeVideo(meta.introVideo);
         }}
         onPointerOut={() => {
           setHovered(false);

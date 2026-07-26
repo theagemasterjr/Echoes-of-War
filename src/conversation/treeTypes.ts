@@ -37,11 +37,25 @@ export interface ConstraintTree {
   objectives?: ObjectiveDef[];
 }
 
-/** One row of the "what to listen for" checklist; derived-done client-side. */
+/** One row of the on-screen Objectives panel; derived-done client-side. */
 export interface ObjectiveDef {
   id: string;
   label: string;
   pointIds: string[];
+}
+
+/** One thing the player should come away understanding. */
+export interface LearningPoint {
+  id: string;
+  text: string;
+  /**
+   * Everyday words, names and phrasings that show this topic is genuinely
+   * being discussed — synonyms and related terms, not just the textbook name.
+   * Two different cues in one answer from the character count as covered, so
+   * a kid never has to say "Treaty of Versailles" to tick it off, and one
+   * stray word can never tick it off by itself.
+   */
+  cues: string[];
 }
 
 export interface StageNode {
@@ -49,7 +63,7 @@ export interface StageNode {
   /** Shown only in the debug character-test screen. */
   title: string;
   objective: string;
-  learningPoints: { id: string; text: string }[];
+  learningPoints: LearningPoint[];
   guidedQuestions: string[];
   /** Extra system-prompt rules while this node is active. */
   behaviorRules: string[];

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import type { ChapterId } from '@/chapters/types';
 import { chapterMeta } from '@/chapters/registry';
 import { useConversation } from './engine';
+import type { ObjectiveDef } from './treeTypes';
 import { voicePlayer } from '@/audio/voicePlayer';
 
 /** Cinematic dialogue: character in the 3D stage, subtitle-style text below. */
@@ -52,36 +53,10 @@ export function ConversationUI({
         </div>
       </div>
 
-      {/* left-side learning objectives — checks off as coverage lands. Hidden
-          when there are no objectives (no-key case, ch2–ch6 skeletons). */}
+      {/* left-side objectives — check off as coverage lands. Hidden when there
+          are no objectives (no-key case, ch2–ch6 skeletons). */}
       {convo.objectives.length > 0 && (
-        <div className="absolute left-4 top-16 hidden w-56 rounded-md border border-stone-800 bg-stone-950/70 p-4 backdrop-blur-sm md:block">
-          <div className="text-[10px] uppercase tracking-widest text-amber-200/70">
-            Things to learn about:
-          </div>
-          <ul className="mt-3 space-y-2">
-            {convo.objectives.map((o) => {
-              const done = o.pointIds.every((id) => convo.covered.includes(id));
-              return (
-                <li key={o.id} className="flex items-start gap-2 text-xs leading-snug">
-                  <span
-                    className={`mt-px shrink-0 text-sm transition-colors duration-500 ${
-                      done ? 'text-amber-300' : 'text-stone-600'
-                    }`}
-                  >
-                    {done ? '✓' : '○'}
-                  </span>
-                  <motion.span
-                    animate={{ color: done ? '#fde68a' : '#78716c' }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {o.label}
-                  </motion.span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <ObjectivesPanel objectives={convo.objectives} covered={convo.covered} />
       )}
 
       {voiceMode ? (
@@ -171,6 +146,94 @@ export function ConversationUI({
         </p>
       </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The Objectives panel. Each row fills quietly as parts of its topic are
+ * explained, then lands with a gold flash the moment the whole topic is
+ * covered — the player should catch it happening out of the corner of an eye.
+ * Once ticked, a row stays ticked.
+ */
+function ObjectivesPanel({
+  objectives,
+  covered,
+}: {
+  objectives: ObjectiveDef[];
+  covered: string[];
+}) {
+  const doneIds = useMemo(
+    () =>
+      objectives.filter((o) => o.pointIds.every((id) => covered.includes(id))).map((o) => o.id),
+    [objectives, covered],
+  );
+  // which row just completed — drives the one-off celebration
+  const [justDone, setJustDone] = useState<string | null>(null);
+  const seen = useRef<string[]>([]);
+  useEffect(() => {
+    const fresh = doneIds.find((id) => !seen.current.includes(id));
+    seen.current = doneIds;
+    if (!fresh) return;
+    setJustDone(fresh);
+    const t = setTimeout(() => setJustDone(null), 1600);
+    return () => clearTimeout(t);
+  }, [doneIds]);
+
+  return (
+    <div className="absolute left-4 top-16 hidden w-56 rounded-md border border-stone-800 bg-stone-950/70 p-4 backdrop-blur-sm md:block">
+      <div className="text-[10px] uppercase tracking-widest text-amber-200/70">Objectives</div>
+      <ul className="mt-3 space-y-2.5">
+        {objectives.map((o) => {
+          const hit = o.pointIds.filter((id) => covered.includes(id)).length;
+          const done = hit === o.pointIds.length;
+          const celebrating = justDone === o.id;
+          return (
+            <motion.li
+              key={o.id}
+              animate={celebrating ? { scale: [1, 1.045, 1] } : { scale: 1 }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
+              className="text-xs leading-snug"
+            >
+              <div className="flex items-start gap-2">
+                <span className="relative mt-px shrink-0 text-sm">
+                  <motion.span
+                    animate={{ color: done ? '#fcd34d' : '#57534e' }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    {done ? '✓' : '○'}
+                  </motion.span>
+                  {celebrating && (
+                    /* a single ring pushing outward from the new tick */
+                    <motion.span
+                      initial={{ opacity: 0.85, scale: 0.5 }}
+                      animate={{ opacity: 0, scale: 2.6 }}
+                      transition={{ duration: 1, ease: 'easeOut' }}
+                      className="absolute inset-0 rounded-full border border-amber-300"
+                    />
+                  )}
+                </span>
+                <motion.span
+                  animate={{ color: done ? '#fde68a' : '#a8a29e' }}
+                  transition={{ duration: 0.5 }}
+                  style={celebrating ? { textShadow: '0 0 14px rgba(252,211,77,0.65)' } : undefined}
+                >
+                  {o.label}
+                </motion.span>
+              </div>
+              {/* how much of this topic has been explained so far */}
+              <div className="mt-1.5 ml-6 h-px bg-stone-800">
+                <motion.div
+                  className="h-px bg-amber-300/70"
+                  initial={false}
+                  animate={{ width: `${(hit / o.pointIds.length) * 100}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                />
+              </div>
+            </motion.li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -418,9 +481,12 @@ function splitSentences(text: string): string[] {
 }
 
 /** Film-subtitle delivery: only the current sentence is on screen. While the
- *  voice is playing, sentences advance in step with it (time shared by
- *  sentence length). With no voice, each sentence waits for a tap, so slow
- *  readers are never rushed. Calls onDone when the last sentence is shown. */
+ *  voice is playing, the sentence on screen is the one being spoken: we read
+ *  the audio clock every tick and map it onto the line (each sentence gets a
+ *  share of the clip proportional to its length), so the words stay locked to
+ *  the voice instead of drifting off pre-computed timers. With no voice, each
+ *  sentence waits for a tap, so slow readers are never rushed. Calls onDone
+ *  when the last sentence is shown. */
 function SubtitleLine({
   text, className, onDone,
 }: {
@@ -431,9 +497,6 @@ function SubtitleLine({
   const sentences = useMemo(() => splitSentences(text), [text]);
   const [i, setI] = useState(0);
   const [tapMode, setTapMode] = useState(false);
-  const iRef = useRef(0);
-  iRef.current = i;
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
@@ -441,42 +504,64 @@ function SubtitleLine({
     setI(0);
     setTapMode(false);
     if (!text) return;
-    const clear = () => {
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-    };
+
+    // Where in the clip each sentence ends, as a fraction. Characters stand in
+    // for speaking time — close enough that a sentence never lands early or
+    // hangs around after the voice has moved on.
     const total = sentences.reduce((a, s) => a + s.length, 0) || 1;
-    const pace = (fromIdx: number, durSec: number) => {
-      clear();
-      setTapMode(false);
-      let at = 0;
-      for (let k = fromIdx; k < sentences.length - 1; k++) {
-        at += (sentences[k].length / total) * durSec * 1000;
-        const next = k + 1;
-        timers.current.push(setTimeout(() => setI(next), at));
-      }
+    const endsAt: number[] = [];
+    let acc = 0;
+    for (const s of sentences) {
+      acc += s.length;
+      endsAt.push(acc / total);
+    }
+
+    let follow: ReturnType<typeof setInterval> | null = null;
+    let waitForVoice: ReturnType<typeof setTimeout> | null = null;
+    const stopFollow = () => {
+      if (follow) clearInterval(follow);
+      follow = null;
     };
+    const stopWaiting = () => {
+      if (waitForVoice) clearTimeout(waitForVoice);
+      waitForVoice = null;
+    };
+
+    const startFollowing = () => {
+      stopWaiting();
+      setTapMode(false);
+      if (follow) return;
+      follow = setInterval(() => {
+        const dur = voicePlayer.durationSec;
+        if (!voicePlayer.speaking || dur <= 1) return;
+        const at = voicePlayer.currentTime / dur;
+        let k = 0;
+        while (k < endsAt.length - 1 && at >= endsAt[k]) k++;
+        setI((v) => (k > v ? k : v)); // subtitles only ever move forward
+      }, 100);
+    };
+
     const un = voicePlayer.subscribe((e) => {
-      // voice arrived (possibly late): pace the rest of the line to it
-      if (e === 'start' && voicePlayer.durationSec > 1) pace(iRef.current, voicePlayer.durationSec);
-      // voice finished: whatever the timing drift, land on the last sentence
+      // voice arrived (possibly late): hand the pacing over to it
+      if (e === 'start') startFollowing();
+      // voice finished: land on the last sentence whatever the clock said
       if (e === 'end') {
-        clear();
+        stopFollow();
         setI(sentences.length - 1);
       }
     });
-    if (voicePlayer.speaking && voicePlayer.durationSec > 1) {
-      pace(0, voicePlayer.durationSec);
+
+    if (voicePlayer.speaking) {
+      startFollowing();
     } else {
       // give the voice a moment to arrive; if it doesn't, the reader sets the pace
-      timers.current.push(
-        setTimeout(() => {
-          if (!voicePlayer.speaking) setTapMode(true);
-        }, 1400),
-      );
+      waitForVoice = setTimeout(() => {
+        if (!voicePlayer.speaking) setTapMode(true);
+      }, 1400);
     }
     return () => {
-      clear();
+      stopFollow();
+      stopWaiting();
       un();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
