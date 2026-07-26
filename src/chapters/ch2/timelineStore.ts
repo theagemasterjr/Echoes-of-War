@@ -40,14 +40,17 @@ export const EVENTS: TimelineEvent[] = [
 
 export const eventById = (id: string) => EVENTS.find((e) => e.id === id)!;
 
-/** End-of-chapter summary — one short line per Objectives topic. The last
- *  line speaks in the narrator's voice (Tom himself never knows the invasion
- *  was called off). Kept under 700 characters so the voice can read it all. */
+/** End-of-chapter summary — one short line per Objectives topic, in the same
+ *  order as the five objectives in src/content/trees/ch2.ts. Narrated audio is
+ *  keyed to these entries BY INDEX, so keep them five and keep them in order.
+ *  The last line speaks in the narrator's voice (Tom himself never knows the
+ *  invasion was called off). Kept under 700 characters so the voice can read it all. */
 export const SUMMARY: { topic: string; line: string }[] = [
-  { topic: 'Why Britain stood alone', line: 'After Dunkirk and the fall of France, Britain and the Commonwealth faced Germany alone.' },
-  { topic: 'Germany’s plan and the attack', line: 'Germany had to destroy the RAF before it could invade. All summer the bombers hammered the airfields — and nearly broke them.' },
-  { topic: 'How Britain fought back', line: 'Radar told the fighters where to go, factories built new planes fast, and fewer than 3,000 aircrew from many countries kept meeting the raids.' },
-  { topic: 'The Blitz and 15 September', line: 'In September the bombers turned on London. On 15 September the biggest daylight raids were beaten back — and the invasion never came.' },
+  { topic: 'Escape at Dunkirk', line: 'Trapped on the beaches of France, over three hundred thousand British and Allied soldiers were rescued by navy ships and small boats.' },
+  { topic: 'Britain stands alone', line: 'France surrendered to Germany in June 1940. Britain and the Commonwealth now faced Germany alone.' },
+  { topic: 'Eagle Day', line: 'In August, Germany launched its air assault on Britain, hammering the RAF’s airfields to clear the way for invasion.' },
+  { topic: 'The cities burn', line: 'In September the bombers turned on London and other cities. Night after night the cities burned — but Britain held on.' },
+  { topic: 'The battle won', line: 'On 15 September the biggest raids were beaten back. Germany gave up, and the invasion never came. Britain had won.' },
 ];
 export const SUMMARY_SPOKEN = SUMMARY.map((s) => `${s.topic}. ${s.line}`).join(' ');
 

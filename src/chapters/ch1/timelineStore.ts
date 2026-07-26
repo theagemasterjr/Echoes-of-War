@@ -40,13 +40,16 @@ export const EVENTS: TimelineEvent[] = [
 
 export const eventById = (id: string) => EVENTS.find((e) => e.id === id)!;
 
-/** End-of-chapter summary — one short line per Objectives topic.
+/** End-of-chapter summary — one short line per Objectives topic, in the same
+ *  five-topic order as the objectives in src/content/trees/ch1.ts (the narrated
+ *  audio is matched to these entries BY INDEX — keep the count and the order).
  *  Kept under 700 characters so the voice can read the whole thing. */
 export const SUMMARY: { topic: string; line: string }[] = [
   { topic: 'The Treaty of Versailles', line: 'The treaty ended World War I and punished Germany. Many Germans felt it was unfair.' },
   { topic: 'Germany under the treaty', line: 'When the Great Depression hit, jobs vanished. Angry, struggling people turned to extreme leaders.' },
-  { topic: 'Hitler’s rise to power', line: 'Hitler took power in 1933, rebuilt the army, and took land step by step — and no one stopped him.' },
-  { topic: 'How Poland was conquered', line: 'After a deal with the Soviet Union, Germany invaded Poland on 1 September 1939. Britain and France declared war. World War II had begun.' },
+  { topic: 'Hitler’s rise to power', line: 'Hitler became Chancellor in 1933 and quickly turned Germany into a dictatorship.' },
+  { topic: 'The road to war', line: 'German troops re-entered the Rhineland, the Munich Agreement handed Hitler part of Czechoslovakia, and Germany signed a secret pact with the Soviet Union. No one stopped him.' },
+  { topic: 'Germany invades Poland', line: 'On 1 September 1939, Germany invaded Poland. Two days later, Britain and France declared war. World War II had begun.' },
 ];
 export const SUMMARY_SPOKEN = SUMMARY.map((s) => `${s.topic}. ${s.line}`).join(' ');
 

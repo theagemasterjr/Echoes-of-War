@@ -33,15 +33,17 @@ export interface ConstraintTree {
   };
   entryNodeId: string;
   nodes: Record<string, StageNode>;
-  /** Learner-facing objectives shown as a checklist; each checks off when all its points are covered. */
+  /** Learner-facing objectives shown as a checklist; each checks off the instant
+   *  the player's own message mentions one of its keywords. */
   objectives?: ObjectiveDef[];
 }
 
-/** One row of the on-screen Objectives panel; derived-done client-side. */
+/** One row of the on-screen Objectives panel; checked off client-side. */
 export interface ObjectiveDef {
   id: string;
   label: string;
-  pointIds: string[];
+  /** Lowercase phrases; if the player's own message contains any of them, the objective checks off instantly. */
+  keywords: string[];
 }
 
 /** One thing the player should come away understanding. */
@@ -96,7 +98,6 @@ export interface ChatResponse {
   /** True once the final node's condition is met — the player may leave when ready. */
   canContinue: boolean;
   guidedQuestions: string[];
-  progress: { covered: number; total: number };
   screened?: 'abusive' | 'ai_probe' | 'busy';
   nodeId: string;
   /** The chapter's objectives — rides every response so the checklist is self-healing. */

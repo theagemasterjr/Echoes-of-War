@@ -3,11 +3,22 @@ import { persist } from 'zustand/middleware';
 import { audioManager, type MusicTrackId } from '@/audio/audioManager';
 import { voicePlayer } from '@/audio/voicePlayer';
 
+/** Reading typeface. 'default' is the game's Inter; 'lexend' is the
+ *  easy-read (dyslexia-friendly) face applied to every word on screen. */
+export type ReadingFont = 'default' | 'lexend';
+/** Root text scale. 'large' bumps the root font-size, so every rem-based
+ *  Tailwind size grows with it. */
+export type TextSize = 'normal' | 'large';
+
 interface SettingsState {
   volume: number; // 0..1
   soundtrack: MusicTrackId;
+  readingFont: ReadingFont;
+  textSize: TextSize;
   setVolume: (v: number) => void;
   setSoundtrack: (t: MusicTrackId) => void;
+  setReadingFont: (f: ReadingFont) => void;
+  setTextSize: (s: TextSize) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -15,6 +26,8 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       volume: 0.8,
       soundtrack: 'main-theme',
+      readingFont: 'default',
+      textSize: 'normal',
       setVolume: (volume) => {
         audioManager.setVolume(volume);
         voicePlayer.setVolume(volume);
@@ -22,6 +35,10 @@ export const useSettingsStore = create<SettingsState>()(
       },
       // MusicDirector reacts to this and crossfades to the chosen track.
       setSoundtrack: (soundtrack) => set({ soundtrack }),
+      // UiLayer mirrors these onto <html> as data attributes; globals.css does
+      // the rest, so nothing else in the game has to know about them.
+      setReadingFont: (readingFont) => set({ readingFont }),
+      setTextSize: (textSize) => set({ textSize }),
     }),
     { name: 'eow-settings-v1' },
   ),

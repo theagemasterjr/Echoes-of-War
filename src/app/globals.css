@@ -11,6 +11,20 @@ body {
   color: #e7e5e4;
 }
 
+/* ---- reading accessibility -------------------------------------------- *
+ * Both settings are mirrored onto <html> as data attributes by UiLayer (from
+ * the settings store), so every screen picks them up without knowing they
+ * exist. Easy-read swaps the whole game over to Lexend; large text raises the
+ * root font-size, and Tailwind's rem-based sizes grow with it. */
+html[data-reading-font="lexend"],
+html[data-reading-font="lexend"] * {
+  font-family: var(--font-lexend), system-ui, sans-serif !important;
+}
+
+html[data-text-size="large"] {
+  font-size: 115%;
+}
+
 /* keyboard focus must always be visible — core controls are reachable by tab */
 :focus-visible {
   outline: 2px solid rgba(214, 185, 122, 0.8);

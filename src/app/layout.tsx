@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Lexend } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+// Easy-read face for the accessibility setting. Self-hosted by next/font, so it
+// is available offline and never blocks on a third-party CDN.
+const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Echoes of War",
@@ -16,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${lexend.variable} h-full antialiased`}>
       <body className="h-full overflow-hidden bg-black font-sans">{children}</body>
     </html>
   );

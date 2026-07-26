@@ -15,6 +15,7 @@ import { ErrorBoundary } from '@/core/ErrorBoundary';
 
 export function UiLayer() {
   const view = useAppStore((s) => s.view);
+  useReadingPreferences();
   return (
     <div className="pointer-events-none fixed inset-0 z-20 select-none">
       <AnimatePresence>{view.kind === 'title' && <TitleIntro key="title" />}</AnimatePresence>
@@ -28,6 +29,21 @@ export function UiLayer() {
   );
 }
 
+/** Mirrors the two reading settings onto <html> as data attributes, which is
+ *  all the global rules in globals.css need: `data-reading-font="lexend"`
+ *  swaps the whole game over to the easy-read face, `data-text-size="large"`
+ *  raises the root font-size so every rem-based size grows with it. Kept here
+ *  because UiLayer is mounted for the entire session. */
+function useReadingPreferences() {
+  const readingFont = useSettingsStore((s) => s.readingFont);
+  const textSize = useSettingsStore((s) => s.textSize);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.readingFont = readingFont;
+    root.dataset.textSize = textSize;
+  }, [readingFont, textSize]);
+}
+
 /** Fullscreen prologue film. Plays /video/prologue.mp4 once, then hands off to
  *  the camera glide down to the map (via completePrologue). The film is already
  *  buffered by the VideoPreloader, so it opens on its first frame. It fills the
@@ -36,10 +52,6 @@ function PrologueVideo() {
   const completePrologue = useAppStore((s) => s.completePrologue);
   const phase = useAppStore((s) => s.phase);
   const videoRef = useRef<HTMLVideoElement>(null);
-  // browsers block autoplay-with-sound after a state change (the BEGIN click is
-  // no longer the active gesture by the time this mounts) — try sound first,
-  // fall back to muted playback and offer a one-tap unmute.
-  const [muted, setMuted] = useState(false);
   const [failed, setFailed] = useState(false);
   const done = useRef(false);
 
@@ -50,14 +62,6 @@ function PrologueVideo() {
     // the map — silence its soundtrack so it can't play over the theme
     if (videoRef.current) videoRef.current.muted = true;
     completePrologue();
-  };
-
-  const unmute = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = false;
-    setMuted(false);
-    v.play().catch(() => {});
   };
 
   return (
@@ -80,21 +84,11 @@ function PrologueVideo() {
           className="absolute inset-0 h-full w-full object-contain"
           onEnded={finish}
           onError={() => setFailed(true)}
-          onMuted={() => setMuted(true)}
         />
       )}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.4em] text-amber-200/60">
         Prologue · 1939
       </div>
-      {/* one-tap unmute when the browser forced a muted start */}
-      {muted && !failed && (
-        <button
-          onClick={unmute}
-          className="absolute bottom-6 left-6 rounded-sm border border-amber-200/40 bg-black/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-100/90 backdrop-blur-sm transition hover:bg-amber-200/10"
-        >
-          ♪ Sound on
-        </button>
-      )}
       <button
         onClick={finish}
         disabled={phase !== 'idle'}
@@ -315,6 +309,11 @@ function SettingsMenu() {
   const setVolume = useSettingsStore((s) => s.setVolume);
   const soundtrack = useSettingsStore((s) => s.soundtrack);
   const setSoundtrack = useSettingsStore((s) => s.setSoundtrack);
+  const readingFont = useSettingsStore((s) => s.readingFont);
+  const setReadingFont = useSettingsStore((s) => s.setReadingFont);
+  const textSize = useSettingsStore((s) => s.textSize);
+  const setTextSize = useSettingsStore((s) => s.setTextSize);
+  const easyRead = readingFont === 'lexend';
 
   const resetProgress = () => {
     useProgressStore.getState().reset();
@@ -345,7 +344,7 @@ function SettingsMenu() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18 }}
-            className="mt-2 w-56 rounded-md border border-stone-700 bg-stone-950/90 p-4 text-stone-300 shadow-xl backdrop-blur-sm"
+            className="mt-2 w-64 rounded-md border border-stone-700 bg-stone-950/95 p-4 text-stone-300 shadow-xl backdrop-blur-sm"
           >
             <label className="flex items-center justify-between gap-3">
               <span className="text-[10px] uppercase tracking-widest text-stone-400">Volume</span>
@@ -367,6 +366,51 @@ function SettingsMenu() {
                       soundtrack === id
                         ? 'border-amber-200/50 bg-amber-200/5 text-amber-200/90'
                         : 'border-stone-700 hover:bg-stone-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="my-3 h-px bg-stone-800" />
+            {/* ---- reading: font + size. Both write to the settings store,
+                which useReadingPreferences mirrors onto <html>. ---- */}
+            <span className="text-[10px] uppercase tracking-widest text-stone-400">Reading</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={easyRead}
+              onClick={() => setReadingFont(easyRead ? 'default' : 'lexend')}
+              className={`mt-1.5 flex w-full items-center justify-between gap-2 rounded-sm border px-3 py-2.5 text-left text-xs transition ${
+                easyRead
+                  ? 'border-amber-200/70 bg-amber-200/15 text-amber-100'
+                  : 'border-stone-600 text-stone-200 hover:bg-stone-800'
+              }`}
+            >
+              <span>Easy-read font</span>
+              <span
+                aria-hidden
+                className={`rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${
+                  easyRead ? 'bg-amber-200/90 text-stone-950' : 'bg-stone-700 text-stone-200'
+                }`}
+              >
+                {easyRead ? 'On' : 'Off'}
+              </span>
+            </button>
+            <div className="mt-3">
+              <span className="text-[10px] uppercase tracking-widest text-stone-400">Text size</span>
+              <div className="mt-1.5 flex gap-2">
+                {([['normal', 'Normal'], ['large', 'Large']] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={textSize === id}
+                    onClick={() => setTextSize(id)}
+                    className={`flex-1 rounded-sm border px-2 py-2.5 text-xs transition ${
+                      textSize === id
+                        ? 'border-amber-200/70 bg-amber-200/15 text-amber-100'
+                        : 'border-stone-600 text-stone-200 hover:bg-stone-800'
                     }`}
                   >
                     {label}

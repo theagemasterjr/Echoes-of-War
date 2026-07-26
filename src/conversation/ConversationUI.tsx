@@ -53,10 +53,10 @@ export function ConversationUI({
         </div>
       </div>
 
-      {/* left-side objectives — check off as coverage lands. Hidden when there
-          are no objectives (no-key case, ch2–ch6 skeletons). */}
+      {/* left-side objectives — check off the moment the player says the words.
+          Hidden when there are no objectives (no-key case, ch4–ch6 skeletons). */}
       {convo.objectives.length > 0 && (
-        <ObjectivesPanel objectives={convo.objectives} covered={convo.covered} />
+        <ObjectivesPanel objectives={convo.objectives} doneIds={convo.objectivesDone} />
       )}
 
       {voiceMode ? (
@@ -151,23 +151,19 @@ export function ConversationUI({
 }
 
 /**
- * The Objectives panel. Each row fills quietly as parts of its topic are
- * explained, then lands with a gold flash the moment the whole topic is
- * covered — the player should catch it happening out of the corner of an eye.
- * Once ticked, a row stays ticked.
+ * The Objectives panel. A row is either open or ticked — nothing in between.
+ * It lands with a gold flash the instant the player says the words, so the
+ * player catches it happening out of the corner of an eye. Once ticked, a row
+ * stays ticked.
  */
 function ObjectivesPanel({
   objectives,
-  covered,
+  doneIds,
 }: {
   objectives: ObjectiveDef[];
-  covered: string[];
+  doneIds: string[];
 }) {
-  const doneIds = useMemo(
-    () =>
-      objectives.filter((o) => o.pointIds.every((id) => covered.includes(id))).map((o) => o.id),
-    [objectives, covered],
-  );
+  const doneSet = useMemo(() => new Set(doneIds), [doneIds]);
   // which row just completed — drives the one-off celebration
   const [justDone, setJustDone] = useState<string | null>(null);
   const seen = useRef<string[]>([]);
@@ -185,8 +181,7 @@ function ObjectivesPanel({
       <div className="text-[10px] uppercase tracking-widest text-amber-200/70">Objectives</div>
       <ul className="mt-3 space-y-2.5">
         {objectives.map((o) => {
-          const hit = o.pointIds.filter((id) => covered.includes(id)).length;
-          const done = hit === o.pointIds.length;
+          const done = doneSet.has(o.id);
           const celebrating = justDone === o.id;
           return (
             <motion.li
@@ -220,15 +215,6 @@ function ObjectivesPanel({
                 >
                   {o.label}
                 </motion.span>
-              </div>
-              {/* how much of this topic has been explained so far */}
-              <div className="mt-1.5 ml-6 h-px bg-stone-800">
-                <motion.div
-                  className="h-px bg-amber-300/70"
-                  initial={false}
-                  animate={{ width: `${(hit / o.pointIds.length) * 100}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                />
               </div>
             </motion.li>
           );

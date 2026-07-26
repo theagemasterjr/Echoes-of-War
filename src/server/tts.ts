@@ -21,11 +21,18 @@ const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // just means silence) and pick the young-British-male voice you like —
   // setting ELEVENLABS_VOICE_CH2 overrides it without a code change.
   ch2: process.env.ELEVENLABS_VOICE_CH2 ?? 'JBFqnCBsd6RMkjVDRZzb',
-  // 'TxGEqnHWrfWFTfGW9XjX' = ElevenLabs stock "Josh" (young American male).
-  // TODO(founder): verify this voice id in your ElevenLabs library (a wrong id
-  // just means silence) and pick the young-American-male voice you like —
-  // setting ELEVENLABS_VOICE_CH3 overrides it without a code change.
-  ch3: process.env.ELEVENLABS_VOICE_CH3 ?? 'TxGEqnHWrfWFTfGW9XjX',
+  // 'bIHbv24MWmeRgasZH58o' = ElevenLabs stock "Will" (American, young, male,
+  // relaxed/conversational) — a good fit for nineteen-year-old Ray Doyle.
+  // Verified against this account: it is in the voice library and synthesizes
+  // (200, audio/mpeg) with TTS_MODEL below.
+  // Was 'TxGEqnHWrfWFTfGW9XjX', which is why ch3 was silent: that id is no
+  // longer the old stock "Josh" — it now resolves to a PROFESSIONAL voice
+  // ("Craig") that this account does not have access to, so every synthesis
+  // came back 402 and the `!res.ok` guard below returned null (silence) while
+  // the chat text kept working. Only stock/premade voices listed under
+  // GET /v1/voices are safe here. Setting ELEVENLABS_VOICE_CH3 overrides this
+  // without a code change — but check any replacement id the same way.
+  ch3: process.env.ELEVENLABS_VOICE_CH3 ?? 'bIHbv24MWmeRgasZH58o',
 };
 
 export function voiceFor(chapterId: ChapterId): string | undefined {

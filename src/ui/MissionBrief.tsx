@@ -1,17 +1,22 @@
 'use client';
 /**
  * Mission brief — the black screen between a chapter's intro film and its
- * conversation. The narration was recorded once by scripts/build-brief-audio.mjs
- * and ships with the game; this only plays those files, so nothing here ever
- * calls a voice API. The words type themselves onto the screen exactly in step
- * with the narrator (the recording carries a time for every character), then
- * the accept button fades in.
+ * conversation. The narration is a recording that ships with the game; this
+ * only plays those files, so nothing here ever calls a voice API. The words
+ * type themselves onto the screen exactly in step with the narrator, then the
+ * accept button fades in.
+ *
+ * The voice starts by itself: this screen is only ever reached by a click
+ * (the chapter pin, the film's continue button), which is the permission a
+ * browser asks for. There is no "sound on" button anywhere — if a browser
+ * somehow still refuses, or the audio stalls mid-take, the briefing carries on
+ * against the wall clock so the words never freeze.
  *
  * Chapter-agnostic: the lines, the button wording and the audio all come from
  * that chapter's entry in src/content/briefs.json. A chapter with no entry
  * never reaches this screen (see appStore.beatsFor).
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { ChapterId } from '@/chapters/types';
 import {
@@ -47,6 +52,9 @@ function loadManifest(): Promise<BriefAudioManifest | null> {
   return manifestPromise;
 }
 
+/** How long the voice may sit still before the words stop waiting for it. */
+const AUDIO_STALL_MS = 350;
+
 export function MissionBrief({
   chapterId,
   onAccept,
@@ -70,58 +78,36 @@ export function MissionBrief({
     [],
   );
 
-  /**
-   * True when the browser refused to start the voice (it is normally claimed
-   * ahead of time by the player's first tap — see audio/narrationPlayer). The
-   * briefing carries on either way; this only decides whether to offer sound.
-   */
-  const [blocked, setBlocked] = useState(false);
-  /** Seconds into the briefing, whatever is driving it — lets sound switched
-   *  on late join in at the right moment instead of starting over. */
-  const clock = useRef(0);
   const doneRef = useRef(false);
 
-  /** Point the element at a file without restarting what is already playing. */
+  /** Point the element at a file without restarting what is already playing.
+   *  Answers whether the file actually changed. */
   const setSource = (el: HTMLAudioElement, url: string) => {
     const absolute = new URL(url, window.location.origin).href;
-    if (el.src !== absolute) el.src = url;
+    if (el.src === absolute) return false;
+    el.src = url;
+    return true;
   };
 
   /**
-   * Start playing, and remember if the browser said no.
-   * Waits until the file is actually ready: asking an element to play while it
-   * is still fetching a newly-set source gets the request cancelled, which
-   * looks exactly like a refusal but leaves the screen silent.
+   * Start the voice. Waits until the file is actually ready: asking an element
+   * to play while it is still fetching a newly-set source gets the request
+   * cancelled, which leaves the screen silent. Returns a disposer for the
+   * pending wait, so leaving the screen never starts a voice behind it.
    */
   const play = (el: HTMLAudioElement) => {
-    const volume = useSettingsStore.getState().volume;
-    el.volume = volume;
-    const start = () =>
-      el.play().then(
-        // playing at zero volume is still silence, and this screen is nothing
-        // but narration — treat it the same as a refusal and offer the sound
-        () => setBlocked(volume === 0),
-        () => setBlocked(true),
-      );
-    if (el.readyState >= 2) start();
-    else el.addEventListener('canplay', start, { once: true });
-  };
-
-  /** The player asked for sound after all — pick the voice up where the words
-   *  have got to, so nothing repeats and nothing is skipped. */
-  const enableSound = () => {
-    const el = narrationAudio();
-    if (!el) return;
-    // the game's sound may simply be turned all the way down — this screen has
-    // no settings gear on it, so bring it back up to something audible
-    const settings = useSettingsStore.getState();
-    if (settings.volume === 0) settings.setVolume(0.8);
-    try {
-      el.currentTime = Math.max(0, clock.current);
-    } catch {
-      /* seeking before metadata lands is fine — it starts from the top */
+    el.volume = useSettingsStore.getState().volume;
+    const start = () => {
+      el.play().catch(() => {
+        /* the words keep going on the wall clock — see the rAF loops below */
+      });
+    };
+    if (el.readyState >= 2) {
+      start();
+      return () => {};
     }
-    play(el);
+    el.addEventListener('canplay', start, { once: true });
+    return () => el.removeEventListener('canplay', start);
   };
 
   // pull in the recorded narration; a chapter whose audio has not been
@@ -132,8 +118,8 @@ export function MissionBrief({
       if (!live) return;
       const recorded = m?.chapters?.[chapterId] ?? null;
       // the wording must match the recording exactly, or the timings would
-      // drift — a founder who edited a line without re-running the build
-      // script gets the silent pace instead of words out of step
+      // drift — a founder who edited a line without re-timing the take gets
+      // the silent pace instead of words out of step
       const matches =
         recorded &&
         recorded.lines.length === lines.length &&
@@ -165,24 +151,74 @@ export function MissionBrief({
     const el = narrationAudio();
     let raf = 0;
     let cancelled = false;
+    let stopWaiting: (() => void) | null = null;
 
+    let swapped = false;
     if (el) {
-      setSource(el, track);
-      if (el.paused) play(el);
+      swapped = setSource(el, track);
+      // a new file, or a replay of one parked at its end — start from the top.
+      // (A take already speaking is left alone: React remounts this screen
+      //  while developing, and rewinding then would stutter the narration.)
+      if (swapped || el.paused) {
+        try {
+          el.currentTime = 0;
+        } catch {
+          /* a freshly-set source is not seekable yet — it starts at 0 anyway */
+        }
+      }
+      // always with sound, always by itself — the player clicked to get here
+      if (el.paused) stopWaiting = play(el);
     }
 
-    const startedAt = performance.now();
     const lastEnd = segments[segments.length - 1]?.end ?? 0;
     // the display only ever moves forward, so a stutter never un-types a line
     let atLine = 0;
     let atChars = 0;
 
+    /**
+     * The briefing's own clock. It follows the voice while the voice is
+     * moving; the moment the voice stalls (buffering, a refused autoplay, a
+     * tab that was backgrounded) it carries on from that exact point against
+     * the wall clock, so the words never freeze half-typed.
+     */
+    let base = !el || swapped ? 0 : el.currentTime || 0;
+    let baseWall = performance.now();
+    let lastAudioT = base;
+    let lastAudioMove = baseWall;
+
+    const complete = () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      setIndex(lines.length - 1);
+      setRevealed(lines[lines.length - 1].length);
+      setFinished(true);
+      doneRef.current = true;
+    };
+
+    // the file may run out a hair before the manifest's last end time — that
+    // is still the end of the briefing
+    const handleEnded = () => complete();
+    el?.addEventListener('ended', handleEnded);
+
     const tick = () => {
       if (cancelled) return;
-      // follow the voice when it is playing; otherwise keep the briefing
-      // moving on the wall clock at the pace the recording was timed to
-      const t = el && el.currentTime > 0 ? el.currentTime : (performance.now() - startedAt) / 1000;
-      clock.current = t;
+      const now = performance.now();
+
+      if (el) {
+        const audioT = el.currentTime;
+        // a jump far past where the briefing can possibly be is a stale
+        // reading from the element the moment its source was swapped — ignore
+        // it rather than let it fling the screen to the accept button
+        const plausible = audioT <= base + (now - baseWall) / 1000 + 2;
+        if (audioT > lastAudioT + 0.005 && plausible) {
+          lastAudioT = audioT;
+          lastAudioMove = now;
+          base = audioT;
+          baseWall = now;
+        }
+      }
+      const stalled = !el || now - lastAudioMove > AUDIO_STALL_MS;
+      const t = stalled ? base + (now - baseWall) / 1000 : base;
 
       let i = 0;
       for (let k = 0; k < segments.length; k++) if (t >= (segments[k].start ?? 0)) i = k;
@@ -191,6 +227,8 @@ export function MissionBrief({
       const through = reducedMotion ? 1 : Math.min(1, Math.max(0, (t - (seg.start ?? 0)) / span));
 
       if (i > atLine) {
+        // finish the line we are leaving before moving on, so nothing is
+        // dropped when the voice runs ahead of a frame
         atLine = i;
         atChars = 0;
       }
@@ -199,9 +237,7 @@ export function MissionBrief({
       setRevealed(atChars);
 
       if (t >= lastEnd) {
-        setRevealed(lines[lines.length - 1].length);
-        setFinished(true);
-        doneRef.current = true;
+        complete();
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -211,6 +247,8 @@ export function MissionBrief({
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      stopWaiting?.();
+      el?.removeEventListener('ended', handleEnded);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, audio, finished]);
@@ -224,6 +262,7 @@ export function MissionBrief({
     let raf = 0;
     let gapTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
+    let stopWaiting: (() => void) | null = null;
 
     const nextLine = () => {
       if (cancelled) return;
@@ -267,7 +306,6 @@ export function MissionBrief({
         // follow the audio clock where we have it, the wall clock if playback
         // never started (a blocked autoplay must not freeze the briefing)
         const t = el.currentTime > 0 ? el.currentTime : (performance.now() - started) / 1000;
-        clock.current = t;
         setRevealed(Math.min(text.length, reducedMotion ? text.length : charsAt(t)));
         if (t >= (clip.duration || 0)) {
           holdThenAdvance();
@@ -275,7 +313,7 @@ export function MissionBrief({
         }
         raf = requestAnimationFrame(tick);
       };
-      if (el.paused) play(el);
+      if (el.paused) stopWaiting = play(el);
       raf = requestAnimationFrame(tick);
     } else {
       // no recording for this line — steady reading pace
@@ -299,6 +337,7 @@ export function MissionBrief({
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      stopWaiting?.();
       if (gapTimer) clearTimeout(gapTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -310,6 +349,32 @@ export function MissionBrief({
     const token = claimNarration();
     return () => releaseNarration(token);
   }, []);
+
+  /**
+   * Credits-style scroll: the stack of lines slides up so the line being
+   * spoken sits at the vertical middle of the screen. Because the accept
+   * button lives inside the stack right after the last line, the briefing
+   * ends with "Do you accept the mission?" dead centre and the button just
+   * beneath it — never off the bottom of a small window.
+   */
+  const stackRef = useRef<HTMLDivElement>(null);
+  const lineRefs = useRef<(HTMLParagraphElement | null)[]>([]);
+  const acceptRef = useRef<HTMLButtonElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  useLayoutEffect(() => {
+    const stack = stackRef.current;
+    const line = lineRefs.current[index];
+    if (!stack || !line) return;
+    // the stack is flex-centred, so its middle sits at the screen's middle;
+    // shift it by how far this line's centre is from the stack's own centre
+    const y = stack.offsetHeight / 2 - (line.offsetTop + line.offsetHeight / 2);
+    setScrollY((v) => (Math.abs(v - y) > 0.5 ? y : v));
+  }, [index, finished]);
+
+  // the button can't use autoFocus — it is mounted (invisibly) from the start
+  useEffect(() => {
+    if (finished) acceptRef.current?.focus();
+  }, [finished]);
 
   // Escape skips to the end, the same as the skip button
   useEffect(() => {
@@ -324,58 +389,71 @@ export function MissionBrief({
   if (!brief) return null;
 
   return (
-    <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center bg-black px-6">
-      <div
+    <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-black px-6">
+      {/* The whole stack slides up as the narrator moves on (see the
+          useLayoutEffect above): the line being spoken is always held at the
+          middle of the screen, so the last line — "Do you accept the
+          mission?" — ends centered with the accept button right under it. */}
+      <motion.div
+        ref={stackRef}
+        initial={false}
+        animate={{ y: scrollY }}
+        transition={{ duration: reducedMotion ? 0 : 0.7, ease: 'easeOut' }}
         className="flex w-full max-w-2xl flex-col items-center gap-5 text-center"
         role="region"
         aria-label="Mission brief"
         aria-live="polite"
       >
+        {/* EVERY line (and the button) is mounted from the first frame,
+            invisible until its turn — the stack's height never changes, so
+            the only movement is the animated scroll. Mounting lines as they
+            arrived made the flex centring re-jump the stack half a line each
+            time, which read as the text bouncing up and down. */}
         {lines.map((line, i) => {
-          if (i > index) return null;
+          const upcoming = i > index;
           const current = i === index && !finished;
-          const text = current ? line.slice(0, revealed) : line;
+          const text = upcoming ? '' : current ? line.slice(0, revealed) : line;
           return (
             <motion.p
               key={i}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: finished || !current ? (i === lines.length - 1 ? 1 : 0.32) : 1 }}
+              ref={(el) => {
+                lineRefs.current[i] = el;
+              }}
+              aria-hidden={upcoming}
+              initial={false}
+              animate={{
+                opacity: upcoming ? 0 : finished || !current ? (i === lines.length - 1 ? 1 : 0.32) : 1,
+              }}
               transition={{ duration: reducedMotion ? 0 : 0.6 }}
-              className="text-balance text-xl font-light leading-relaxed tracking-wide text-stone-100 md:text-2xl"
+              className="relative text-xl font-light leading-relaxed tracking-wide text-stone-100 md:text-2xl"
             >
-              {text}
-              {current && revealed < line.length && (
-                <span className="ml-0.5 inline-block h-[1em] w-px translate-y-[0.12em] animate-pulse bg-amber-200/80 align-middle" />
-              )}
+              {/* the full line, invisible, holds the final size from the first
+                  frame — so typing never re-wraps the text or moves the stack */}
+              <span aria-hidden className="invisible">{line}</span>
+              <span className="absolute inset-0">
+                {text}
+                {current && revealed < line.length && (
+                  <span className="ml-0.5 inline-block h-[1em] w-px translate-y-[0.12em] animate-pulse bg-amber-200/80 align-middle" />
+                )}
+              </span>
             </motion.p>
           );
         })}
-      </div>
 
-      {finished && (
         <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: reducedMotion ? 0 : 1.1, delay: reducedMotion ? 0 : 0.5 }}
-          autoFocus
+          ref={acceptRef}
+          initial={false}
+          animate={{ opacity: finished ? 1 : 0 }}
+          transition={{ duration: reducedMotion ? 0 : 1.1, delay: finished && !reducedMotion ? 0.5 : 0 }}
+          disabled={!finished}
+          aria-hidden={!finished}
+          style={{ pointerEvents: finished ? 'auto' : 'none' }}
           onClick={onAccept}
-          className="mt-14 rounded-sm border border-amber-200/50 px-10 py-3 text-sm tracking-[0.3em] text-amber-100 transition hover:bg-amber-200/10"
+          className="mt-8 rounded-sm border border-amber-200/50 px-10 py-3 text-sm tracking-[0.3em] text-amber-100 transition hover:bg-amber-200/10"
         >
           {brief.accept}
         </motion.button>
-      )}
-
-      {/* the browser would not let the voice start (rare — the player's first
-          tap normally earns that permission). The briefing runs on regardless;
-          this quietly offers the sound, and it joins at the current line. */}
-      {blocked && !finished && (
-        <button
-          onClick={enableSound}
-          className="absolute bottom-6 left-6 rounded-sm border border-amber-200/40 bg-black/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-100/90 transition hover:bg-amber-200/10"
-        >
-          ♪ Sound on
-        </button>
-      )}
+      </motion.div>
 
       {!finished && (
         <button
