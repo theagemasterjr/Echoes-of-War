@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ChapterId } from '@/chapters/types';
-import { synthesize, voiceFor } from '@/server/tts';
+import { lastTtsFailure, synthesize, voiceFor } from '@/server/tts';
 import { checkTtsRateLimit } from '@/server/rateLimit';
 
 export const maxDuration = 30;
@@ -36,7 +36,16 @@ export async function POST(req: NextRequest) {
   }
 
   const buf = await synthesize(text, chapterId);
-  if (!buf) return NextResponse.json({ error: 'synth failed' }, { status: 502 });
+  if (!buf) {
+    // the reason travels only while developing — the live site says no more
+    // than it has to, and the player degrades to silent subtitles either way
+    return NextResponse.json(
+      process.env.NODE_ENV === 'production'
+        ? { error: 'synth failed' }
+        : { error: 'synth failed', reason: lastTtsFailure() },
+      { status: 502 },
+    );
+  }
 
   return new Response(buf, {
     headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' },
