@@ -18,6 +18,12 @@
  * newer backdrop every time the model was rebuilt.)
  *
  * Run:  node scripts/build-ch1-character.mjs
+ *
+ * TODO(claude): when the founder's NEW ch1 animations land, also call
+ * bakeRestPoseFromClip(idleClip) from ./lib/rest-pose.mjs after the clips are
+ * merged (see build-ch2/ch3-character.mjs) so a failed animation start shows
+ * a natural still instead of a T-pose. Deliberately not done yet — the
+ * current ch1 source files are about to be replaced.
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -7,8 +7,8 @@
  * `clips` — the stage passes `talking` and the right clip plays. No other
  * code changes, ever. Generation prompts: docs/model-prompts.md.
  */
-import { Suspense, useEffect, useMemo, useRef, type FC } from 'react';
-import type { ThreeElements } from '@react-three/fiber';
+import { Suspense, useMemo, useRef, type FC } from 'react';
+import { useFrame, type ThreeElements } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import type { Group } from 'three';
 import * as P from './placeholders';
@@ -71,7 +71,7 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     label: 'RAF pilot figure',
     source: {
       kind: 'glb', url: '/models/ch2-pilot.glb',
-      scale: 0.042, offset: [0, -3.0, -0.6], rotation: [0, -0.3, 0], castShadow: false,
+      scale: 0.042, offset: [0, -3.35, -0.6], rotation: [0, -0.3, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
     },
   },
@@ -79,18 +79,16 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   // (flying helmet + goggles on a deckchair). Registered so the swap is ready,
   // but NOT currently rendered anywhere — drawing it is a future scene's job.
   'ch2.prop.helmet': { label: 'Flying helmet on a deckchair', source: { kind: 'placeholder', component: P.HelmetProp } },
-  // Drop-in when the founder's animated sailor lands in public/models/ch3-sailor.glb —
-  // needs baked idle + talking clips; fill `clips` with the REAL clip names from the
-  // file, matching the ch1.character entry above:
-  // 'ch3.character': {
-  //   label: 'US sailor figure',
-  //   source: {
-  //     kind: 'glb', url: '/models/ch3-sailor.glb',
-  //     scale: 4.8, offset: [0, -4.8, 0], castShadow: false,
-  //     clips: { idle: '<idle clip name>', talking: '<talking clip name>' },
-  //   },
-  // },
-  'ch3.character': { label: 'US sailor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  'ch3.character': {
+    label: 'US sailor figure',
+    source: {
+      kind: 'glb', url: '/models/ch3-sailor.glb',
+      // Navy1 rig is cm-scale (181 units standing); both clips are seated, so
+      // the offset lifts the seated head to ~2.4 like the other chapters
+      scale: 0.048, offset: [-0.15, -4.0, -0.5], rotation: [0, -0.15, 0], castShadow: false,
+      clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+    },
+  },
   // Reserved for the chapter 3 minigame scene the founder may build later.
   // Registered so the swaps are ready, but NEITHER is currently rendered
   // anywhere — drawing them is a future scene's job.
@@ -136,22 +134,25 @@ const Glb: FC<
 
   // idle always loops; talking cross-fades in over it while `talking` is true.
   // When both states share one clip, only the playback speed changes.
+  // Checked every frame, not once on mount: a start command issued at an
+  // unlucky moment (mid-transition, remount, hot reload) used to fail silently
+  // and leave the character T-posed forever — now a miss just retries next frame.
   const lastClip = useRef<string | null>(null);
-  useEffect(() => {
+  useFrame(() => {
     if (!clips) return;
     const name = talking ? clips.talking : clips.idle;
     const next = actions[name];
-    if (!next) return;
+    if (!next) return; // bindings not ready yet — try again next frame
     next.timeScale = talking ? 1 : (clips.idleTimeScale ?? 1);
     if (lastClip.current !== name) {
       const prev = lastClip.current ? actions[lastClip.current] : null;
-      next.reset().play();
+      next.reset().setEffectiveWeight(1).play();
       if (prev && prev !== next) next.crossFadeFrom(prev, 0.35, false);
-    } else {
-      next.play();
+      lastClip.current = name;
+    } else if (!next.isRunning()) {
+      next.reset().setEffectiveWeight(1).play(); // something stopped it — heal
     }
-    lastClip.current = name;
-  }, [talking, actions, clips]);
+  });
 
   return (
     <group {...props} ref={group} rotation={rotation}>
