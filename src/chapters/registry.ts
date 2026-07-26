@@ -44,7 +44,7 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch4', index: 4, title: 'Turning the Tide', subtitle: 'Stalingrad',
     dates: '1942–1943', location: 'Stalingrad, USSR',
-    characterName: 'Nina Volkova', characterRole: 'Front-line medic',
+    characterName: 'Nikolai Volkov', characterRole: 'Front-line medic',
     /* recalibrated to the current map texture: the old [1.40, 0, -1.14] sat on
      * the northern shore of the Caspian, a few hundred km south-east of the
      * city. Fixed against the two markers known to be right on this texture
@@ -56,7 +56,7 @@ export const CHAPTERS: ChapterMeta[] = [
      * the styled placeholder frame and its CONTINUE goes on to the brief.
      * Dropping ch4-intro.mp4 in needs no code change at all. */
     introVideo: '/video/ch4-intro.mp4',
-    // conversationBackdrop: '/img/ch4-cellar.jpg',  // uncomment once the file exists — a missing image breaks the 3D stage rather than degrading
+    conversationBackdrop: '/img/ch4-ruins.jpg',
     /* Looking down on the whole map (about 52°, the paper filling the frame with
      * the pieces' row along the near edge inside the bottom of it) — the
      * "Operation Uranus" table. Fits the 8.4 × 6.3 map plus the tray at z 3.2

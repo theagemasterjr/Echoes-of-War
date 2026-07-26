@@ -109,19 +109,16 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'ch3.doc.decree': { label: 'Sealed Imperial decree (round 1)', source: { kind: 'glb', url: '/models/ch3-doc-decree.glb', scale: 3.2 } },
   'ch3.doc.folder': { label: 'Strapped military mission folder (round 2)', source: { kind: 'glb', url: '/models/ch3-doc-folder.glb', scale: 3.2 } },
   'ch3.doc.envelope': { label: 'Official Washington envelope (round 3)', source: { kind: 'glb', url: '/models/ch3-doc-envelope.glb', scale: 3.2 } },
-  // Drop-in when the founder's model lands in public/models/ch4-medic.glb —
-  // it MUST be exported with an idle loop and a talking loop, and the two clip
-  // names below must be the real names from inside the file (the stage
-  // cross-fades between them). Mirror of the ch1.character block above:
-  // 'ch4.character': {
-  //   label: 'Soviet medic figure',
-  //   source: {
-  //     kind: 'glb', url: '/models/ch4-medic.glb',
-  //     scale: 4.76, offset: [0, -6.13, 0], castShadow: false,   // re-measure: top of head ≈ y 2.48
-  //     clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
-  //   },
-  // },
-  'ch4.character': { label: 'Soviet medic figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  'ch4.character': {
+    label: 'Soviet medic figure',
+    source: {
+      kind: 'glb', url: '/models/ch4-medic.glb',
+      // Ch49 rig is metre-scale; both clips are seated with the head at y 1.30,
+      // so this puts the top of the head at ~2.40 like the other chapters
+      scale: 4.76, offset: [0, -3.79, -0.5], rotation: [0, -0.25, 0], castShadow: false,
+      clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+    },
+  },
   // Chapter 4 "Operation Uranus" minigame — the pieces the player lays out on
   // the red-stained map. Scales are set from each file's measured bounds so the
   // set reads at one size on the table: the two markers ~0.7 units tall, the

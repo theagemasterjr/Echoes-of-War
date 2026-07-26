@@ -183,7 +183,7 @@ Still for the founder to drop in (everything works with placeholders until then)
 - After editing the ch3 brief text, run `npm run build:briefs` to give it a voice.
 
 ## Chapter 4 — same pattern, plus extra care with the subject
-Chapter 4 (Turning the Tide — **Nina Volkova**, a nineteen-year-old front-line medic in
+Chapter 4 (Turning the Tide — **Nikolai Volkov**, a nineteen-year-old front-line medic in
 Stalingrad in early February 1943, a few days after the last German troops gave up)
 follows the same shape: one open conversation node with all twenty learning points live
 from the first turn, and **five** objectives, in this order:
@@ -212,10 +212,10 @@ correct arrangement, no score and no timer:
 Two things make it teach rather than just play, and neither is decoration:
 **every piece on the table is labelled** (the flank labels most of all — without
 *Romanian Army* and *Hungarian Army* the player only learns "hit the smaller piece"), and
-**every wrong drop gets Nina's reason, never a bare no**. Both live in
+**every wrong drop gets Nikolai's reason, never a bare no**. Both live in
 `src/chapters/ch4/uranusStore.ts` with the rest of the board.
 
-Nothing in the minigame asks anything Nina has not already taught: each slot names the
+Nothing in the minigame asks anything Nikolai has not already taught: each slot names the
 learning point that teaches it.
 
 **The tone rules for this chapter are part of the content, not a style note.** They live
@@ -235,23 +235,23 @@ inherits them:
 
 Chapter 6 (Hiroshima) will need the same treatment.
 
-**Two things are deliberately placeholders**, and the chapter plays start to finish with
-both of them missing:
+**One thing is deliberately a placeholder**, and the chapter plays start to finish with
+it missing:
 - `public/video/ch4-intro.mp4` — **the intro film does not exist yet.** The beat still runs
   in the right order and holds on the styled "coming soon" frame, whose CONTINUE goes on to
   the mission brief. Dropping the file in needs nothing but the file. Ruins, snow, a river,
   a lamp; no casualties on screen.
-- `public/models/ch4-medic.glb` — **Nina has no 3D model yet.** The conversation stands in
-  a plain bust and is otherwise complete: she speaks, she answers, objectives tick, and
-  CONTINUE hands over to the war table. See the drop-in checklist in `docs/model-prompts.md`.
 
-Also still for the founder (everything works without them):
-- `public/img/ch4-cellar.jpg` — optional conversation backdrop (then uncomment its line
-  in `src/chapters/registry.ts`; do not uncomment before the file exists).
-- Nina's voice: set `ELEVENLABS_VOICE_CH4` in `.env.local` (and Vercel), or verify the
-  stock "Sarah" id in `src/server/tts.ts`. It must not be chapter 1's voice — both
-  characters are young women. Wrong or missing = silent subtitles, in the conversation and
-  for her corrections on the war table alike.
+Already in place (was a placeholder, now real):
+- `public/models/ch4-medic.glb` — Nikolai's model, baked from the founder's two Music-folder
+  exports by `scripts/build-ch4-character.mjs` (Idle_Loop + Talking_Loop merged, spec/gloss
+  maps stripped to flat roughness, webp textures).
+- `public/img/ch4-ruins.jpg` — the conversation backdrop (ruined snowy street), wired in
+  `src/chapters/registry.ts`.
+- Nikolai's voice: stock "Charlie" in `src/server/tts.ts`, verified against this account.
+  Setting `ELEVENLABS_VOICE_CH4` in `.env.local` (and Vercel) overrides it without a code
+  change. Wrong or missing = silent subtitles, in the conversation and for his corrections
+  on the war table alike.
 
 Already done and not to be re-done by hand: the mission brief lines
 (`src/content/briefs.json`) and its recorded take, timed into

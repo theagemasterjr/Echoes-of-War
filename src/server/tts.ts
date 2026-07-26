@@ -33,16 +33,17 @@ const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // GET /v1/voices are safe here. Setting ELEVENLABS_VOICE_CH3 overrides this
   // without a code change — but check any replacement id the same way.
   ch3: process.env.ELEVENLABS_VOICE_CH3 ?? 'bIHbv24MWmeRgasZH58o',
-  // 'EXAVITQu4vr4xnSDxMaL' = ElevenLabs stock "Sarah" (young female, soft and
-  // even) — deliberately NOT ch1's "Jessica": Zofia and Nina are both young
-  // women, and one voice for both would break the illusion. Sarah is the
-  // calmer, lower of the two.
-  // TODO(founder): verify this voice id in your ElevenLabs library, and confirm
-  // it does not sound like ch1's. Setting ELEVENLABS_VOICE_CH4 overrides it
-  // without a code change. Only stock/premade voices listed under
-  // GET /v1/voices are safe here — see the ch3 note above for what a
-  // professional voice id costs you (silence, with no error on screen).
-  ch4: process.env.ELEVENLABS_VOICE_CH4 ?? 'EXAVITQu4vr4xnSDxMaL',
+  // 'IKne3meq5aSn9XLyUdCD' = ElevenLabs stock "Charlie" (young male) — the
+  // closest young-male premade to nineteen-year-old Nikolai, and deliberately
+  // NOT ch3's "Will" (the two would otherwise blur together). Verified against
+  // this account: it is listed under GET /v1/voices as premade.
+  // TODO(founder): audition it — "Roger" (CwhRBWXzGAHq8TQ4Fs17) and "Eric"
+  // (cjVigY5qzO86Huf0OWal) are calmer, older-sounding alternates on this
+  // account. Setting ELEVENLABS_VOICE_CH4 overrides without a code change;
+  // only stock/premade voices listed under GET /v1/voices are safe here — see
+  // the ch3 note above for what a professional voice id costs you (silence,
+  // with no error on screen).
+  ch4: process.env.ELEVENLABS_VOICE_CH4 ?? 'IKne3meq5aSn9XLyUdCD',
 };
 
 export function voiceFor(chapterId: ChapterId): string | undefined {

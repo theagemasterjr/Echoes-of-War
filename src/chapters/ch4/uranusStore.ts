@@ -7,7 +7,7 @@
  * the war-room table. Five drags, three phases, one correct arrangement: this is
  * a comprehension check made physical, not a strategy simulation. There is no
  * score, no timer, no lives, and no penalty for a wrong drop beyond an
- * explanation in Nina's voice. The player may retry as often as they like.
+ * explanation in Nikolai's voice. The player may retry as often as they like.
  *
  * NOTHING IS ASKED HERE THAT NINA HAS NOT ALREADY TAUGHT. Every slot names the
  * learning point in src/content/trees/ch4.ts that teaches it (`teachesPointId`)
@@ -27,7 +27,7 @@
  * further up the Don to the north-west; the Hungarians were broken in the weeks
  * that followed. Both were Axis allies holding flank sectors of that front, and
  * the point the labels exist to teach — Germany's flanks were held by its
- * allies, not by Germans — is exactly right. Nina's own dialogue carries the
+ * allies, not by Germans — is exactly right. Nikolai's own dialogue carries the
  * fuller version; see her `flanks` learning point.
  */
 import { create } from 'zustand';
@@ -53,11 +53,14 @@ export function mapToWorld([u, v]: MapPoint): [number, number, number] {
 export type Phase = 'why' | 'strike' | 'close' | 'sealed';
 
 /** One short line at the top of the screen — the only instruction text in the
- *  whole minigame. Everything else is taught by the board. */
+ *  whole minigame. Everything else is taught by the board. Each line says what
+ *  to DO (drag a piece somewhere) as well as what it means, because a player
+ *  who has never seen the board cannot be expected to guess that the floating
+ *  pieces at the table edge are for picking up. */
 export const INSTRUCTION: Record<Phase, string> = {
-  why: 'Mark what Germany came for.',
-  strike: 'Where do you strike?',
-  close: 'Close it.',
+  why: 'Drag the two markers onto the map — mark what Germany came for.',
+  strike: 'Drag a hammer to where the Red Army should strike.',
+  close: 'One hammer left — drag it in to close the trap.',
   sealed: 'The ring is closed.',
 };
 
@@ -93,6 +96,12 @@ export interface Slot {
   id: string;
   phase: Phase;
   at: MapPoint;
+  /** Where a seated piece actually rests, when that differs from the drop
+   *  target's centre. The two flank slots need this: their `at` is the ally
+   *  piece holding the line, and a hammer seated on the very same point would
+   *  stand inside the ally model. The hammer sits just east of the line
+   *  instead — the side the Red Army attacked from. */
+  seatAt?: MapPoint;
   /** How generous the drop target is, in table units. */
   radius: number;
   /** Piece ids this slot will seat. An empty list is a slot that always
@@ -100,7 +109,7 @@ export interface Slot {
   accepts: PieceId[];
   /** The one line that appears under the board on a correct drop. */
   caption?: string;
-  /** Nina's line when the wrong thing is put here (or when this slot refuses
+  /** Nikolai's line when the wrong thing is put here (or when this slot refuses
    *  everything). Never a bare rejection — always the reason. */
   refuses?: string;
   /** The learning point in trees/ch4.ts that teaches this slot. */
@@ -140,6 +149,7 @@ export const SLOTS: Slot[] = [
     id: 'left-flank',
     phase: 'strike',
     at: [0.51, 0.42],
+    seatAt: [0.56, 0.39],
     radius: 0.6,
     accepts: ['hammer-1', 'hammer-2'],
     caption: 'This side is held by Romanians — Germany’s allies, not Germans.',
@@ -159,6 +169,7 @@ export const SLOTS: Slot[] = [
     id: 'right-flank',
     phase: 'strike',
     at: [0.675, 0.74],
+    seatAt: [0.735, 0.74],
     radius: 0.6,
     accepts: ['hammer-1', 'hammer-2'],
     caption: 'This side is held by Hungarians — Germany’s allies, not Germans.',
@@ -177,7 +188,7 @@ export const SLOTS: Slot[] = [
 
 export const slotById = (id: string) => SLOTS.find((s) => s.id === id)!;
 
-/** What Nina says when a piece is let go over open table — a nudge, never a
+/** What Nikolai says when a piece is let go over open table — a nudge, never a
  *  telling-off. One per phase. */
 export const NOWHERE_LINE: Record<Phase, string> = {
   why: 'Not just anywhere. The two places worth marking are the ones glowing.',
@@ -209,10 +220,12 @@ export interface Scenery {
 
 export const SCENERY: Scenery[] = [
   { id: 'city', assetId: 'ch4.piece.city', at: [0.621, 0.552], label: 'Stalingrad', labelNudge: [0.055, 0.008] },
-  // one label for all three German pieces, not three
-  { id: 'german-1', assetId: 'ch4.piece.german', at: [0.586, 0.5], german: true },
-  { id: 'german-2', assetId: 'ch4.piece.german', at: [0.578, 0.57], german: true, label: 'German 6th Army', labelNudge: [-0.075, 0.055] },
-  { id: 'german-3', assetId: 'ch4.piece.german', at: [0.6, 0.622], german: true },
+  // One label for all three German pieces, not three. They cluster tight
+  // around the city but hold ~0.6 table units off its centre — the city model
+  // is 0.89 units square, so anything nearer stands inside the ruins.
+  { id: 'german-1', assetId: 'ch4.piece.german', at: [0.573, 0.481], german: true },
+  { id: 'german-2', assetId: 'ch4.piece.german', at: [0.553, 0.58], german: true, label: 'German 6th Army', labelNudge: [-0.075, 0.055] },
+  { id: 'german-3', assetId: 'ch4.piece.german', at: [0.595, 0.64], german: true },
   { id: 'ally-left', assetId: 'ch4.piece.ally', at: [0.51, 0.42], label: 'Romanian Army', labelNudge: [-0.062, 0.036] },
   { id: 'ally-right', assetId: 'ch4.piece.ally', at: [0.675, 0.74], label: 'Hungarian Army', labelNudge: [0.058, 0.032] },
 ];
@@ -239,11 +252,12 @@ export const RING_SOUTH: MapPoint[] = [
 ];
 
 /** The curved paths the two flank hammers sweep along as the ring closes:
- *  start, a control point that bows them round the outside, and the meeting
- *  point behind the city. */
+ *  start (each flank slot's seatAt, so the sweep begins where the hammer
+ *  actually stands), a control point that bows them round the outside, and the
+ *  meeting point behind the city. */
 export const SWEEPS: Record<'left-flank' | 'right-flank', { from: MapPoint; via: MapPoint; to: MapPoint }> = {
-  'left-flank': { from: [0.51, 0.42], via: [0.372, 0.452], to: [0.495, 0.575] },
-  'right-flank': { from: [0.675, 0.74], via: [0.542, 0.79], to: [0.495, 0.575] },
+  'left-flank': { from: [0.56, 0.39], via: [0.372, 0.452], to: [0.495, 0.575] },
+  'right-flank': { from: [0.735, 0.74], via: [0.542, 0.79], to: [0.495, 0.575] },
 };
 
 /* ───────────────────────── the objectives panel ───────────────────────── */
@@ -310,7 +324,7 @@ interface UranusState {
   phase: Phase;
   /** slot id → the piece seated in it. */
   placed: Record<string, PieceId>;
-  /** Nina's last spoken line (a refusal or a nudge), and when it landed. */
+  /** Nikolai's last spoken line (a refusal or a nudge), and when it landed. */
   said: { text: string; at: number } | null;
   /** The caption under the board from the last correct drop. */
   caption: { text: string; at: number } | null;
@@ -338,7 +352,7 @@ const fresh = () => ({
   ticked: [] as string[],
 });
 
-/** Speak one of Nina's lines through the same voice the conversation uses.
+/** Speak one of Nikolai's lines through the same voice the conversation uses.
  *  Fire-and-forget and silent when no voice key is configured; an identical
  *  line twice in a row is not repeated, so a run of sloppy drops never turns
  *  into a stutter. */
@@ -379,7 +393,7 @@ export const useUranusStore = create<UranusState>((set, get) => ({
     }
 
     const placed = { ...s.placed, [slotId]: pieceId };
-    // a correct drop clears whatever Nina was last explaining
+    // a correct drop clears whatever Nikolai was last explaining
     const next: Partial<UranusState> = {
       placed,
       said: null,

@@ -178,11 +178,14 @@ Also: `public/video/ch3-intro.mp4` (intro film — a styled "coming soon" frame 
 until then) and optionally `public/img/ch3-harbor.jpg` (conversation backdrop — then
 uncomment its line in `src/chapters/registry.ts`).
 
-### `ch4.character` — Nina Volkova, Soviet front-line medic (Stalingrad, 1943)
+### `ch4.character` — Nikolai Volkov, Soviet front-line medic (Stalingrad, 1943)
+**Done** — `public/models/ch4-medic.glb` is real, baked by `scripts/build-ch4-character.mjs`
+from the founder's two Music-folder exports (Idle_Loop + Talking_Loop). The prompt below is
+kept for regenerating him.
 Match the persona in `src/content/trees/ch4.ts`: nineteen, calm, practical, very tired.
 If generating for animation (Meshy rig), export with a calm standing **idle** clip and a
 **talking** clip — that is what the conversation stage cross-fades between.
-> A photorealistic full-body young Soviet female combat medic of 1942, about nineteen, heavy winter greatcoat over a padded jacket, fur ushanka hat with the flaps down, a canvas medical bag on a strap across her shoulder, mittens tucked in her belt, chapped hands, weary steady expression, standing naturally at ease in the cold. Muted winter palette, film-lighting friendly. **No weapons, no wounds, no blood.**
+> A photorealistic full-body young Soviet male combat medic of 1942, about nineteen, heavy winter greatcoat over a padded jacket, fur ushanka hat with the flaps down, a canvas medical bag on a strap across his shoulder, mittens tucked in his belt, chapped hands, weary steady expression, standing naturally at ease in the cold. Muted winter palette, film-lighting friendly. **No weapons, no wounds, no blood.**
 
 ### `ch4.piece.*` — the six pieces of the "Operation Uranus" table (all real)
 The chapter 4 minigame is played on the war-room table with the founder's own models, all
@@ -205,16 +208,14 @@ file in and point `ch4.piece.ally` at it; nothing else changes.
 
 **Chapter 4 drop-in checklist** (each swap is one registry line in `src/assets/registry.tsx`,
 next to a comment showing the exact line):
-1. `public/models/ch4-medic.glb` — **must be exported with an idle loop and a talking
-   loop** → uncomment the `ch4.character` glb block and fill in the two real clip names
-   from inside the file. Until then the conversation runs with a plain stand-in bust: Nina
-   speaks, answers, ticks objectives and hands over to the minigame exactly as she will
-   with the real model.
+1. ~~`public/models/ch4-medic.glb`~~ — **done**: the `ch4.character` glb entry is live
+   (clips `Idle_Loop` + `Talking_Loop`, rebuilt any time with
+   `node scripts/build-ch4-character.mjs`).
 2. Optional: a separate ally piece, as above.
 The map marker (`bandages.glb`) and all six table pieces are already real — leave them.
 Also: `public/video/ch4-intro.mp4` (intro film — a styled "coming soon" frame stands in
-until then) and optionally `public/img/ch4-cellar.jpg` (conversation backdrop — then
-uncomment its line in `src/chapters/registry.ts`; do not uncomment before the file exists).
+until then). The conversation backdrop is real too: `public/img/ch4-ruins.jpg`, wired in
+`src/chapters/registry.ts`.
 
 ⚠ **Chapter 4's film and backdrop follow the same restraint as its words:** ruins, snow, a
 river, a lamp in a cellar — **no casualties on screen**, and nothing that makes the fighting
