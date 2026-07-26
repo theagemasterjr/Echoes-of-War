@@ -33,7 +33,7 @@ export const CHAPTERS: ChapterMeta[] = [
     /* recalibrated to the current map texture — the old [-4.93, 0, -0.16] sat on the west paper roll */
     markerPosition: [-4.4, 0, 0.0], markerAssetId: 'ch3.marker', characterAssetId: 'ch3.character',
     introVideo: '/video/ch3-intro.mp4',
-    // conversationBackdrop: '/img/ch3-harbor.jpg',  // uncomment once the file exists — a missing image breaks the 3D stage rather than degrading
+    conversationBackdrop: '/img/ch3-studio.jpg',
   },
   {
     id: 'ch4', index: 4, title: 'Turning the Tide', subtitle: 'Stalingrad',

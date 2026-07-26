@@ -22,6 +22,7 @@ import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
 import { copyToDocument, dedup, weld, resample, prune, meshopt, unpartition } from '@gltf-transform/functions';
 import { MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
+import { bakeRestPoseFromClip } from './lib/rest-pose.mjs';
 
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -97,6 +98,9 @@ async function main() {
   for (const copy of copied.values()) if (copy instanceof Node) copy.dispose();
   for (const a of root.listAnimations())
     if (a !== idleClip && a !== talkClip) a.dispose(); // empty "Take 001"s
+
+  /* -- 2b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
+  bakeRestPoseFromClip(idleClip);
 
   /* -- 3. drop unused vertex attributes ------------------------------- */
   for (const mesh of root.listMeshes())
