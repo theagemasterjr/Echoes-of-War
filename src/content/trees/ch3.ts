@@ -27,12 +27,12 @@ import type { ConstraintTree } from '@/conversation/treeTypes';
  * ticks off the instant the PLAYER's own message contains one of its
  * keywords, so a kid sees progress from their very first question.
  *
- * THE TEN LEARNING POINTS ARE THE CHAPTER'S CONTRACT. The eight cards in the
- * timeline minigame are drawn from them (see src/chapters/ch3/timelineStore.ts,
- * where each event names the point that teaches it). Nothing is asked in the
- * minigame that Ray has not explained here — so the ids china, oil, plan,
- * sunday, infamy, germany and oneworld must keep existing and must keep
- * covering the material their cards test.
+ * THE TEN LEARNING POINTS ARE THE CHAPTER'S CONTRACT. The Letters of December
+ * minigame tests the same material (see src/chapters/ch3/lettersStore.ts —
+ * each round's question maps to one of the three objectives). Nothing is
+ * asked in the minigame that Ray has not explained here — so the ids china,
+ * oil, plan, sunday, infamy, germany and oneworld must keep existing and must
+ * keep covering the material their rounds test.
  *
  * Two traps to know about: he must HEDGE on casualty numbers (official
  * counts came later — he knows "more than two thousand", not a tally), and

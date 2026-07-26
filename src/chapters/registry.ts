@@ -25,6 +25,9 @@ export const CHAPTERS: ChapterMeta[] = [
     markerPosition: [-0.52, 0, -1.66], markerAssetId: 'ch2.marker', characterAssetId: 'ch2.character',
     introVideo: '/video/ch2-intro.mp4',
     conversationBackdrop: '/img/ch2-hangar.jpg',
+    /* high over the table so the box row sits in the upper third and the
+     * piece row across the lower third, full-scale pieces on normal windows */
+    minigameCamera: { pos: [0, 4.6, 7.0], target: [0, 0.1, -0.6] },
   },
   {
     id: 'ch3', index: 3, title: 'A World at War', subtitle: 'Pearl Harbor and a global conflict',
@@ -34,6 +37,9 @@ export const CHAPTERS: ChapterMeta[] = [
     markerPosition: [-4.4, 0, 0.0], markerAssetId: 'ch3.marker', characterAssetId: 'ch3.character',
     introVideo: '/video/ch3-intro.mp4',
     conversationBackdrop: '/img/ch3-studio.jpg',
+    /* looking down at the row of four flat documents (~37° with the built-in
+     * tilt) — room for the round banner above and the confirm panel below */
+    minigameCamera: { pos: [0, 2.9, 5.6], target: [0, 0.15, -0.3] },
   },
   {
     id: 'ch4', index: 4, title: 'Turning the Tide', subtitle: 'Stalingrad',

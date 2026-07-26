@@ -39,6 +39,20 @@ export function voiceFor(chapterId: ChapterId): string | undefined {
   return VOICE_IDS[chapterId];
 }
 
+/**
+ * Why the last synthesis failed. The player never sees this — voice is
+ * optional and failing silently is deliberate — but a silent character is
+ * otherwise indistinguishable from a broken one, and this is the difference
+ * between "the key ran out" and hours of guessing. Read by /api/tts.
+ */
+let lastFailure: string | null = null;
+export const lastTtsFailure = () => lastFailure;
+
+function noteFailure(reason: string) {
+  lastFailure = reason;
+  console.warn(`[tts] ${reason}`);
+}
+
 // Small FIFO cache so intros, deflections and REPEAT are free (no re-synth).
 const CACHE_MAX = 40;
 const cache = new Map<string, ArrayBuffer>();
@@ -99,13 +113,24 @@ export async function synthesize(
         body: JSON.stringify({ text: clean, model_id: TTS_MODEL }),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // The player still just gets silent subtitles, but "the voice is gone"
+      // must never again be a mystery: record why. Every past silence (an
+      // exhausted key, a voice the account can't use, a mistyped key) showed
+      // up here as a status code and a one-line reason.
+      noteFailure(`ElevenLabs ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
+      return null;
+    }
     const buf = await res.arrayBuffer();
-    if (!buf.byteLength) return null;
+    if (!buf.byteLength) {
+      noteFailure('ElevenLabs returned an empty clip');
+      return null;
+    }
     cacheSet(key, buf);
     writeCacheFile(file, Buffer.from(buf)); // fire-and-forget
     return buf;
-  } catch {
+  } catch (err) {
+    noteFailure(`could not reach ElevenLabs: ${(err as Error)?.message ?? 'unknown'}`);
     return null;
   }
 }
