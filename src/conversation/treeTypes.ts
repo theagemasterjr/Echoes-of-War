@@ -38,7 +38,14 @@ export interface ConstraintTree {
   objectives?: ObjectiveDef[];
 }
 
-/** One row of the on-screen Objectives panel; checked off client-side. */
+/**
+ * One row of the on-screen Objectives panel. It checks off two ways, and
+ * either is enough — a row never un-checks once ticked:
+ *  1. the PLAYER says one of its keywords (client-side, instant);
+ *  2. the CHARACTER'S answer actually covers the concept, in whatever words
+ *     they choose (graded server-side against the row's label — see
+ *     server/coverage.objectiveCoverage).
+ */
 export interface ObjectiveDef {
   id: string;
   label: string;
@@ -88,6 +95,8 @@ export interface ChatRequest {
   message: string;
   /** First call of a conversation: character introduces itself. */
   intro?: boolean;
+  /** Objective ids already ticked off on screen — only the rest get graded. */
+  objectivesDone?: string[];
 }
 
 export interface ChatResponse {
@@ -102,4 +111,7 @@ export interface ChatResponse {
   nodeId: string;
   /** The chapter's objectives — rides every response so the checklist is self-healing. */
   objectives?: ObjectiveDef[];
+  /** Objectives this reply actually explained — they tick off alongside the
+   *  ones the player's own words already ticked. */
+  objectivesCovered?: string[];
 }

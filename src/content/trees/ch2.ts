@@ -11,10 +11,14 @@ import type { ConstraintTree, StageNode } from '@/conversation/treeTypes';
  * SHAPE OF THIS CHAPTER: five stages, told in order, one per on-screen
  * objective —
  *   1. Escape at Dunkirk
- *   2. Britain stands alone
+ *   2. France’s Surrender
  *   3. Eagle Day
- *   4. The cities burn
- *   5. The battle won
+ *   4. The Blitz
+ *   5. How Britain Won
+ * (The stage `title`s below are the older wording — they are debug-screen
+ * labels only. The five names above are what the player actually reads, and
+ * they live in `objectives`. The chapter's closing summary keeps its own
+ * wording, because the narration recording is timed to it.)
  * Each stage has two or three learning points. The stage advances once they
  * are covered, so the summer arrives in the order it happened instead of all
  * at once. Tom answers whatever is asked, but keeps drawing the talk back to
@@ -318,7 +322,7 @@ const tree: ConstraintTree = {
     },
     {
       id: 'obj-alone',
-      label: 'Britain stands alone',
+      label: 'France’s Surrender',
       keywords: ['france surrendered', 'france fell', 'fall of france', 'france gave up', 'france gave in', 'french surrender', 'surrendered', 'surrender', 'armistice', 'alone', 'on our own', 'on its own', 'on their own', 'by itself', 'stood alone', 'stands alone', 'standing alone', 'no allies', 'no help', 'only country left', 'last country', 'commonwealth', 'paris', 'sea lion', 'operation sea lion', 'invade britain', 'june 1940'],
     },
     {
@@ -328,12 +332,12 @@ const tree: ConstraintTree = {
     },
     {
       id: 'obj-cities',
-      label: 'The cities burn',
+      label: 'The Blitz',
       keywords: ['blitz', 'london', 'cities', 'the city', 'bombing', 'bombed', 'bombs', 'bombers', 'east end', 'the docks', 'burning', 'burned', 'burnt', 'on fire', 'shelter', 'shelters', 'anderson shelter', 'underground', 'the tube', 'blackout', 'siren', 'sirens', 'air raid', 'air raids', 'civilians', 'ordinary people', 'at night', 'night raids', '7 september', 'berlin'],
     },
     {
       id: 'obj-won',
-      label: 'The battle won',
+      label: 'How Britain Won',
       keywords: ['won', 'win', 'winning', 'victory', 'beat them', 'beaten', 'beaten back', 'turned back', 'drove them off', 'gave up', 'give up', 'stopped coming', 'stopped attacking', '15 september', 'fifteenth of september', 'battle of britain day', 'invasion called off', 'called off', 'never came', 'did they invade', 'how did it end', 'the end', 'end of the battle', 'who won', 'over now', 'safe now', 'the few'],
     },
   ],

@@ -6,7 +6,7 @@ import { Component, type ReactNode } from 'react';
  * and around each chapter's DOM beats; a chapter crash offers a way home.
  */
 export class ErrorBoundary extends Component<
-  { children: ReactNode; onReset?: () => void; label?: string },
+  { children: ReactNode; onReset?: () => void; label?: string; resetLabel?: string },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<
             this.props.onReset?.();
           }}
         >
-          Return to the map
+          {this.props.resetLabel ?? 'Return to the map'}
         </button>
       </div>
     );

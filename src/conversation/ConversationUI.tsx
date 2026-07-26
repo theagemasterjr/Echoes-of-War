@@ -19,8 +19,24 @@ export function ConversationUI({
   const [draft, setDraft] = useState('');
   const [voiceMode, setVoiceMode] = useState(false);
   const [lineDone, setLineDone] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const started = useRef(false);
   const msgCount = convo.messages.length;
+  // Every row ticked? Then CONTINUE just goes. Otherwise it asks first — this
+  // is the one thing standing between a student and skipping their objectives
+  // by accident. A chapter with no objectives (the ch4–ch6 skeletons) is
+  // vacuously done, so it never nags.
+  const objectivesLeft = convo.objectives.filter(
+    (o) => !convo.objectivesDone.includes(o.id),
+  ).length;
+  const leave = () => {
+    setConfirming(false);
+    onContinue();
+  };
+  const tryContinue = () => {
+    if (objectivesLeft === 0) leave();
+    else setConfirming(true);
+  };
 
   // a new line starts un-finished; guided chips wait until it has fully played
   useEffect(() => setLineDone(false), [msgCount]);
@@ -53,14 +69,23 @@ export function ConversationUI({
         </div>
       </div>
 
-      {/* left-side objectives — check off the moment the player says the words.
+      {/* left-side objectives — a row checks off the moment the player says the
+          words, or the moment the character explains that concept.
           Hidden when there are no objectives (no-key case, ch4–ch6 skeletons). */}
       {convo.objectives.length > 0 && (
         <ObjectivesPanel objectives={convo.objectives} doneIds={convo.objectivesDone} />
       )}
 
+      {confirming && (
+        <UnfinishedObjectivesDialog
+          left={objectivesLeft}
+          onStay={() => setConfirming(false)}
+          onLeave={leave}
+        />
+      )}
+
       {voiceMode ? (
-        <VoiceMode onExit={() => setVoiceMode(false)} onContinue={onContinue} />
+        <VoiceMode onExit={() => setVoiceMode(false)} onContinue={tryContinue} />
       ) : (
       <div className="mx-auto mb-4 w-full max-w-3xl px-4">
         {/* subtitle line */}
@@ -126,16 +151,18 @@ export function ConversationUI({
           >
             ASK
           </button>
+          {/* Always available: the guard is the pop-up, not a locked button —
+              a player who wants to move on can, and a player who forgot an
+              objective is asked once. */}
           <motion.button
-            onClick={onContinue}
-            disabled={!convo.canContinue}
-            animate={convo.canContinue ? { opacity: 1 } : { opacity: 0.35 }}
+            onClick={tryContinue}
+            animate={{ opacity: objectivesLeft === 0 ? 1 : 0.75 }}
             title={
-              convo.canContinue
+              objectivesLeft === 0
                 ? 'Continue the chapter'
-                : 'Keep talking — there is more to hear first'
+                : 'You still have objectives left — we’ll check first'
             }
-            className="rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 text-xs tracking-widest text-amber-100"
+            className="rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 text-xs tracking-widest text-amber-100 transition hover:bg-amber-200/20"
           >
             CONTINUE →
           </motion.button>
@@ -147,6 +174,82 @@ export function ConversationUI({
       </div>
       )}
     </div>
+  );
+}
+
+/**
+ * "Are you sure?" — the one thing between a student and accidentally walking
+ * out on their objectives. Deliberately weighted toward staying: staying is
+ * the bright, obvious button; leaving is the quiet one. Nothing is scolded,
+ * nothing is blocked.
+ *
+ * Sized and spaced for the easy-read font: no cramped lines, no tiny type, no
+ * tight letter-spacing on anything that has to be read as words.
+ */
+function UnfinishedObjectivesDialog({
+  left, onStay, onLeave,
+}: {
+  left: number;
+  onStay: () => void;
+  onLeave: () => void;
+}) {
+  const stayRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    stayRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onStay();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/70 px-6 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="objectives-guard-title"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="w-full max-w-md rounded-md border border-amber-200/30 bg-stone-950/95 p-7 text-center shadow-2xl"
+      >
+        <div className="text-[10px] uppercase tracking-[0.3em] text-amber-200/60">
+          Hold on a moment
+        </div>
+        <h2
+          id="objectives-guard-title"
+          className="mt-3 text-xl font-light leading-snug text-stone-100"
+        >
+          You still have {left} {left === 1 ? 'objective' : 'objectives'} to finish.
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-stone-300">
+          A few more questions and {left === 1 ? 'it’s' : 'they’re'} yours. Are you sure you
+          want to go on?
+        </p>
+        <div className="mt-7 flex flex-col gap-3">
+          <button
+            ref={stayRef}
+            onClick={onStay}
+            className="rounded-sm border border-amber-200/60 bg-amber-200/15 px-6 py-3 text-sm tracking-wide text-amber-100 transition hover:bg-amber-200/25"
+          >
+            Stay and keep learning
+          </button>
+          <button
+            onClick={onLeave}
+            className="rounded-sm border border-stone-700 px-6 py-2.5 text-sm text-stone-400 transition hover:border-stone-500 hover:text-stone-200"
+          >
+            Continue anyway
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -267,10 +370,21 @@ function VoiceModeButton({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** Voice mode: talk with the character out loud. You speak; when you finish,
- *  the question is sent (the character never talks over you). The answer plays
- *  in voice while the words appear on screen, then it listens again. The 3D
- *  character stays visible — this overlay only owns the bottom of the screen. */
+/**
+ * Voice mode: talk with the character out loud.
+ *
+ * THE MICROPHONE ONLY EVER TURNS ON WHEN THE PLAYER PRESSES THE BUTTON. It
+ * does not switch itself on when the character finishes speaking, and it does
+ * not switch itself on at any other moment — after a reply it sits off and
+ * waits. (It used to start listening the instant the voice ended, which meant
+ * a classroom full of children were being recorded without having asked.)
+ * The button says which state it is in, in words and in colour, always.
+ *
+ * You press, you speak; when you stop, the question is sent (the character
+ * never talks over you) and the mic goes off. The answer plays in voice while
+ * the words appear on screen. The 3D character stays visible — this overlay
+ * only owns the bottom of the screen.
+ */
 function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () => void }) {
   const convo = useConversation();
   const [mode, setMode] = useState<'ready' | 'listening' | 'thinking' | 'speaking'>(
@@ -356,11 +470,15 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [msgCount]);
 
-  // when the spoken line ends, listen again — a natural back-and-forth
+  // when the spoken line ends, the mic stays OFF and waits for a press —
+  // never opened by anything but the player's own hand
   useEffect(() => {
     const un = voicePlayer.subscribe((e) => {
       if (e === 'start') clearSafety();
-      if (e === 'end' && modeRef.current === 'speaking') startListening();
+      if (e === 'end' && modeRef.current === 'speaking') {
+        clearSafety();
+        setMode('ready');
+      }
     });
     return () => {
       un();
@@ -394,16 +512,19 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
     }
   };
 
+  /** The one thing that matters here: is this microphone hearing you? */
+  const micOn = mode === 'listening';
+
   const hint =
     convo.status === 'error'
       ? 'Something broke — tap to try again'
-      : mode === 'listening'
+      : micOn
         ? 'Listening… tap when you finish'
         : mode === 'thinking'
-          ? '…'
+          ? 'Thinking…'
           : mode === 'speaking'
-            ? 'Tap to talk'
-            : 'Tap to speak';
+            ? 'Tap the microphone to talk'
+            : 'Tap the microphone to speak';
 
   return (
     <div className="pointer-events-auto flex flex-col items-center pb-8">
@@ -414,44 +535,65 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
         ✕ Exit voice
       </button>
 
-      {/* the words, as they are spoken */}
+      {/* the words, as they are spoken. The line stays on screen after the
+          voice ends — the mic is off and waiting, so there is nothing to
+          hurry the reader along. */}
       <div className="mb-6 min-h-16 w-full max-w-2xl px-6 text-center">
-        {mode === 'listening' && heard && (
-          <p className="text-[15px] leading-relaxed text-sky-200/90">{heard}</p>
-        )}
-        {mode === 'thinking' && <p className="animate-pulse text-stone-500">…</p>}
-        {mode === 'speaking' && (
-          <SubtitleLine
-            key={msgCount}
-            text={lastCharacterLine}
-            className="rounded-md bg-stone-950/60 px-4 py-3 text-[15px] leading-relaxed text-stone-100 backdrop-blur-sm"
-          />
+        {micOn ? (
+          heard && <p className="text-[15px] leading-relaxed text-sky-200/90">{heard}</p>
+        ) : mode === 'thinking' ? (
+          <p className="animate-pulse text-stone-500">…</p>
+        ) : (
+          lastCharacterLine && (
+            <SubtitleLine
+              key={msgCount}
+              text={lastCharacterLine}
+              className="rounded-md bg-stone-950/60 px-4 py-3 text-[15px] leading-relaxed text-stone-100 backdrop-blur-sm"
+            />
+          )
         )}
       </div>
 
+      {/* The microphone. Off unless the player put it on: a live ring and the
+          word ON while it hears you, dark and struck through while it does
+          not. Never ambiguous, never on by itself. */}
       <button
         onClick={tap}
-        aria-label={hint}
-        className={`flex h-20 w-20 items-center justify-center rounded-full border-2 text-2xl transition ${
-          mode === 'listening'
-            ? 'animate-pulse border-amber-300 bg-amber-200/20 text-amber-100'
-            : mode === 'speaking'
-              ? 'border-amber-200/60 bg-amber-200/10 text-amber-100'
-              : 'border-stone-600 bg-stone-950/70 text-stone-300 hover:border-amber-200/50'
+        aria-label={micOn ? 'Microphone on — tap to stop and send' : 'Tap to turn the microphone on'}
+        aria-pressed={micOn}
+        className={`relative flex h-20 w-20 items-center justify-center rounded-full border-2 text-2xl transition ${
+          micOn
+            ? 'border-amber-300 bg-amber-200/25 text-amber-100 shadow-[0_0_28px_rgba(252,211,77,0.45)]'
+            : 'border-stone-600 bg-stone-950/80 text-stone-500 hover:border-amber-200/50 hover:text-stone-300'
         }`}
       >
-        🎙
+        {micOn && (
+          <span className="absolute inset-0 animate-ping rounded-full border-2 border-amber-300/60" />
+        )}
+        <span className="relative">🎙</span>
+        {!micOn && (
+          /* struck through — the mic is not hearing anything */
+          <span
+            aria-hidden
+            className="absolute h-[2px] w-11 rotate-45 rounded-full bg-stone-500"
+          />
+        )}
       </button>
-      <p className="mt-3 text-xs text-stone-400">{hint}</p>
+      <p
+        className={`mt-3 text-[11px] font-semibold uppercase tracking-[0.25em] ${
+          micOn ? 'text-amber-200' : 'text-stone-500'
+        }`}
+      >
+        {micOn ? '● Mic on' : 'Mic off'}
+      </p>
+      <p className="mt-1 text-xs text-stone-400">{hint}</p>
 
-      {convo.canContinue && (
-        <button
-          onClick={onContinue}
-          className="mt-4 rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 py-1.5 text-xs tracking-widest text-amber-100"
-        >
-          CONTINUE →
-        </button>
-      )}
+      <button
+        onClick={onContinue}
+        className="mt-4 rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 py-1.5 text-xs tracking-widest text-amber-100 transition hover:bg-amber-200/20"
+      >
+        CONTINUE →
+      </button>
       <p className="mt-2 text-center text-[10px] text-stone-600">
         Character responses are AI-generated and may contain errors.
       </p>

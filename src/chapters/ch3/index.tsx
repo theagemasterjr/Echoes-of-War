@@ -9,8 +9,10 @@
  */
 import type { ChapterModule } from '../types';
 import { PathToWarMinigame } from './PathToWarMinigame';
+import { SUMMARY } from './timelineStore';
 
 const chapter: ChapterModule = {
   Minigame: PathToWarMinigame,
+  summary: SUMMARY,
 };
 export default chapter;

@@ -22,6 +22,13 @@ export interface MinigameProps {
   onComplete: (result: MinigameResult) => void;
 }
 
+/** One topic of the end-of-chapter summary: its title and the line the
+ *  narrator reads. The chapter's recording is matched to these BY INDEX. */
+export interface SummaryEntry {
+  topic: string;
+  line: string;
+}
+
 /** What each chapter folder default-exports. Only DOM beats live here — 3D staging is shared. */
 export interface ChapterModule {
   Minigame: ComponentType<MinigameProps>;
@@ -29,6 +36,10 @@ export interface ChapterModule {
    *  shared Canvas instead of the default floating-marker stage. Pair with
    *  `minigameCamera` on the chapter's registry row. */
   MinigameScene?: ComponentType;
+  /** The chapter's summary topics. Exported here (not just used inside the
+   *  minigame) so the debug menu can open the real summary screen without the
+   *  chapter having been played. Absent = this chapter has no summary yet. */
+  summary?: SummaryEntry[];
 }
 
 /** Static metadata — lives in the registry so the map never loads chapter code. */

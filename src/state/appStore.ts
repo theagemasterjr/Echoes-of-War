@@ -19,6 +19,8 @@ interface AppState {
   phase: TransitionPhase;
   debugOpen: boolean;
   characterTestChapter: ChapterId | null;
+  /** Debug only: show this chapter's real summary screen over everything. */
+  summaryChapter: ChapterId | null;
 
   begin: () => void;
   gotoChapter: (id: ChapterId, beat?: Beat, instant?: boolean) => void;
@@ -29,6 +31,7 @@ interface AppState {
   returnToTitle: () => void;
   setDebugOpen: (open: boolean) => void;
   setCharacterTestChapter: (id: ChapterId | null) => void;
+  setSummaryChapter: (id: ChapterId | null) => void;
   /** Called by the transition layer as it walks the phases. */
   _commit: () => void;
   _setPhase: (phase: TransitionPhase) => void;
@@ -53,6 +56,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   phase: 'idle',
   debugOpen: false,
   characterTestChapter: null,
+  summaryChapter: null,
 
   // first BEGIN plays the prologue film; afterwards it goes straight to the map
   begin: () =>
@@ -96,6 +100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setDebugOpen: (debugOpen) => set({ debugOpen }),
   setCharacterTestChapter: (characterTestChapter) => set({ characterTestChapter }),
+  setSummaryChapter: (summaryChapter) => set({ summaryChapter }),
 
   _commit: () => {
     const p = get().pending;
