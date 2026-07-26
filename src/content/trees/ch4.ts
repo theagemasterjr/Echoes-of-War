@@ -106,7 +106,7 @@ const tree: ConstraintTree = {
       'Order No. 227 of 28 July 1942, “Not one step back”, which forbade retreat',
       'Her own work in detail: finding men, first aid under fire, cellar dressing stations, night ferries, frostbite, and how few of the medics she started with are still here',
       'That civilians were never fully evacuated, and that families lived through the battle in cellars and ravines',
-      'The counter-attack that began on 19 November 1942, which struck the Romanian armies on the flanks rather than the German centre — and that Germany’s other allies holding stretches of the river line were broken in the weeks that followed',
+      'The counter-attack that began on 19 November 1942, which struck the Romanian armies on the flanks rather than the German centre — and that Germany’s other allies holding the line along the Don river, away to the north-west, were broken in the weeks that followed',
       'That the German army in the city was surrounded within days, and that it was very large — “a whole army”',
       'That through December the trapped army was not rescued and could not be supplied by air, and that it starved and froze through the winter',
       'The surrender: the last German troops gave up on 2 February 1943, and long columns of prisoners were marched out of the city',
@@ -241,12 +241,12 @@ const tree: ConstraintTree = {
         {
           id: 'barbarossa',
           text: 'Germany invaded the Soviet Union on 22 June 1941 and pushed deep into the country',
-          cues: ['invaded', 'invasion', 'they invaded us', 'attacked us', 'crossed the border', '22 june', 'june 1941', '1941', 'summer of 1941', 'pushed deep', 'drove deep', 'came a long way in', 'far into our country', 'took our towns', 'the war reached us', 'before all this', 'a year and a half ago'],
+          cues: ['invaded', 'invasion', 'attacked us', 'crossed the border', '22 june', 'june 1941', 'summer of 1941', 'pushed deep', 'drove deep', 'came a long way in', 'far into our country', 'took our towns', 'the war reached us', 'before all this', 'a year and a half ago'],
         },
         {
           id: 'whystalingrad',
-          text: 'In summer 1942 the German attack drove south-east toward the oil fields; Stalingrad stood on the Volga guarding the way, and it carried Stalin’s name, so neither side would give it up',
-          cues: ['oil', 'oil fields', 'the caucasus', 'fuel for their tanks', 'south east', 'drove south', 'went south', 'summer of 1942', '1942', 'the volga', 'on the river', 'the supply route', 'barges up the river', 'in their way', 'guarded the way', 'stalin’s name', 'named for stalin', 'the city carries his name', 'neither side would let go', 'would not give it up', 'a matter of pride', 'more than a city'],
+          text: 'In summer 1942 the German attack drove south-east toward the oil fields; Stalingrad, on the Volga, guarded the side of that push and the river supply route, and it carried Stalin’s name, so neither side would give it up',
+          cues: ['oil', 'the caucasus', 'fuel for their tanks', 'south east', 'drove south', 'went south', 'summer of 1942', 'the volga', 'on the river', 'the supply route', 'barges up the river', 'guarded the side', 'guarded the flank', 'stalin’s name', 'named for stalin', 'the city carries his name', 'neither side would let go', 'would not give it up', 'a matter of pride', 'more than a city'],
         },
 
         // ── PART 2 — Fighting in the ruins
@@ -258,24 +258,24 @@ const tree: ConstraintTree = {
         {
           id: 'ruins',
           text: 'The fighting went house by house through the wreckage, where the broken city helped the defenders and made German tanks and aircraft far less useful',
-          cues: ['house by house', 'street by street', 'room by room', 'factory by factory', 'the ruins', 'the rubble', 'the wreckage', 'broken buildings', 'stairwells', 'cellars', 'close together', 'a few metres apart', 'their tanks were no use', 'no room for tanks', 'aircraft could not help them', 'could not bomb us without', 'the ruins helped us', 'suited us', 'we knew the ground', 'months of it'],
+          cues: ['house by house', 'street by street', 'room by room', 'factory by factory', 'the ruins', 'the rubble', 'the wreckage', 'broken buildings', 'stairwells', 'cellars', 'close together', 'a few metres apart', 'their tanks were no use', 'no room for tanks', 'aircraft could not help them', 'could not bomb us without', 'suited us', 'we knew the ground', 'months of it'],
         },
         {
           id: 'volga',
           text: 'Everything crossed the Volga by boat under fire — food, ammunition and fresh soldiers coming in, wounded men going out',
-          cues: ['the volga', 'the river', 'the crossings', 'crossed at night', 'by boat', 'boats', 'barges', 'the ferry', 'ferries', 'under fire', 'ammunition', 'bread', 'food came over', 'fresh soldiers', 'reinforcements', 'the wounded went back', 'took them across', 'the far bank', 'the other side', 'when the ice came', 'ice on the river', 'the river froze'],
+          cues: ['the volga', 'the river', 'the crossings', 'crossed at night', 'by boat', 'boats', 'barges', 'the ferry', 'ferries', 'under fire', 'ammunition', 'bread', 'food came over', 'fresh soldiers', 'reinforcements', 'the wounded went back', 'took them across', 'the far bank', 'the other side', 'when the ice came', 'froze over'],
         },
         {
           id: 'notonestep',
           text: 'In July 1942 Soviet soldiers were given an order called “Not one step back”, which forbade retreat; men who ran could be punished severely',
-          cues: ['not one step back', 'order 227', 'the order', 'july 1942', 'no retreat', 'forbidden to retreat', 'could not fall back', 'no going back', 'read out to us', 'read to every unit', 'punished', 'punished severely', 'nobody was allowed', 'we were not to leave'],
+          cues: ['not one step back', 'order 227', 'the order', 'july 1942', 'no retreat', 'forbidden to retreat', 'could not fall back', 'no going back', 'read out to us', 'read to every unit', 'punished', 'nobody was allowed', 'we were not to leave'],
         },
 
         // ── PART 3 — What it cost
         {
           id: 'medics',
           text: 'Medics — many of them young women — found wounded men under fire, treated them in cellars, and got them across the river at night',
-          cues: ['medic', 'medics', 'my bag', 'dressings', 'bandages', 'first aid', 'a dressing station', 'in the cellar', 'stretcher', 'stretcher party', 'carried them', 'brought them in', 'under fire', 'at night', 'across the river at night', 'young women', 'mostly girls', 'we were girls', 'trained with', 'four of us are left', 'frostbite', 'cold hands'],
+          cues: ['medic', 'medics', 'my bag', 'dressings', 'bandages', 'first aid', 'a dressing station', 'in the cellar', 'stretcher', 'carried them', 'brought them in', 'under fire', 'across the river at night', 'young women', 'mostly girls', 'we were girls', 'trained with', 'four of us are left', 'frostbite', 'cold hands'],
         },
         {
           id: 'civilians',
@@ -287,10 +287,11 @@ const tree: ConstraintTree = {
         {
           id: 'counterattack',
           text: 'On 19 November 1942 the Red Army attacked the weaker Romanian armies guarding the flanks, instead of the strong German force in the city',
-          cues: ['19 november', 'november', 'november 1942', 'the counter attack', 'counter attack', 'we attacked', 'our guns opened', 'the flanks', 'the sides', 'either side of the city', 'romanian', 'romanians', 'their allies', 'germany’s allies', 'the weaker part', 'the weakest place', 'not the germans in the city', 'went around us', 'swung behind', 'behind the city', 'where the line was thin'],
+          cues: ['19 november', 'november 1942', 'counter attack', 'we attacked', 'our guns opened', 'the flanks', 'the sides', 'either side of the city', 'romanian', 'romanians', 'their allies', 'germany’s allies', 'the weaker part', 'the weakest place', 'not the germans in the city', 'went around us', 'swung behind', 'behind the city', 'where the line was thin'],
         },
         {
           id: 'encircled',
+          // TODO(founder): verify the figure — sources range ~250,000–290,000 encircled
           text: 'Within days the whole German army inside Stalingrad was surrounded — around a quarter of a million men',
           cues: ['surrounded', 'encircled', 'the ring closed', 'closed the ring', 'met behind the city', 'the two attacks met', 'trapped inside', 'a whole army', 'the whole german army', 'a quarter of a million', 'two hundred thousand', 'within days', 'in four days', 'no way out', 'cut off', 'shut in'],
         },
@@ -301,8 +302,9 @@ const tree: ConstraintTree = {
         },
         {
           id: 'surrender',
+          // TODO(founder): verify the figure — commonly cited as ~91,000 taken prisoner
           text: 'The last German troops surrendered on 2 February 1943, and about ninety thousand prisoners were marched out of the city',
-          cues: ['surrendered', 'gave up', 'the surrender', '2 february', 'february', 'a few days ago', 'the last of them', 'columns of prisoners', 'prisoners', 'marched out', 'marched away', 'ninety thousand', 'the guns stopped', 'it was over', 'quiet for the first time', 'the first quiet morning'],
+          cues: ['surrendered', 'gave up', 'the surrender', '2 february', 'a few days ago', 'the last of them', 'prisoners', 'marched out', 'marched away', 'ninety thousand', 'the guns stopped', 'it was over', 'quiet for the first time', 'the first quiet morning'],
         },
         {
           id: 'tide',
@@ -310,8 +312,9 @@ const tree: ConstraintTree = {
           cues: ['turning point', 'the tide', 'turned', 'changed direction', 'the first time', 'a whole german army', 'never happened before', 'pushing west', 'moving west', 'going forward now', 'the newspaper says', 'everyone is saying', 'they can be beaten', 'not unbeatable', 'the other way now'],
         },
       ],
-      // One question per part (the last two both open the turn), worded so that
-      // clicking one also ticks its own row of the Objectives panel.
+      // Six questions: one each for parts 1 and 3, two for part 2, and two that
+      // open the turn — each worded so clicking it also ticks its own row of
+      // the Objectives panel.
       guidedQuestions: [
         'What was your job here?',
         'Why did the fighting happen in this city?',
@@ -332,7 +335,7 @@ const tree: ConstraintTree = {
         'Do not claim to know what the generals decided or why. You carried men; you did not plan battles, and you can say so plainly.',
         'You have never heard a codename for the counter-attack in November — those were secret. Call it “the counter-attack in November”, never anything else.',
         'You do not know what became of the German prisoners. You watched them marched away, and that is all. If you are asked, say exactly that and do not guess.',
-        'The four parts, and each is its own answer: (1) why the fighting came here — the invasion in 1941, then the push south toward the oil, with this city on the river in the way; (2) the months in the ruins — the bombing in August, house-by-house fighting, everything crossing the river by boat, and the order that forbade retreat; (3) what it cost — the medics and the families who were never got out; (4) how it turned — the counter-attack on the flanks in November, the army surrounded, the winter, the surrender, and what people are saying it means.',
+        'The four parts, and each is its own answer: (1) why the fighting came here — the invasion in 1941, then the push south toward the oil, with this city guarding the great river at the side of that push; (2) the months in the ruins — the bombing in August, house-by-house fighting, everything crossing the river by boat, and the order that forbade retreat; (3) what it cost — the medics and the families who were never got out; (4) how it turned — the counter-attack on the flanks in November, the army surrounded, the winter, the surrender, and what people are saying it means.',
         'When you explain one of the big moments, anchor it in time — roughly when it happened and what it changed — the way you would set it down for someone who was not here, so the visitor could later put the chain in order themselves.',
         'Never leave a moment as only a name. “The counter-attack” on its own teaches nothing — say when it happened, where it struck, and what it changed.',
         'When most of the story has been told, say you would like to see whether the visitor can put the whole thing in order.',

@@ -48,7 +48,7 @@ export interface TimelineEvent {
  */
 export const EVENTS: TimelineEvent[] = [
   { id: 'invasion', order: 1, group: 'Why Stalingrad', teachesPointId: 'barbarossa', label: 'Germany invades the Soviet Union', date: '22 June 1941', why: 'The largest invasion in history. German armies pushed deep into Soviet land.' },
-  { id: 'southeast', order: 2, group: 'Why Stalingrad', teachesPointId: 'whystalingrad', label: 'Germany’s summer attack drives south-east', date: '28 June 1942', why: 'The new push aimed at the oil fields in the south. Stalingrad stood in the way.' },
+  { id: 'southeast', order: 2, group: 'Why Stalingrad', teachesPointId: 'whystalingrad', label: 'Germany’s summer attack drives south-east', date: '28 June 1942', why: 'The new push aimed at the oil fields in the south. Stalingrad guarded the side of that push, and the river it stood on.' },
   { id: 'bombing', order: 3, group: 'Fighting in the ruins', teachesPointId: 'bombing', label: 'The city is bombed and the Germans reach the Volga', date: '23 August 1942', why: 'The city was set alight in a day. Thousands of people were killed and Stalingrad became ruins.' },
   { id: 'ruins', order: 4, group: 'Fighting in the ruins', teachesPointId: 'ruins', label: 'Months of fighting through the ruins', date: 'September – November 1942', why: 'House by house, factory by factory. The wreckage helped the defenders and slowed the attackers.' },
   { id: 'counterattack', order: 5, group: 'How the tide turned', teachesPointId: 'counterattack', label: 'The Red Army counter-attacks the flanks', date: '19 November 1942', why: 'Instead of attacking the strong German centre, the Soviets hit the weaker armies on either side.' },
@@ -70,7 +70,7 @@ export const eventById = (id: string) => EVENTS.find((e) => e.id === id)!;
  * and the soldiers on both sides, no numbers and no imagery.
  */
 export const SUMMARY: { topic: string; line: string }[] = [
-  { topic: 'Why Stalingrad', line: 'Germany invaded the Soviet Union in 1941. The next summer it drove south for oil, and this city on the Volga stood in the way.' },
+  { topic: 'Why Stalingrad', line: 'Germany invaded the Soviet Union in 1941. The next summer it drove south for oil, and this city guarded the Volga at the side of that drive.' },
   { topic: 'Fighting in the ruins', line: 'The city was bombed to rubble, then fought over house by house for months. Everything came in across the river by boat.' },
   { topic: 'What it cost', line: 'The families in the city were never taken to safety, and soldiers on both sides lived through that winter. The cost fell on all of them.' },
   { topic: 'How the tide turned', line: 'In November the Red Army struck the weaker armies on the flanks and surrounded the Germans in the city. They surrendered in February 1943, and the war in the east changed direction.' },
