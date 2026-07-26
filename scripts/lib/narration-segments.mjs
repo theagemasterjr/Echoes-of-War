@@ -21,16 +21,37 @@ const WINDOW_S = 0.02; // energy is measured in 20ms windows
 const QUIET_FRACTION = 0.02; // "silent" = under 2% of the recording's peak
 const MIN_GAP_S = 0.25; // shorter dips are breaths, not pauses
 
+/**
+ * The decoders this can use to turn an mp3 into plain samples, in the order it
+ * tries them: macOS ships afconvert, Windows and Linux normally have ffmpeg.
+ * Whichever the founder's machine has is the one that runs — the timings come
+ * out the same either way, because both are asked for the identical format.
+ */
+const DECODERS = [
+  { cmd: 'afconvert', args: (i, o) => ['-f', 'WAVE', '-d', 'LEI16@16000', '-c', '1', i, o], from: 'macOS' },
+  { cmd: 'ffmpeg', args: (i, o) => ['-v', 'error', '-y', '-i', i, '-ac', '1', '-ar', '16000', '-f', 'wav', '-acodec', 'pcm_s16le', o], from: 'ffmpeg' },
+];
+
 /** Mono 16-bit PCM at 16kHz — plenty for finding silence. */
 async function toPcm(mp3Path) {
   const wav = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'eow-brief-')), 'a.wav');
-  try {
-    execFileSync('afconvert', ['-f', 'WAVE', '-d', 'LEI16@16000', '-c', '1', mp3Path, wav], {
-      stdio: 'pipe',
-    });
-  } catch (e) {
+  const tried = [];
+  let decoded = false;
+  for (const dec of DECODERS) {
+    try {
+      execFileSync(dec.cmd, dec.args(mp3Path, wav), { stdio: 'pipe' });
+      decoded = true;
+      break;
+    } catch (e) {
+      tried.push(`${dec.cmd} (${dec.from}): ${String(e.message).split('\n')[0]}`);
+    }
+  }
+  if (!decoded) {
+    await fs.rm(path.dirname(wav), { recursive: true, force: true });
     throw new Error(
-      `Could not read ${path.basename(mp3Path)} with afconvert (macOS audio tool): ${e.message}`,
+      `Could not read ${path.basename(mp3Path)} — no audio decoder worked.\n` +
+        `    ${tried.join('\n    ')}\n` +
+        `    Install ffmpeg (Windows: "winget install ffmpeg", macOS: "brew install ffmpeg") and re-run.`,
     );
   }
   const buf = await fs.readFile(wav);

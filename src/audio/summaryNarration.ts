@@ -67,6 +67,20 @@ const TAKES: Record<string, SummaryTake> = {
       { start: 20.14, end: 31.14 },
     ],
   },
+  // Five topics, in the order src/chapters/ch4/uranusStore.ts lists them.
+  // Measured off the recording itself with scripts/lib/narration-segments.mjs
+  // (the same silence-finder the mission briefs use), so the reveal lands on
+  // the narrator's own pauses: 13.7–16.9 characters a second across all five.
+  ch4: {
+    track: '/audio/summary/ch4.mp3?v=1',
+    topics: [
+      { start: 0.04, end: 9.1 },
+      { start: 9.96, end: 18.12 },
+      { start: 19.08, end: 27.84 },
+      { start: 28.78, end: 38.56 },
+      { start: 39.28, end: 48.86 },
+    ],
+  },
 };
 
 /** The take recorded for a chapter, or null if it has none. */

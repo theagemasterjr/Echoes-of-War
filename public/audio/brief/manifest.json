@@ -1,124 +1,167 @@
 {
   "version": 1,
-  "voiceId": "recorded",
-  "voiceName": "Elderon (recorded take)",
+  "voiceId": "NwyAvGnfbFoNNEi4UuTq",
+  "voiceName": "Elderon",
   "chapters": {
     "ch1": {
-      "track": "/audio/brief/narration/ch1.mp3?v=89c927f5b033",
-      "trackHash": "89c927f5b033",
+      "track": "/audio/brief/narration/ch1.mp3?v=66e76633b1bc",
+      "trackHash": "66e76633b1bc",
       "duration": 27.66,
-      "voiceName": "Elderon (recorded take)",
+      "voiceName": "Elderon (recorded by hand)",
       "lines": [
         {
           "text": "Your objective: understand how one treaty set the world on fire.",
-          "start": 0,
-          "end": 4.54
+          "start": 0.06,
+          "end": 4.42
         },
         {
           "text": "Learn what the Treaty of Versailles demanded of Germany.",
-          "start": 5.27,
-          "end": 8.3
+          "start": 5.26,
+          "end": 8.16
         },
         {
           "text": "Learn how those terms broke a nation, and left its people desperate.",
-          "start": 8.95,
-          "end": 13.05
+          "start": 8.94,
+          "end": 12.92
         },
         {
           "text": "Learn how that desperation carried Adolf Hitler to power.",
-          "start": 13.91,
-          "end": 17.06
+          "start": 13.9,
+          "end": 16.94
         },
         {
           "text": "Learn how the world watched him take land, step by step, and did nothing.",
-          "start": 17.78,
-          "end": 21.62
+          "start": 17.76,
+          "end": 21.5
         },
         {
           "text": "And learn how it ended — with German tanks crossing into Poland.",
           "start": 22.12,
-          "end": 25.72
+          "end": 25.58
         },
         {
           "text": "Do you accept the mission?",
-          "start": 26.28,
-          "end": 27.66
+          "start": 26.26,
+          "end": 27.34
         }
       ]
     },
     "ch2": {
-      "track": "/audio/brief/narration/ch2.mp3?v=2b3c3e5b67be",
-      "trackHash": "2b3c3e5b67be",
+      "track": "/audio/brief/narration/ch2.mp3?v=dfa415dafb5f",
+      "trackHash": "dfa415dafb5f",
       "duration": 27.4,
-      "voiceName": "Elderon (recorded take)",
+      "voiceName": "Elderon (recorded by hand)",
       "lines": [
         {
           "text": "Your objective: understand the summer Britain stood alone.",
-          "start": 0,
-          "end": 4.8
+          "start": 0.06,
+          "end": 4.68
         },
         {
           "text": "Learn how three hundred thousand soldiers escaped from Dunkirk.",
           "start": 5.3,
-          "end": 8.84
+          "end": 8.7
         },
         {
           "text": "Learn how France surrendered — and left Britain to fight on alone.",
-          "start": 9.31,
-          "end": 12.92
+          "start": 9.3,
+          "end": 12.8
         },
         {
           "text": "Learn how Eagle Day began Germany's assault from the sky.",
-          "start": 13.63,
-          "end": 16.93
+          "start": 13.62,
+          "end": 16.8
         },
         {
           "text": "Learn how the bombers turned on the cities, and the cities burned.",
           "start": 17.48,
-          "end": 20.9
+          "end": 20.76
         },
         {
           "text": "And learn how the battle was won — and the invasion never came.",
-          "start": 21.31,
-          "end": 24.82
+          "start": 21.3,
+          "end": 24.7
         },
         {
           "text": "Do you accept the mission?",
           "start": 26.02,
-          "end": 27.4
+          "end": 27.04
         }
       ]
     },
     "ch3": {
-      "track": "/audio/brief/narration/ch3.mp3?v=4d303fa39365",
-      "trackHash": "4d303fa39365",
-      "duration": 18.94,
-      "voiceName": "Elderon (recorded take)",
+      "track": "/audio/brief/narration/ch3.mp3?v=f297e78d3cc2",
+      "trackHash": "f297e78d3cc2",
+      "duration": 18.92,
+      "voiceName": "Elderon (recorded by hand)",
       "lines": [
         {
           "text": "Your objective: understand how the war became the whole world's war.",
-          "start": 0,
-          "end": 4.07
+          "start": 0.02,
+          "end": 3.94
         },
         {
           "text": "Learn why Japan chose to strike America across the Pacific.",
-          "start": 4.71,
-          "end": 8.15
+          "start": 4.7,
+          "end": 8.04
         },
         {
           "text": "Learn what the bombers came for at Pearl Harbor — and what they missed.",
           "start": 8.7,
-          "end": 12.56
+          "end": 12.42
         },
         {
           "text": "And learn how America's answer changed the course of the entire war.",
           "start": 12.96,
-          "end": 16.59
+          "end": 16.46
         },
         {
           "text": "Do you accept the mission?",
           "start": 17.3,
-          "end": 18.94
+          "end": 18.58
+        }
+      ]
+    },
+    "ch4": {
+      "track": "/audio/brief/narration/ch4.mp3?v=5d2334c6b04e",
+      "trackHash": "5d2334c6b04e",
+      "duration": 26.46,
+      "voiceName": "Elderon (recorded by hand)",
+      "lines": [
+        {
+          "text": "Your objective: understand the battle that turned the war around.",
+          "start": 0.1,
+          "end": 3.66
+        },
+        {
+          "text": "Learn how Germany broke its promise and invaded the Soviet Union.",
+          "start": 4.36,
+          "end": 7.92
+        },
+        {
+          "text": "Learn why the fighting came to one city on the Volga.",
+          "start": 8.78,
+          "end": 11.6
+        },
+        {
+          "text": "Learn how a city in ruins was defended, house by house.",
+          "start": 12.24,
+          "end": 15.58
+        },
+        {
+          "text": "Learn how the Red Army struck where the Germans were weakest.",
+          "start": 16.4,
+          "end": 19.28
+        },
+        {
+          "text": "And learn how an entire German army was lost, and the war changed direction.",
+          "start": 19.8,
+          "end": 24.28
+        },
+        {
+          "text": "Do you accept the mission?",
+          "start": 24.94,
+          "end": 26.18
         }
       ]
     }
