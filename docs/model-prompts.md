@@ -53,7 +53,9 @@ Already generated, compressed (14MB→557KB) and live in the app (`/models/warsh
 Nothing to do. Original prompt kept for re-generation:
 > A miniature US Navy battleship of the early 1940s, haze grey hull, superstructure and gun turrets, subtle rust streaks at the waterline…
 
-### `ch4.marker` — medic satchel (Turning the Tide)
+### `ch4.marker` — medic satchel (Turning the Tide) — ✅ delivered
+Already generated, compressed and live in the app (`/models/bandages.glb`).
+Nothing to do — leave that registry line alone. Original prompt kept for re-generation:
 > A miniature Soviet military medical satchel, worn olive canvas with leather straps and a small red cross patch, frost on the fabric…
 
 ### `ch5.marker` — medic helmet (The Road Back)
@@ -176,8 +178,36 @@ Also: `public/video/ch3-intro.mp4` (intro film — a styled "coming soon" frame 
 until then) and optionally `public/img/ch3-harbor.jpg` (conversation backdrop — then
 uncomment its line in `src/chapters/registry.ts`).
 
-### `ch4.character` — Soviet combat medic (Stalingrad, 1942)
-> A photorealistic full-body Soviet female combat medic of 1942, heavy winter greatcoat with fur ushanka hat, medical bag across her shoulder, chapped hands, weary steady expression, standing in the cold.
+### `ch4.character` — Nina Volkova, Soviet front-line medic (Stalingrad, 1943)
+Match the persona in `src/content/trees/ch4.ts`: nineteen, calm, practical, very tired.
+If generating for animation (Meshy rig), export with a calm standing **idle** clip and a
+**talking** clip — that is what the conversation stage cross-fades between.
+> A photorealistic full-body young Soviet female combat medic of 1942, about nineteen, heavy winter greatcoat over a padded jacket, fur ushanka hat with the flaps down, a canvas medical bag on a strap across her shoulder, mittens tucked in her belt, chapped hands, weary steady expression, standing naturally at ease in the cold. Muted winter palette, film-lighting friendly. **No weapons, no wounds, no blood.**
+
+### `ch4.prop.ferry` — small Volga river ferry (reserved)
+For the future chapter 4 minigame scene — registered in the asset registry, not yet drawn.
+> A small wooden river ferry boat of the 1940s, plain planked hull with a low wheelhouse and a stubby funnel, worn paint, rope fenders along the side, resting level as if on calm water, photorealistic, muted period materials, tabletop-prop proportions.
+
+### `ch4.prop.ruin` — ruined factory wall (reserved)
+For the future chapter 4 minigame scene — registered in the asset registry, not yet drawn.
+> A fragment of a ruined red-brick factory wall with empty window openings and a broken chimney stack rising beside it, scorched brick, rubble at the base, dusted with snow, photorealistic, muted winter materials, tabletop-prop proportions. No people, no wreckage of bodies.
+
+**Chapter 4 drop-in checklist** (each swap is one registry line in `src/assets/registry.tsx`,
+next to a comment showing the exact line):
+1. `public/models/ch4-medic.glb` — **must be exported with an idle loop and a talking
+   loop** → uncomment the `ch4.character` glb block and fill in the two real clip names
+   from inside the file.
+2. `public/models/ch4-ferry.glb` → flip `ch4.prop.ferry` to a glb entry (used only once a
+   minigame scene exists — nothing draws it today).
+3. `public/models/ch4-ruin.glb` → flip `ch4.prop.ruin` to a glb entry (same).
+The map marker (`bandages.glb`) is already real — leave it.
+Also: `public/video/ch4-intro.mp4` (intro film — a styled "coming soon" frame stands in
+until then) and optionally `public/img/ch4-cellar.jpg` (conversation backdrop — then
+uncomment its line in `src/chapters/registry.ts`; do not uncomment before the file exists).
+
+⚠ **Chapter 4's film and backdrop follow the same restraint as its words:** ruins, snow, a
+river, a lamp in a cellar — **no casualties on screen**, and nothing that makes the fighting
+look thrilling. The same will go for chapter 6.
 
 ### `ch5.character` — Allied field medical worker (Normandy, 1944)
 > A photorealistic full-body Allied medical corps worker of 1944, olive-drab uniform with red cross armband, helmet with red cross, practical weathered field gear, kind exhausted face, standing naturally.

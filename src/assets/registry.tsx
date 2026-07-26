@@ -109,7 +109,28 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'ch3.doc.decree': { label: 'Sealed Imperial decree (round 1)', source: { kind: 'glb', url: '/models/ch3-doc-decree.glb', scale: 3.2 } },
   'ch3.doc.folder': { label: 'Strapped military mission folder (round 2)', source: { kind: 'glb', url: '/models/ch3-doc-folder.glb', scale: 3.2 } },
   'ch3.doc.envelope': { label: 'Official Washington envelope (round 3)', source: { kind: 'glb', url: '/models/ch3-doc-envelope.glb', scale: 3.2 } },
+  // Drop-in when the founder's model lands in public/models/ch4-medic.glb —
+  // it MUST be exported with an idle loop and a talking loop, and the two clip
+  // names below must be the real names from inside the file (the stage
+  // cross-fades between them). Mirror of the ch1.character block above:
+  // 'ch4.character': {
+  //   label: 'Soviet medic figure',
+  //   source: {
+  //     kind: 'glb', url: '/models/ch4-medic.glb',
+  //     scale: 4.76, offset: [0, -6.13, 0], castShadow: false,   // re-measure: top of head ≈ y 2.48
+  //     clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+  //   },
+  // },
   'ch4.character': { label: 'Soviet medic figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  // Reserved for the chapter 4 minigame scene the founder may build later
+  // (chapter 4's timeline is plain DOM today). Registered so the swaps are
+  // ready, but NEITHER is currently rendered anywhere — drawing them is a
+  // future scene's job. Swap each to:
+  // { kind: 'glb', url: '/models/ch4-ferry.glb', scale: 1 }   // eye-tune scale/offset
+  // (the stand-in shapes below are arbitrary — nothing draws them, so they are
+  // only here to keep the ids real until the files arrive)
+  'ch4.prop.ferry': { label: 'Small wooden Volga river ferry', source: { kind: 'placeholder', component: P.ShipProp } },
+  'ch4.prop.ruin': { label: 'Ruined brick factory wall with broken chimney', source: { kind: 'placeholder', component: P.HelmetProp } },
   'ch5.character': { label: 'Allied medical worker figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
 };
