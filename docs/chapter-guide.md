@@ -166,6 +166,46 @@ Still for the founder to drop in (everything works with placeholders until then)
   the stock "Josh" id in `src/server/tts.ts`. Wrong or missing = silent subtitles.
 - After editing the ch3 brief text, run `npm run build:briefs` to give it a voice.
 
+## Chapter 4 — same pattern, plus extra care with the subject
+Chapter 4 (Turning the Tide — **Nina Volkova**, a nineteen-year-old front-line medic in
+Stalingrad in early February 1943, a few days after the last German troops gave up)
+follows the same shape: one open conversation node with all thirteen learning points
+live from the first turn, four objectives, and a minigame. Its minigame is deliberately
+the simplest one in the game — a plain 2D timeline of eight moments to put in order
+(`src/chapters/ch4/`), with no 3D table scene — so it can be replaced later without
+unpicking anything.
+
+**The tone rules for this chapter are part of the content, not a style note.** They live
+at the top of `src/content/trees/ch4.ts` (`TONE_RULES`) and anyone editing this chapter
+inherits them:
+
+- A person can say *what happened to people* without describing *what it looked like*.
+  "Two men from my company did not come back" is in bounds. Wounds, bodies, and anyone
+  dying on the page are out of bounds — however the player asks, however many times.
+- Death, cold and hunger get one quiet sentence and then the conversation moves on.
+  Never dwell, never build atmosphere out of suffering, never make war sound exciting.
+- German soldiers are spoken of as people; no wartime slurs for anyone.
+- **Two things are left out on purpose**: what became of the German prisoners, and any
+  total casualty figure for the battle. "A whole German army was destroyed" carries the
+  history without asking a ten-year-old to hold a number like two million. Please don't
+  add them back.
+
+Chapter 6 (Hiroshima) will need the same treatment.
+
+Still for the founder to drop in (everything works with placeholders until then):
+- `public/models/ch4-medic.glb` (needs idle + talking clips) and the two reserved props
+  `ch4-ferry.glb` / `ch4-ruin.glb` — see the Chapter 4 drop-in checklist in
+  `docs/model-prompts.md`. The medic-satchel map marker is already real.
+- `public/video/ch4-intro.mp4` — the intro film. Ruins, snow, a river, a lamp; no
+  casualties on screen.
+- `public/img/ch4-cellar.jpg` — optional conversation backdrop (then uncomment its line
+  in `src/chapters/registry.ts`; do not uncomment before the file exists).
+- Nina's voice: set `ELEVENLABS_VOICE_CH4` in `.env.local` (and Vercel), or verify the
+  stock "Sarah" id in `src/server/tts.ts`. It must not be chapter 1's voice — both
+  characters are young women. Wrong or missing = silent subtitles.
+- Chapter 4 has no mission brief yet: write its lines in `src/content/briefs.json` and
+  run `npm run build:briefs`. Until then the chapter simply skips that beat.
+
 ## Rules of the road
 - Don't edit files outside your chapter's tree file, chapter folder, and the asset registry.
 - All fixed content (dates, claims, minigame facts) must be historically accurate —

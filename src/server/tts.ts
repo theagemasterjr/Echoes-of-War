@@ -33,6 +33,16 @@ const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // GET /v1/voices are safe here. Setting ELEVENLABS_VOICE_CH3 overrides this
   // without a code change — but check any replacement id the same way.
   ch3: process.env.ELEVENLABS_VOICE_CH3 ?? 'bIHbv24MWmeRgasZH58o',
+  // 'EXAVITQu4vr4xnSDxMaL' = ElevenLabs stock "Sarah" (young female, soft and
+  // even) — deliberately NOT ch1's "Jessica": Zofia and Nina are both young
+  // women, and one voice for both would break the illusion. Sarah is the
+  // calmer, lower of the two.
+  // TODO(founder): verify this voice id in your ElevenLabs library, and confirm
+  // it does not sound like ch1's. Setting ELEVENLABS_VOICE_CH4 overrides it
+  // without a code change. Only stock/premade voices listed under
+  // GET /v1/voices are safe here — see the ch3 note above for what a
+  // professional voice id costs you (silence, with no error on screen).
+  ch4: process.env.ELEVENLABS_VOICE_CH4 ?? 'EXAVITQu4vr4xnSDxMaL',
 };
 
 export function voiceFor(chapterId: ChapterId): string | undefined {

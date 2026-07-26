@@ -44,8 +44,17 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch4', index: 4, title: 'Turning the Tide', subtitle: 'Stalingrad',
     dates: '1942–1943', location: 'Stalingrad, USSR',
-    characterName: 'Placeholder: Soviet combat medic', characterRole: 'Combat medic',
-    markerPosition: [1.40, 0, -1.14], markerAssetId: 'ch4.marker', characterAssetId: 'ch4.character',
+    characterName: 'Nina Volkova', characterRole: 'Front-line medic',
+    /* recalibrated to the current map texture: the old [1.40, 0, -1.14] sat on
+     * the northern shore of the Caspian, a few hundred km south-east of the
+     * city. Fixed against the two markers known to be right on this texture
+     * (ch1 Warsaw and the recalibrated ch3 Pearl Harbor), which puts the
+     * satchel on the lower Volga, north-west of the Caspian. Every marker here
+     * is eyeballed to within a degree or two — worth a look, not a re-survey. */
+    markerPosition: [1.15, 0, -1.23], markerAssetId: 'ch4.marker', characterAssetId: 'ch4.character',
+    introVideo: '/video/ch4-intro.mp4',
+    // conversationBackdrop: '/img/ch4-cellar.jpg',  // uncomment once the file exists — a missing image breaks the 3D stage rather than degrading
+    /* no minigameCamera: chapter 4's timeline is plain DOM, not a table scene */
   },
   {
     id: 'ch5', index: 5, title: 'The Road Back', subtitle: 'D-Day and the liberation of Europe',
