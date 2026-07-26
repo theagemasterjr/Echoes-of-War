@@ -203,8 +203,9 @@ Still for the founder to drop in (everything works with placeholders until then)
 - Nina's voice: set `ELEVENLABS_VOICE_CH4` in `.env.local` (and Vercel), or verify the
   stock "Sarah" id in `src/server/tts.ts`. It must not be chapter 1's voice — both
   characters are young women. Wrong or missing = silent subtitles.
-- Chapter 4 has no mission brief yet: write its lines in `src/content/briefs.json` and
-  run `npm run build:briefs`. Until then the chapter simply skips that beat.
+- Chapter 4's mission brief lines are written in `src/content/briefs.json`. What remains
+  is the narration: record the take and run `npm run build:briefs` — until then the brief
+  plays silently, with the words typing on at reading pace.
 
 ## Rules of the road
 - Don't edit files outside your chapter's tree file, chapter folder, and the asset registry.
