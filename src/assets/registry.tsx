@@ -79,6 +79,14 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   // (flying helmet + goggles on a deckchair). Registered so the swap is ready,
   // but NOT currently rendered anywhere — drawing it is a future scene's job.
   'ch2.prop.helmet': { label: 'Flying helmet on a deckchair', source: { kind: 'placeholder', component: P.HelmetProp } },
+  // Chapter 2 matching minigame — one bronze piece per objective. Scales are
+  // set from each file's measured bounds so every piece reads at a similar
+  // size on the table (~0.7 units tall); every piece rests on its own origin.
+  'ch2.piece.boat': { label: 'Matching piece — Dunkirk fishing boat', source: { kind: 'glb', url: '/models/ch2-piece-boat.glb', scale: 6.5 } },
+  'ch2.piece.carriage': { label: 'Matching piece — armistice railway carriage', source: { kind: 'glb', url: '/models/ch2-piece-carriage.glb', scale: 6.3 } },
+  'ch2.piece.bomber': { label: 'Matching piece — German bomber', source: { kind: 'glb', url: '/models/ch2-piece-bomber.glb', scale: 5.6 } },
+  'ch2.piece.cathedral': { label: 'Matching piece — St Paul’s Cathedral', source: { kind: 'glb', url: '/models/ch2-piece-cathedral.glb', scale: 4.7 } },
+  'ch2.piece.crown': { label: 'Matching piece — the crown', source: { kind: 'glb', url: '/models/ch2-piece-crown.glb', scale: 6.1 } },
   'ch3.character': {
     label: 'US sailor figure',
     source: {
@@ -94,6 +102,13 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   // anywhere — drawing them is a future scene's job.
   'ch3.prop.dixiecup': { label: 'Sailor’s cap and dungarees on a footlocker', source: { kind: 'placeholder', component: P.HelmetProp } },
   'ch3.prop.globe': { label: '1941 desk globe — the “one world” object', source: { kind: 'placeholder', component: P.LanternProp } },
+  // Chapter 3 Letters of December minigame — one sealed document per round,
+  // rendered four times each (options in a round must look identical). All
+  // three are flat closed props resting on their own origin; opening is done
+  // in code, never in the model.
+  'ch3.doc.decree': { label: 'Sealed Imperial decree (round 1)', source: { kind: 'glb', url: '/models/ch3-doc-decree.glb', scale: 3.2 } },
+  'ch3.doc.folder': { label: 'Strapped military mission folder (round 2)', source: { kind: 'glb', url: '/models/ch3-doc-folder.glb', scale: 3.2 } },
+  'ch3.doc.envelope': { label: 'Official Washington envelope (round 3)', source: { kind: 'glb', url: '/models/ch3-doc-envelope.glb', scale: 3.2 } },
   'ch4.character': { label: 'Soviet medic figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch5.character': { label: 'Allied medical worker figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
