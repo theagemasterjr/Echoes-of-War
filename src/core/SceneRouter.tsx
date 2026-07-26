@@ -329,15 +329,14 @@ function CameraDirector() {
 
   useFrame(({ clock, pointer }) => {
     // 3D minigame scene: absolute placement every frame (immune to preset
-    // races) + a slight lean with the mouse
+    // races). Perfectly static — the view must never respond to the mouse,
+    // only the pieces the player is dragging do.
     const game = minigameCamera(view);
     if (game && phase === 'idle') {
       const g = game;
-      const p = parallax.current;
-      const still = reducedMotion.current;
-      p.x = THREE.MathUtils.lerp(p.x, still ? 0 : pointer.x * 0.65, 0.05);
-      p.y = THREE.MathUtils.lerp(p.y, still ? 0 : -pointer.y * 0.35, 0.05);
-      camera.position.set(g.pos[0] + p.x, g.pos[1] + p.y, g.pos[2]);
+      parallax.current.x = 0;
+      parallax.current.y = 0;
+      camera.position.set(g.pos[0], g.pos[1], g.pos[2]);
       camera.lookAt(g.target[0], g.target[1], g.target[2]);
       applied.current.set(0, 0, 0);
       amp.current = 0;

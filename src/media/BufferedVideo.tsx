@@ -9,25 +9,26 @@ import { useSettingsStore } from '@/state/settingsStore';
  * is created outside React (it has to outlive this component to stay buffered),
  * so it's slotted into the host div by hand rather than rendered as JSX.
  *
- * Falls back to muted playback when the browser blocks sound, and reports
- * failure so the caller can show its own "couldn't play" frame.
+ * Films always play WITH SOUND. There is no muted fallback and no "sound on"
+ * button anywhere in the game: every film is reached by a click (a chapter pin,
+ * a continue button), which is exactly the permission browsers ask for, so the
+ * first play() succeeds. The two retry paths below are safety nets, not the
+ * normal route — and neither of them ever mutes the picture.
  */
 export function BufferedVideo({
-  src, className, elementRef, onEnded, onError, onMuted,
+  src, className, elementRef, onEnded, onError,
 }: {
   src: string;
   className?: string;
-  /** filled with the live element, for callers that need to mute/pause it */
+  /** filled with the live element, for callers that need to pause it */
   elementRef?: React.MutableRefObject<HTMLVideoElement | null>;
   onEnded: () => void;
   onError: () => void;
-  /** the browser refused sound — the caller offers a one-tap unmute */
-  onMuted: () => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   // held in a ref so swapping callbacks never restarts the film
-  const cbs = useRef({ onEnded, onError, onMuted });
-  cbs.current = { onEnded, onError, onMuted };
+  const cbs = useRef({ onEnded, onError });
+  cbs.current = { onEnded, onError };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -70,14 +71,61 @@ export function BufferedVideo({
     el.addEventListener('playing', handlePlaying);
     el.addEventListener('pause', handlePause);
 
-    // sound first; browsers that block it get muted playback + an unmute button
-    el.play().catch(() => {
-      el.muted = true;
-      cbs.current.onMuted();
-      el.play().catch(() => cbs.current.onError());
-    });
+    // ---- start it, with sound, and keep trying with sound ------------------
+    let cancelled = false;
+    /** listeners the retry paths install; all torn down on unmount */
+    let onCanPlay: (() => void) | null = null;
+    let onGesture: (() => void) | null = null;
+
+    const clearGesture = () => {
+      if (!onGesture) return;
+      window.removeEventListener('pointerdown', onGesture);
+      window.removeEventListener('keydown', onGesture);
+      onGesture = null;
+    };
+    const clearCanPlay = () => {
+      if (!onCanPlay) return;
+      el.removeEventListener('canplay', onCanPlay);
+      onCanPlay = null;
+    };
+
+    const attempt = (retriesLeft: number) => {
+      if (cancelled) return;
+      el.muted = false; // never, ever silently
+      el.play().catch((err: unknown) => {
+        if (cancelled) return;
+        const name = (err as { name?: string })?.name ?? '';
+        if (name === 'NotAllowedError') {
+          // the browser wants a gesture it can point at — take the next one
+          if (onGesture) return;
+          onGesture = () => {
+            clearGesture();
+            attempt(retriesLeft);
+          };
+          window.addEventListener('pointerdown', onGesture, { once: true });
+          window.addEventListener('keydown', onGesture, { once: true });
+          return;
+        }
+        // AbortError / load race: the source was still settling. Wait until the
+        // element says it can play and ask again — once.
+        if (retriesLeft > 0) {
+          if (onCanPlay) return;
+          onCanPlay = () => {
+            clearCanPlay();
+            attempt(retriesLeft - 1);
+          };
+          el.addEventListener('canplay', onCanPlay, { once: true });
+          return;
+        }
+        cbs.current.onError();
+      });
+    };
+    attempt(1);
 
     return () => {
+      cancelled = true;
+      clearGesture();
+      clearCanPlay();
       el.removeEventListener('ended', handleEnded);
       el.removeEventListener('error', handleError);
       el.removeEventListener('playing', handlePlaying);

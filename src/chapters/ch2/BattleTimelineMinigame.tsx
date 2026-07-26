@@ -5,12 +5,14 @@
  * this with a tabletop scene later, the way chapter 1's works). Tap two cards
  * to swap them; CHECK MY ORDER locks the correct ones, which turn green and
  * reveal their date and why they mattered. Score = right on the first check.
- * Summary screen behaviour is identical to chapter 1's TimelineMinigame.
+ * Summary screen behaviour is identical to chapter 1's TimelineMinigame: its
+ * own black screen, narrated, each topic appearing as it is spoken.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { MinigameProps } from '../types';
-import { voicePlayer } from '@/audio/voicePlayer';
-import { EVENTS, SUMMARY, SUMMARY_SPOKEN, eventById, useTimelineStore } from './timelineStore';
+import { useSummaryNarration } from '@/audio/summaryNarration';
+import { EVENTS, SUMMARY, eventById, useTimelineStore } from './timelineStore';
 
 export function BattleTimelineMinigame({ chapterId, onComplete }: MinigameProps) {
   const order = useTimelineStore((s) => s.order);
@@ -23,11 +25,12 @@ export function BattleTimelineMinigame({ chapterId, onComplete }: MinigameProps)
   const swapById = useTimelineStore((s) => s.swapById);
   const check = useTimelineStore((s) => s.check);
   const [showSummary, setShowSummary] = useState(false);
-  const [spoken, setSpoken] = useState(false); // the voice reads the summary exactly once
   const done = locked.length === EVENTS.length;
 
-  // leaving the screen silences any summary still being read
-  useEffect(() => () => voicePlayer.stop(), []);
+  // the narrated summary — idle until the summary screen opens, and silenced
+  // by leaving it (the hook hands the voice back on unmount)
+  const reveal = useSummaryNarration(chapterId, SUMMARY.length, showSummary);
+  const reduced = useReducedMotion() ?? false;
 
   const tapCard = (id: string) => {
     if (locked.includes(id)) return;
@@ -38,43 +41,78 @@ export function BattleTimelineMinigame({ chapterId, onComplete }: MinigameProps)
 
   if (showSummary) {
     return (
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-        <div className="pointer-events-auto w-full max-w-xl rounded-md border border-stone-800 bg-stone-950/85 p-8 backdrop-blur-sm">
-          <div className="text-center text-[10px] uppercase tracking-[0.3em] text-amber-200/50">
+      <div
+        className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center bg-black px-6 py-10"
+        role="region"
+        aria-label="Chapter summary"
+        aria-live="polite"
+      >
+        <div className="w-full max-w-2xl">
+          <div className="text-center text-[10px] uppercase tracking-[0.35em] text-amber-200/50">
             Chapter 2 · Summary
           </div>
-          <h2 className="mt-3 text-center text-xl font-light text-stone-100">What you learned</h2>
-          <ul className="mt-6 space-y-4">
-            {SUMMARY.map((s) => (
-              <li key={s.topic}>
-                <div className="text-[10px] uppercase tracking-widest text-amber-200/70">{s.topic}</div>
-                <p className="mt-1 text-sm leading-relaxed text-stone-300">{s.line}</p>
-              </li>
-            ))}
+          <h2 className="mt-3 text-center text-2xl font-light tracking-wide text-stone-100">
+            What you learned
+          </h2>
+          <ul className="mt-10 space-y-7">
+            {SUMMARY.map((s, i) => {
+              const shown = i < reveal.revealed;
+              const speaking = i === reveal.current && !reveal.finished;
+              return (
+                <motion.li
+                  key={s.topic}
+                  initial={false}
+                  animate={{
+                    opacity: shown ? (speaking || reveal.finished ? 1 : 0.4) : 0,
+                    y: shown || reduced ? 0 : 10,
+                  }}
+                  transition={{ duration: reduced ? 0 : 0.7, ease: 'easeOut' }}
+                  aria-hidden={!shown}
+                >
+                  <div
+                    className={`text-[11px] uppercase tracking-[0.25em] ${
+                      speaking ? 'text-amber-200' : 'text-amber-200/70'
+                    }`}
+                  >
+                    {s.topic}
+                  </div>
+                  <p className="mt-1.5 text-base leading-relaxed text-stone-200">{s.line}</p>
+                </motion.li>
+              );
+            })}
           </ul>
-          <div className="mt-8 flex justify-center gap-3">
-            <button
-              onClick={() => {
-                if (spoken) return;
-                setSpoken(true);
-                voicePlayer.speak(SUMMARY_SPOKEN, chapterId);
-              }}
-              disabled={spoken}
-              className="rounded-sm border border-stone-700 px-5 py-2.5 text-xs tracking-widest text-stone-300 transition hover:bg-stone-800 disabled:opacity-40"
+          {reveal.finished && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: reduced ? 0 : 0.9 }}
+              className="mt-12 flex justify-center"
             >
-              {spoken ? '✓ PLAYED' : '🔊 READ IT TO ME'}
-            </button>
-            <button
-              onClick={() => {
-                voicePlayer.stop();
-                onComplete({ chapterId, completed: true, score: (firstCheckScore ?? 0) / EVENTS.length });
-              }}
-              className="rounded-sm border border-amber-200/40 px-5 py-2.5 text-xs tracking-[0.25em] text-amber-100 hover:bg-amber-200/10"
-            >
-              FINISH CHAPTER →
-            </button>
-          </div>
+              <button
+                autoFocus
+                onClick={() =>
+                  onComplete({
+                    chapterId,
+                    completed: true,
+                    score: (firstCheckScore ?? 0) / EVENTS.length,
+                  })
+                }
+                className="rounded-sm border border-amber-200/50 px-8 py-3 text-xs tracking-[0.3em] text-amber-100 transition hover:bg-amber-200/10"
+              >
+                FINISH CHAPTER →
+              </button>
+            </motion.div>
+          )}
         </div>
+
+        {!reveal.finished && (
+          <button
+            onClick={reveal.skip}
+            className="absolute bottom-6 right-6 rounded-sm border border-stone-700/70 px-5 py-2 text-[10px] uppercase tracking-[0.25em] text-stone-500 transition hover:border-amber-200/40 hover:text-amber-100/80"
+          >
+            Skip →
+          </button>
+        )}
       </div>
     );
   }

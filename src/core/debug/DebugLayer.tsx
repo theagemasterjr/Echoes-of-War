@@ -167,10 +167,8 @@ function CharacterTest({ chapterId }: { chapterId: ChapterId }) {
             <dd className="break-words">{convo.covered.join(', ') || 'none yet'}</dd>
           </div>
           <div>
-            <dt className="text-stone-500">progress</dt>
-            <dd>
-              {convo.progress.covered} / {convo.progress.total}
-            </dd>
+            <dt className="text-stone-500">objectives checked off</dt>
+            <dd className="break-words">{convo.objectivesDone.join(', ') || 'none yet'}</dd>
           </div>
           <div>
             <dt className="text-stone-500">turns in node</dt>

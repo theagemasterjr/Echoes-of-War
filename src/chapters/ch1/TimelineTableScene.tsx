@@ -162,7 +162,7 @@ function PieceCard({ id, cardScale }: { id: string; cardScale: number }) {
       position={CARD_OFFSET}
       center
       /* shrinks in step with the row's spacing, so cards never crowd each other */
-      distanceFactor={6 * cardScale}
+      distanceFactor={5.2 * cardScale}
       zIndexRange={[15, 0]}
       style={{ pointerEvents: 'none' }}
     >
@@ -171,7 +171,7 @@ function PieceCard({ id, cardScale }: { id: string; cardScale: number }) {
         onClick={onClick}
         disabled={isLocked}
         style={{ pointerEvents: 'auto' }}
-        className={`flex w-40 flex-col items-center rounded-sm border px-2 py-1.5 text-center backdrop-blur-sm transition ${
+        className={`flex w-36 flex-col items-center rounded-sm border px-2 py-1.5 text-center backdrop-blur-sm transition ${
           isLocked
             ? 'border-emerald-600/50 bg-emerald-950/70'
             : isSel

@@ -46,14 +46,15 @@ export const EVENTS: TimelineEvent[] = [
 
 export const eventById = (id: string) => EVENTS.find((e) => e.id === id)!;
 
-/** End-of-chapter summary — one short line per Objectives topic. The
- *  narrator's voice, not Ray's: it may state the exact casualty figures he
- *  has to hedge on. Kept under 700 characters so the voice can read it all. */
+/** End-of-chapter summary — one short line per Objectives topic, in the same
+ *  order as the three objectives in src/content/trees/ch3.ts (why Japan
+ *  attacked → what they came for → what changed). The narrator's voice, not
+ *  Ray's. Kept under 700 characters so the voice can read it all. THREE
+ *  entries, in this order: the narration is wired up by index. */
 export const SUMMARY: { topic: string; line: string }[] = [
-  { topic: 'Why Japan attacked', line: 'Japan wanted an empire in Asia. When America cut off its oil, Japan chose to strike rather than back down.' },
-  { topic: 'The attack on Pearl Harbor', line: 'On 7 December 1941, planes from Japanese carriers hit the fleet at anchor. 2,403 Americans were killed and 1,178 wounded.' },
-  { topic: 'America enters the war', line: 'America declared war on Japan on 8 December. Three days later, Germany and Italy declared war on America.' },
-  { topic: 'One world war', line: 'The wars in Europe and Asia had become one world war — and America’s factories began building on a scale no one could match.' },
+  { topic: 'Why Japan attacked', line: 'Japan wanted an empire in Asia. When America cut off its oil, Japan chose to strike first — and cripple the fleet that could stop it.' },
+  { topic: 'Japan’s target at Pearl Harbor', line: 'On 7 December 1941, Japanese planes hit the fleet at anchor. The battleships were sunk or crippled — but the aircraft carriers were at sea, and escaped.' },
+  { topic: 'America joins the war', line: 'America declared war on Japan the next day, and Germany and Italy declared war on America. American factories, ships, and troops poured in — and the tide began to turn against the Axis.' },
 ];
 export const SUMMARY_SPOKEN = SUMMARY.map((s) => `${s.topic}. ${s.line}`).join(' ');
 

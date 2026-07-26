@@ -14,6 +14,40 @@ export interface ConvoMessage {
   text: string;
 }
 
+/**
+ * Flatten a line so keyword matching is about the words a kid actually said and
+ * never about typography. Accents are dropped (Wieluń → wielun); apostrophes in
+ * every shape vanish so "Hitler's" and "Hitlers" are the same word; dashes
+ * become a space so "anti-aircraft" and "anti aircraft" are the same phrase;
+ * every other non-alphanumeric run becomes a space and whitespace collapses.
+ * The result is padded with spaces so a phrase can be matched at word
+ * boundaries with a plain `includes`.
+ */
+export function normalizeForKeywords(text: string): string {
+  return ` ${text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/['`´‘’ʼ]/g, '')
+    .replace(/[-‐‑‒–—−]/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()} `;
+}
+
+/** Ids of every objective whose keywords appear in this player message. */
+export function matchObjectives(objectives: ObjectiveDef[], message: string): string[] {
+  const hay = normalizeForKeywords(message);
+  if (hay.trim() === '') return [];
+  return objectives
+    .filter((o) =>
+      (o.keywords ?? []).some((k) => {
+        const needle = normalizeForKeywords(k).trim();
+        return needle !== '' && hay.includes(` ${needle} `);
+      }),
+    )
+    .map((o) => o.id);
+}
+
 interface ConvoState {
   chapterId: ChapterId | null;
   nodeId: string;
@@ -22,7 +56,8 @@ interface ConvoState {
   messages: ConvoMessage[];
   guided: string[];
   objectives: ObjectiveDef[];
-  progress: { covered: number; total: number };
+  /** Ids of objectives the player has already said out loud. Only ever grows. */
+  objectivesDone: string[];
   status: 'idle' | 'sending' | 'error';
   canContinue: boolean;
   lastRequest: ChatRequest | null;
@@ -60,7 +95,6 @@ export const useConversation = create<ConvoState>((set, get) => {
         messages: [...s.messages, { role: 'character', text: r.reply }],
         guided: r.guidedQuestions,
         objectives: r.objectives ?? s.objectives,
-        progress: r.progress,
         canContinue: s.canContinue || r.canContinue,
       });
       // fire-and-forget voice — deflections get voiced too (in character);
@@ -79,7 +113,7 @@ export const useConversation = create<ConvoState>((set, get) => {
     messages: [],
     guided: [],
     objectives: [],
-    progress: { covered: 0, total: 1 },
+    objectivesDone: [],
     status: 'idle',
     canContinue: false,
     lastRequest: null,
@@ -102,7 +136,17 @@ export const useConversation = create<ConvoState>((set, get) => {
       // send plenty of history: the character only reads the recent turns, but
       // the coverage grader reads far back so nothing explained early is lost
       const history = s.messages.slice(-60);
-      set({ messages: [...s.messages, { role: 'player', text }] });
+      // Objectives tick off the instant the player says the words — before the
+      // message even leaves for the server. Typed input and voice input both
+      // arrive here, so this is the one place it has to happen.
+      const hits = matchObjectives(s.objectives, text);
+      set({
+        messages: [...s.messages, { role: 'player', text }],
+        objectivesDone:
+          hits.length > 0
+            ? Array.from(new Set([...s.objectivesDone, ...hits]))
+            : s.objectivesDone,
+      });
       dispatch({
         chapterId: s.chapterId, nodeId: s.nodeId, coveredPointIds: s.covered,
         turnsInNode: s.turnsInNode, history, message: text,
@@ -118,7 +162,7 @@ export const useConversation = create<ConvoState>((set, get) => {
       voicePlayer.stop();
       set({
         chapterId: null, nodeId: '', covered: [], turnsInNode: 0, messages: [],
-        guided: [], objectives: [], progress: { covered: 0, total: 1 }, status: 'idle',
+        guided: [], objectives: [], objectivesDone: [], status: 'idle',
         canContinue: false, lastRequest: null,
       });
     },

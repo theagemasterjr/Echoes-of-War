@@ -8,9 +8,11 @@
     "Keep each line one short sentence — it has to land on its own.",
     "'accept' is the wording on the button at the end (defaults to 'I ACCEPT').",
     "",
-    "After editing, run:  npm run build:briefs",
-    "That regenerates ONLY the lines whose wording changed and saves them under",
-    "public/audio/brief/. The game never calls ElevenLabs while it is running."
+    "ch1–ch3 are narrated by a single hand-recorded take per chapter, sitting in",
+    "public/audio/brief/narration/. Their line-by-line timings live in",
+    "public/audio/brief/manifest.json and the wording there must match these lines",
+    "EXACTLY — the screen refuses mismatched wording and falls back to silence.",
+    "Editing a line here means re-timing that chapter's take in the manifest."
   ],
   "chapters": {
     "ch1": {
@@ -19,6 +21,7 @@
         "Learn what the Treaty of Versailles demanded of Germany.",
         "Learn how those terms broke a nation, and left its people desperate.",
         "Learn how that desperation carried Adolf Hitler to power.",
+        "Learn how the world watched him take land, step by step, and did nothing.",
         "And learn how it ended — with German tanks crossing into Poland.",
         "Do you accept the mission?"
       ],
@@ -27,10 +30,11 @@
     "ch2": {
       "lines": [
         "Your objective: understand the summer Britain stood alone.",
-        "Learn how the army escaped at Dunkirk, and how France fell.",
-        "Learn why Germany had to destroy the RAF before it could invade.",
-        "Learn how radar and fewer than three thousand pilots held the line.",
-        "And learn how the bombers turned on London — and were beaten back.",
+        "Learn how three hundred thousand soldiers escaped from Dunkirk.",
+        "Learn how France surrendered — and left Britain to fight on alone.",
+        "Learn how Eagle Day began Germany's assault from the sky.",
+        "Learn how the bombers turned on the cities, and the cities burned.",
+        "And learn how the battle was won — and the invasion never came.",
         "Do you accept the mission?"
       ],
       "accept": "I ACCEPT"
@@ -38,10 +42,9 @@
     "ch3": {
       "lines": [
         "Your objective: understand how the war became the whole world's war.",
-        "Learn why Japan struck at America across the Pacific.",
-        "Learn what happened at Pearl Harbor on the seventh of December.",
-        "Learn how America answered — and how Germany answered America.",
-        "And learn how separate wars became one world war.",
+        "Learn why Japan chose to strike America across the Pacific.",
+        "Learn what the bombers came for at Pearl Harbor — and what they missed.",
+        "And learn how America's answer changed the course of the entire war.",
         "Do you accept the mission?"
       ],
       "accept": "I ACCEPT"

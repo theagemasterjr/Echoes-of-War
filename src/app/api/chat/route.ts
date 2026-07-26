@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import type { ChatRequest, ChatResponse } from '@/conversation/treeTypes';
-import { TREES, totalLearningPoints } from '@/server/trees';
+import { TREES } from '@/server/trees';
 import { chatComplete, CHARACTER_MODEL, REPLY_MAX_TOKENS } from '@/server/openai';
 import { buildCharacterSystem, buildIntroInstruction } from '@/server/prompts';
 import { screenInput } from '@/server/screening';
@@ -24,14 +24,12 @@ export async function POST(req: NextRequest) {
 
   const nodeId = body.nodeId && tree.nodes[body.nodeId] ? body.nodeId : tree.entryNodeId;
   const node = tree.nodes[nodeId];
-  const total = totalLearningPoints(tree);
   const covered = (body.coveredPointIds ?? []).filter((id) => typeof id === 'string');
   const base = {
     newlyCoveredIds: [] as string[],
     advanceTo: null,
     canContinue: false,
     guidedQuestions: node.guidedQuestions,
-    progress: { covered: covered.length, total },
     nodeId,
     objectives: tree.objectives ?? [],
   } satisfies Omit<ChatResponse, 'reply'>;
@@ -116,7 +114,6 @@ export async function POST(req: NextRequest) {
       advanceTo,
       canContinue: met && node.advance.to === null,
       guidedQuestions: tree.nodes[nextNodeId].guidedQuestions,
-      progress: { covered: merged.length, total },
       nodeId: nextNodeId,
       objectives: tree.objectives ?? [],
     };
