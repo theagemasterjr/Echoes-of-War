@@ -4,14 +4,14 @@
  *
  * Every word in the game lives up here: the one instruction line at the top of
  * the screen, the label beside each piece on the table, the caption a correct
- * drop earns, and Nina's line when something is put in the wrong place. The
+ * drop earns, and Nikolai's line when something is put in the wrong place. The
  * board itself — table, map, pieces, the ring closing — is the 3D scene
  * (UranusTableScene), which measures where each labelled piece lands on screen
  * and publishes it, so the pairing holds at any window size. Root is
  * pointer-events-none so drags reach the canvas.
  *
  * The Objectives panel stays on screen throughout, showing what the player
- * ticked off talking to Nina plus the three rows the board itself teaches. It is
+ * ticked off talking to Nikolai plus the three rows the board itself teaches. It is
  * the same panel the conversation uses.
  *
  * The summary is its own black screen, shared by every chapter and by the debug
@@ -32,7 +32,7 @@ const HOLD_MS = 2000;
 const FADE_MS = 900;
 /** A caption has said its piece after this long. */
 const CAPTION_MS = 7000;
-/** So does one of Nina's corrections, if the player leaves it alone. */
+/** So does one of Nikolai's corrections, if the player leaves it alone. */
 const SAID_MS = 14000;
 
 export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
@@ -42,7 +42,7 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
   const caption = useUranusStore((s) => s.caption);
   const said = useUranusStore((s) => s.said);
   const ticked = useUranusStore((s) => s.ticked);
-  // what the player ticked off talking to Nina — the store outlives the
+  // what the player ticked off talking to Nikolai — the store outlives the
   // conversation beat, and an empty list (jumped straight here from the debug
   // menu) simply means the panel starts blank
   const fromConversation = useConversation((s) => s.objectivesDone);
@@ -73,7 +73,7 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* the cut from Nina to the war-room table */}
+      {/* the cut from Nikolai to the war-room table */}
       <motion.div
         className="absolute inset-0 bg-black"
         initial={{ opacity: 1 }}
@@ -136,7 +136,7 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
         )}
       </AnimatePresence>
 
-      {/* Nina, when something is put in the wrong place. Never a bare "no" —
+      {/* Nikolai, when something is put in the wrong place. Never a bare "no" —
           always the reason, in her own voice. */}
       <AnimatePresence>
         {said && stage === 'play' && (
@@ -144,7 +144,7 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
             <div className="absolute bottom-6 left-1/2 w-full max-w-2xl -translate-x-1/2 px-4">
               <div className="rounded-md border border-stone-800 bg-stone-950/80 px-6 py-4 text-center backdrop-blur-sm">
                 <div className="text-[10px] uppercase tracking-[0.25em] text-amber-200/50">
-                  Nina
+                  Nikolai
                 </div>
                 <p className="mt-1.5 text-[15px] leading-relaxed text-stone-100">{said.text}</p>
               </div>

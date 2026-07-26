@@ -166,7 +166,7 @@ export function UranusTableScene() {
   });
 
   // Releasing anywhere ends the drag: a slot that takes the piece seats it,
-  // anything else floats the piece home while Nina says why.
+  // anything else floats the piece home while Nikolai says why.
   useEffect(() => {
     if (!draggingId) return;
     const onUp = () => {
@@ -539,9 +539,9 @@ function SeatedPiece({
   }, [sweep]);
 
   const home = useMemo(() => {
-    const [x, , z] = mapToWorld(slot.at);
+    const [x, , z] = mapToWorld(slot.seatAt ?? slot.at);
     return new THREE.Vector3(x, 0, z);
-  }, [slot.at]);
+  }, [slot.seatAt, slot.at]);
 
   useFrame(() => {
     const g = group.current;
@@ -740,7 +740,7 @@ function useLabelProjection(phaseAge: React.RefObject<number>) {
       // the two flank hammers travel as the ring closes — their labels go with
       // them rather than sit on empty paper
       if (seal !== 'idle' && SWEEPS[slot.id as keyof typeof SWEEPS]) continue;
-      add(`piece-${slot.id}`, pieceById(pieceId).label, slot.at, [0, 0.058]);
+      add(`piece-${slot.id}`, pieceById(pieceId).label, slot.seatAt ?? slot.at, [0, 0.058]);
     }
 
     // the static pieces, each as it lands
