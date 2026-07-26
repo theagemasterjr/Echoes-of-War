@@ -19,9 +19,39 @@ const minigameCamera = (view: View) =>
     ? chapterMeta(view.chapterId).minigameCamera
     : undefined;
 
+/** Every shot in the game is composed for a 16:9 frame. */
+const REF_ASPECT = 16 / 9;
+const BASE_FOV = 45;
+/** Ceiling for the widened angle: a very tall window (half-screen portrait)
+ *  stops widening here and crops instead — past this the perspective goes
+ *  fisheye. */
+const MAX_FOV = 68;
+
 /** Everything inside the single persistent <Canvas>. */
 export function SceneRouter() {
   const view = useAppStore((s) => s.view);
+  // Hold the horizontal composition on any window narrower than 16:9: keep the
+  // 16:9 horizontal field of view by widening the vertical one, so nothing at
+  // the sides is ever cropped away on laptops / non-maximized windows. Wider
+  // windows keep the base vertical angle (they just see more at the sides).
+  // Mutated during render, before the scenes below — their layout hooks read
+  // camera.fov while rendering, so it must already be correct here.
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const { width, height } = useThree((s) => s.size);
+  const aspect = width / Math.max(1, height);
+  const fov =
+    aspect >= REF_ASPECT
+      ? BASE_FOV
+      : Math.min(
+          MAX_FOV,
+          THREE.MathUtils.radToDeg(
+            2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2)) * (REF_ASPECT / aspect)),
+          ),
+        );
+  if (Math.abs(camera.fov - fov) > 0.01) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  }
   return (
     <>
       {view.kind === 'chapter' ? (
@@ -78,13 +108,15 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
         </Suspense>
       ) : (
         <>
-          {/* 2D painted backdrop plane — founders swap the material/texture per chapter later */}
+          {/* 2D painted backdrop plane — founders swap the material/texture per
+              chapter later. Oversized so an ultrawide window never sees past
+              its edges. */}
           <mesh position={[0, 2.2, -4.5]}>
-            <planeGeometry args={[16, 8]} />
+            <planeGeometry args={[34, 10]} />
             <meshStandardMaterial color="#141821" roughness={1} />
           </mesh>
           <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-            <planeGeometry args={[20, 14]} />
+            <planeGeometry args={[34, 14]} />
             <meshStandardMaterial color="#191713" roughness={0.95} />
           </mesh>
         </>
