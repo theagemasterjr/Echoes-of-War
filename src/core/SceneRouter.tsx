@@ -355,12 +355,12 @@ function CameraDirector() {
     p.x = THREE.MathUtils.lerp(p.x, pointer.x * 0.24, 0.04);
     p.y = THREE.MathUtils.lerp(p.y, -pointer.y * 0.12, 0.04);
 
-    // slow sweep around the table (map only): rotate the camera's base offset
-    // about the look target — wide pendulum, so the map never goes upside down
+    // barely-there sway around the table (map only): the camera leans a
+    // touch to one side, then the other — idle life, never a tour
     let orbitX = 0;
     let orbitZ = 0;
     if (view.kind === 'map') {
-      const theta = 0.4 * Math.sin((t * Math.PI * 2) / 70) * amp.current; // ±23°, 70s cycle
+      const theta = 0.045 * Math.sin((t * Math.PI * 2) / 26) * amp.current; // ±2.6°, 26s cycle
       const bx = camera.position.x - target.current.x;
       const bz = camera.position.z - target.current.z;
       orbitX = bx * Math.cos(theta) + bz * Math.sin(theta) - bx;

@@ -318,27 +318,27 @@ const tree: ConstraintTree = {
     {
       id: 'obj-dunkirk',
       label: 'Escape at Dunkirk',
-      keywords: ['dunkirk', 'dunkerque', 'evacuation', 'evacuate', 'evacuated', 'beaches', 'the beach', 'little ships', 'small boats', 'fishing boats', 'boats', 'rescue', 'rescued', 'escape', 'escaped', 'got away', 'got out', 'trapped', 'cut off', 'surrounded', 'brought home', 'the army got home', 'left their tanks', 'left the equipment', '338', 'three hundred thousand', 'may 1940'],
+      keywords: ['dunkirk', 'dunkerque', 'evacuation', 'evacuate', 'evacuated', 'beaches', 'the beach', 'little ships', 'small boats', 'fishing boats', 'boats', 'civilian boats', 'ordinary boats', 'every boat', 'rescue', 'rescued', 'escape', 'escaped', 'got away', 'got out', 'trapped', 'stranded', 'stuck on the beach', 'cut off', 'surrounded', 'backs to the sea', 'pushed to the sea', 'pushed back to the sea', 'retreat', 'retreated', 'fell back', 'brought home', 'bring them home', 'get them home', 'got them home', 'the army got home', 'saved the army', 'saved the soldiers', 'across the channel', 'the channel', 'operation dynamo', 'dynamo', 'how did they escape', 'how did the army escape', 'left their tanks', 'left the equipment', '338', 'three hundred thousand', 'may 1940'],
     },
     {
       id: 'obj-alone',
       label: 'France’s Surrender',
-      keywords: ['france surrendered', 'france fell', 'fall of france', 'france gave up', 'france gave in', 'french surrender', 'surrendered', 'surrender', 'armistice', 'alone', 'on our own', 'on its own', 'on their own', 'by itself', 'stood alone', 'stands alone', 'standing alone', 'no allies', 'no help', 'only country left', 'last country', 'commonwealth', 'paris', 'sea lion', 'operation sea lion', 'invade britain', 'june 1940'],
+      keywords: ['france surrendered', 'france fell', 'fall of france', 'france gave up', 'france gave in', 'france lost', 'lost france', 'french surrender', 'french lost', 'surrendered', 'surrender', 'armistice', 'took france', 'germany took france', 'took paris', 'captured paris', 'alone', 'on our own', 'on its own', 'on their own', 'by itself', 'stood alone', 'stands alone', 'standing alone', 'all alone', 'britain alone', 'britain was alone', 'left alone', 'fighting alone', 'no allies', 'no help', 'no one to help', 'only country left', 'only ones left', 'last country', 'last one standing', 'who was left', 'anyone left', 'no one left', 'commonwealth', 'paris', 'churchill', 'never surrender', 'keep fighting', 'kept fighting', 'why not give up', 'why didnt britain give up', 'did britain give up', 'make peace', 'peace deal with hitler', 'sea lion', 'operation sea lion', 'invade britain', 'invade england', 'june 1940'],
     },
     {
       id: 'obj-eagleday',
       label: 'Eagle Day',
-      keywords: ['eagle day', 'adlertag', 'eagle', 'air attack', 'air assault', 'the attack began', 'attack started', 'airfields', 'airfield', 'aerodrome', 'raf', 'royal air force', 'fighter command', 'luftwaffe', 'radar', 'biggin hill', '13 august', 'august', 'bombing the airfields', 'attacking the airfields', 'attacked the airfields', 'destroy the raf', 'wipe out the raf'],
+      keywords: ['eagle day', 'adlertag', 'eagle', 'air attack', 'air assault', 'the attack began', 'attack started', 'when did the attack start', 'how did the attack begin', 'the first attack', 'airfields', 'airfield', 'aerodrome', 'raf', 'royal air force', 'fighter command', 'attack the raf', 'attacked the raf', 'beat the raf', 'knock out the raf', 'destroy the air force', 'destroy our planes', 'luftwaffe', 'german planes', 'their bombers', 'radar', 'radar stations', 'biggin hill', 'spitfire', 'spitfires', 'hurricane', 'hurricanes', 'fighter planes', 'fighters', 'dogfight', 'dogfights', 'air battle', 'battle in the sky', 'battle of britain', 'goering', 'goring', '13 august', 'august', 'bombing the airfields', 'attacking the airfields', 'attacked the airfields', 'bombed the airfields', 'bomb the airfields', 'runways', 'hangars', 'destroy the raf', 'wipe out the raf'],
     },
     {
       id: 'obj-cities',
       label: 'The Blitz',
-      keywords: ['blitz', 'london', 'cities', 'the city', 'bombing', 'bombed', 'bombs', 'bombers', 'east end', 'the docks', 'burning', 'burned', 'burnt', 'on fire', 'shelter', 'shelters', 'anderson shelter', 'underground', 'the tube', 'blackout', 'siren', 'sirens', 'air raid', 'air raids', 'civilians', 'ordinary people', 'at night', 'night raids', '7 september', 'berlin'],
+      keywords: ['blitz', 'london', 'cities', 'the city', 'bombing', 'bombed', 'bombs', 'bombers', 'bomb london', 'bombing london', 'bombed london', 'attacked london', 'why bomb the cities', 'why did they bomb the cities', 'switched to the cities', 'changed targets', 'changed target', 'stopped bombing the airfields', 'east end', 'the docks', 'burning', 'burned', 'burnt', 'on fire', 'fires', 'shelter', 'shelters', 'anderson shelter', 'underground', 'the tube', 'tube stations', 'sleeping in the tube', 'blackout', 'siren', 'sirens', 'air raid', 'air raids', 'civilians', 'ordinary people', 'peoples homes', 'lost their homes', 'houses destroyed', 'children sent away', 'sent to the countryside', 'evacuees', 'at night', 'every night', 'night after night', 'night raids', '7 september', 'st pauls', 'berlin'],
     },
     {
       id: 'obj-won',
       label: 'How Britain Won',
-      keywords: ['won', 'win', 'winning', 'victory', 'beat them', 'beaten', 'beaten back', 'turned back', 'drove them off', 'gave up', 'give up', 'stopped coming', 'stopped attacking', '15 september', 'fifteenth of september', 'battle of britain day', 'invasion called off', 'called off', 'never came', 'did they invade', 'how did it end', 'the end', 'end of the battle', 'who won', 'over now', 'safe now', 'the few'],
+      keywords: ['won', 'win', 'winning', 'victory', 'we won', 'britain won', 'raf won', 'how did britain win', 'they lost', 'germany lost', 'the germans lost', 'hitler lost', 'beat them', 'beaten', 'beaten back', 'turned back', 'drove them off', 'held out', 'held on', 'survived', 'still standing', 'saved britain', 'saved the country', 'gave up', 'give up', 'why did they give up', 'why did they stop', 'stopped coming', 'stopped attacking', '15 september', 'fifteenth of september', 'battle of britain day', 'invasion called off', 'called off', 'postponed', 'never invaded', 'no invasion', 'never came', 'did they invade', 'how did it end', 'when did it end', 'the end', 'end of the battle', 'who won', 'over now', 'safe now', 'the few'],
     },
   ],
   nodes,

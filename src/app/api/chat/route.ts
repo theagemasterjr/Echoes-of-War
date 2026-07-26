@@ -5,7 +5,7 @@ import { TREES } from '@/server/trees';
 import { chatComplete, CHARACTER_MODEL, REPLY_MAX_TOKENS } from '@/server/openai';
 import { buildCharacterSystem, buildIntroInstruction } from '@/server/prompts';
 import { screenInput } from '@/server/screening';
-import { checkCoverage, objectiveCoverage } from '@/server/coverage';
+import { checkCoverage } from '@/server/coverage';
 import { checkRateLimit } from '@/server/rateLimit';
 import { readCacheFile, writeCacheFile } from '@/server/diskCache';
 
@@ -93,19 +93,10 @@ export async function POST(req: NextRequest) {
         messages: [...history, { role: 'user', content: message }],
       })) || '…';
 
-    // Two gradings, run together: the node's learning points (what lights up
-    // CONTINUE) and the chapter's on-screen objectives (what ticks the
-    // checklist). Only objectives still open are sent, so a row already
-    // ticked by the player's own words costs nothing.
-    const objectives = tree.objectives ?? [];
-    const done = new Set((body.objectivesDone ?? []).filter((id) => typeof id === 'string'));
-    const [newlyCoveredIds, objectivesCovered] = await Promise.all([
-      checkCoverage(node, fullHistory, message, reply, covered),
-      objectiveCoverage(
-        objectives.filter((o) => !done.has(o.id)),
-        reply,
-      ),
-    ]);
+    // Grade the node's learning points (what lights up CONTINUE). The on-screen
+    // objectives are NOT graded here — a row only ever ticks off client-side,
+    // the instant the player's own words hit one of its keywords.
+    const newlyCoveredIds = await checkCoverage(node, fullHistory, message, reply, covered);
     const merged = [...new Set([...covered, ...newlyCoveredIds])];
 
     const nodeCovered = node.learningPoints.filter((p) => merged.includes(p.id)).length;
@@ -127,8 +118,7 @@ export async function POST(req: NextRequest) {
       canContinue: met && node.advance.to === null,
       guidedQuestions: tree.nodes[nextNodeId].guidedQuestions,
       nodeId: nextNodeId,
-      objectives,
-      objectivesCovered,
+      objectives: tree.objectives ?? [],
     };
     return NextResponse.json(response);
   } catch (e) {

@@ -17,7 +17,13 @@ export function ConversationUI({
   const meta = chapterMeta(chapterId);
   const convo = useConversation();
   const [draft, setDraft] = useState('');
+  // Voice is the default way to talk — every conversation opens in voice mode
+  // wherever the browser supports it (checked on mount, so the server render
+  // stays deterministic). "Type instead" switches to the text box any time.
   const [voiceMode, setVoiceMode] = useState(false);
+  useEffect(() => {
+    if (getSpeechCtor()) setVoiceMode(true);
+  }, []);
   const [lineDone, setLineDone] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const started = useRef(false);
@@ -69,9 +75,9 @@ export function ConversationUI({
         </div>
       </div>
 
-      {/* left-side objectives — a row checks off the moment the player says the
-          words, or the moment the character explains that concept.
-          Hidden when there are no objectives (no-key case, ch4–ch6 skeletons). */}
+      {/* left-side objectives — a row checks off the moment the PLAYER's own
+          words mention it; what the character says never ticks a row.
+          Hidden when there are no objectives (no-key case, ch5–ch6 skeletons). */}
       {convo.objectives.length > 0 && (
         <ObjectivesPanel objectives={convo.objectives} doneIds={convo.objectivesDone} />
       )}
@@ -528,11 +534,15 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
 
   return (
     <div className="pointer-events-auto flex flex-col items-center pb-8">
+      {/* the way out for anyone who would rather type — always visible,
+          plainly worded, and big enough to find at a glance */}
       <button
         onClick={onExit}
-        className="absolute right-4 top-16 rounded-sm border border-stone-700 bg-stone-950/70 px-3 py-1.5 text-[10px] uppercase tracking-widest text-stone-300 backdrop-blur-sm hover:bg-stone-800"
+        title="Switch to typing your questions"
+        className="absolute right-4 top-16 flex items-center gap-2 rounded-sm border border-amber-200/40 bg-stone-950/80 px-4 py-2.5 text-xs tracking-wide text-amber-100 backdrop-blur-sm transition hover:bg-amber-200/10"
       >
-        ✕ Exit voice
+        <span className="text-base leading-none">⌨</span>
+        <span>Type instead</span>
       </button>
 
       {/* the words, as they are spoken. The line stays on screen after the
