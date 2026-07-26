@@ -62,7 +62,14 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
       clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
     },
   },
-  'ch2.character': { label: 'RAF pilot figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  'ch2.character': {
+    label: 'RAF pilot figure',
+    source: {
+      kind: 'glb', url: '/models/ch2-pilot.glb',
+      scale: 0.042, offset: [0, -3.0, -0.6], rotation: [0, -0.3, 0], castShadow: false,
+      clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+    },
+  },
   'ch3.character': { label: 'US sailor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch4.character': { label: 'Soviet medic figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch5.character': { label: 'Allied medical worker figure', source: { kind: 'placeholder', component: P.CharacterBust } },

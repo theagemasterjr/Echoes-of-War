@@ -21,6 +21,7 @@ export const CHAPTERS: ChapterMeta[] = [
     dates: '1940–1941', location: 'Southern England',
     characterName: 'Placeholder: RAF pilot', characterRole: 'RAF fighter pilot',
     markerPosition: [-0.30, 0, -1.42], markerAssetId: 'ch2.marker', characterAssetId: 'ch2.character',
+    conversationBackdrop: '/img/ch2-hangar.jpg',
   },
   {
     id: 'ch3', index: 3, title: 'A World at War', subtitle: 'Pearl Harbor and a global conflict',
