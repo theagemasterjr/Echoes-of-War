@@ -35,11 +35,19 @@ import { claimNarration, narrationAudio, releaseNarration } from '@/audio/narrat
  * answer is kept: one flaky moment must not leave every later chapter's
  * briefing silent for the rest of the visit, which is what caching the
  * failure would do.
+ *
+ * Always read fresh from the server (`no-store`). This file is the INDEX of
+ * which recordings exist and what they say — an old copy left in the browser
+ * names lines the current briefing no longer uses, the wording check below
+ * fails, and the briefing goes silent with nothing to show for it. The
+ * recordings themselves carry a version in their name, so they can still be
+ * kept; the index never can. This holds whatever any caching rule says, which
+ * is the point: it also rescues a browser already holding a stale copy.
  */
 let manifestPromise: Promise<BriefAudioManifest | null> | null = null;
 function loadManifest(): Promise<BriefAudioManifest | null> {
   if (!manifestPromise) {
-    manifestPromise = fetch(BRIEF_MANIFEST_URL)
+    manifestPromise = fetch(BRIEF_MANIFEST_URL, { cache: 'no-store' })
       .then((r) => {
         if (!r.ok) throw new Error(`brief manifest ${r.status}`);
         return r.json();
