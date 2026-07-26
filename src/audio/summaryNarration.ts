@@ -143,6 +143,18 @@ export function useSummaryNarration(
       (_, i) => take.topics[i]?.start ?? lastEnd,
     );
 
+    let raf = 0;
+    let cancelled = false;
+
+    const finish = () => {
+      if (cancelled || doneRef.current) return;
+      doneRef.current = true;
+      cancelAnimationFrame(raf);
+      setRevealed(topicCount);
+      setCurrent(topicCount - 1);
+      setFinished(true);
+    };
+
     const el = narrationAudio();
     if (el) {
       try {
@@ -152,19 +164,20 @@ export function useSummaryNarration(
         const start = () => el.play().catch(() => {}); // refused: the wall clock carries it
         if (el.readyState >= 2) start();
         else el.addEventListener('canplay', start, { once: true });
+        // the recording finishing IS the take being over — never wait on the
+        // timed lastEnd, which can sit a hair past the file's real duration
+        el.addEventListener('ended', finish);
       } catch {
         /* fail silent — the reveal runs on the wall clock */
       }
     }
 
     const startedAt = performance.now();
-    let raf = 0;
-    let cancelled = false;
     // the screen only ever moves forward, so a stutter never un-reveals a topic
     let seen = 0;
 
     const tick = () => {
-      if (cancelled) return;
+      if (cancelled || doneRef.current) return;
       // follow the voice when it is playing, otherwise keep the screen moving
       // at the pace the take was timed to
       const t =
@@ -176,11 +189,8 @@ export function useSummaryNarration(
       setRevealed(seen);
       setCurrent(seen - 1);
 
-      if (t >= lastEnd) {
-        setRevealed(topicCount);
-        setCurrent(topicCount - 1);
-        setFinished(true);
-        doneRef.current = true;
+      if (t >= lastEnd || (el && el.ended)) {
+        finish();
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -190,6 +200,7 @@ export function useSummaryNarration(
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      el?.removeEventListener('ended', finish);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, take?.track, topicCount]);

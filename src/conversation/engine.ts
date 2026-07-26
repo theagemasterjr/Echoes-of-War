@@ -56,8 +56,8 @@ interface ConvoState {
   messages: ConvoMessage[];
   guided: string[];
   objectives: ObjectiveDef[];
-  /** Ids of ticked objectives — either the player said the words, or the
-   *  character's answer explained the concept. Only ever grows. */
+  /** Ids of ticked objectives. ONLY the player's own words tick a row —
+   *  what the character says never counts. Only ever grows. */
   objectivesDone: string[];
   status: 'idle' | 'sending' | 'error';
   canContinue: boolean;
@@ -88,10 +88,6 @@ export const useConversation = create<ConvoState>((set, get) => {
       // the player may have left for another chapter while this was in flight
       if (s.chapterId !== req.chapterId) return;
       const movedNode = r.advanceTo !== null && r.advanceTo !== s.nodeId;
-      // Objectives the character's own answer explained tick off here, next to
-      // the ones the player's words already ticked. Both only ever add — a row
-      // that is checked stays checked.
-      const said = r.objectivesCovered ?? [];
       set({
         status: 'idle',
         nodeId: r.nodeId,
@@ -100,10 +96,6 @@ export const useConversation = create<ConvoState>((set, get) => {
         messages: [...s.messages, { role: 'character', text: r.reply }],
         guided: r.guidedQuestions,
         objectives: r.objectives ?? s.objectives,
-        objectivesDone:
-          said.length > 0
-            ? Array.from(new Set([...s.objectivesDone, ...said]))
-            : s.objectivesDone,
         canContinue: s.canContinue || r.canContinue,
       });
       // fire-and-forget voice — deflections get voiced too (in character);
@@ -157,8 +149,6 @@ export const useConversation = create<ConvoState>((set, get) => {
       dispatch({
         chapterId: s.chapterId, nodeId: s.nodeId, coveredPointIds: s.covered,
         turnsInNode: s.turnsInNode, history, message: text,
-        // rows already ticked are not worth grading again
-        objectivesDone,
       });
     },
 
