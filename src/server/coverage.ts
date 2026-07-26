@@ -17,9 +17,10 @@ import { chatComplete, FAST_MODEL } from './openai';
  * Both read the character's answers, never the player's question: asking about
  * the Treaty of Versailles must not tick off the Treaty of Versailles.
  *
- * The on-screen Objectives checklist is a separate thing from learning points
- * and is never graded here — a row only ticks off client-side, on the
- * player's own words (see the note on ObjectiveDef).
+ * The on-screen Objectives checklist is a separate thing and is never graded
+ * here. A row ticks off client-side: on the player's own words, or once every
+ * learning point that row maps to has been covered by the grading above (see
+ * the note on ObjectiveDef).
  */
 
 /** Lowercase, strip accents, and flatten punctuation so cue matching is about

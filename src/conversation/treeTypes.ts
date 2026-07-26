@@ -33,23 +33,34 @@ export interface ConstraintTree {
   };
   entryNodeId: string;
   nodes: Record<string, StageNode>;
-  /** Learner-facing objectives shown as a checklist; each checks off the instant
-   *  the player's own message mentions one of its keywords. */
+  /** Learner-facing objectives shown as a checklist; each checks off from the
+   *  player's own words, and (where the row lists `pointIds`) from the
+   *  character's answers too. */
   objectives?: ObjectiveDef[];
 }
 
 /**
- * One row of the on-screen Objectives panel. It checks off ONE way only: the
- * PLAYER says one of its keywords (client-side, instant). What the character
- * says never ticks a row — so the lists are broad, covering every everyday
- * way a kid might put the idea, not just the textbook words. A row never
- * un-checks once ticked.
+ * One row of the on-screen Objectives panel. It checks off two ways, and a row
+ * never un-checks once ticked:
+ *
+ *  1. The PLAYER says one of its `keywords` (client-side, instant). The lists
+ *     are broad on purpose — every everyday way a kid might put the idea, not
+ *     just the textbook words.
+ *  2. The CHARACTER covers every learning point in `pointIds` (the same
+ *     coverage the engine already grades — see server/coverage.ts, which judges
+ *     substance, so an idea explained in wording nobody listed still counts).
+ *     This is what catches the player who asks in words no keyword list
+ *     predicted. Omit `pointIds` and the row is keyword-only, exactly as
+ *     chapters 1–3 behave.
  */
 export interface ObjectiveDef {
   id: string;
   label: string;
   /** Lowercase phrases; if the player's own message contains any of them, the objective checks off instantly. */
   keywords: string[];
+  /** Learning-point ids belonging to this row; the row ticks once ALL of them
+   *  are covered by the character's answers. */
+  pointIds?: string[];
 }
 
 /** One thing the player should come away understanding. */

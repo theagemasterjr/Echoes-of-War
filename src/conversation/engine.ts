@@ -48,6 +48,20 @@ export function matchObjectives(objectives: ObjectiveDef[], message: string): st
     .map((o) => o.id);
 }
 
+/**
+ * Ids of every objective the CHARACTER has now taught: each of its `pointIds`
+ * is covered. This is the second way a row ticks — the one that catches a
+ * player who asked in words no keyword list predicted, since coverage is graded
+ * on substance rather than wording. A row with no `pointIds` is keyword-only
+ * (chapters 1–3), so this never fires for them.
+ */
+export function coveredObjectives(objectives: ObjectiveDef[], covered: string[]): string[] {
+  const done = new Set(covered);
+  return objectives
+    .filter((o) => (o.pointIds?.length ?? 0) > 0 && o.pointIds!.every((id) => done.has(id)))
+    .map((o) => o.id);
+}
+
 interface ConvoState {
   chapterId: ChapterId | null;
   nodeId: string;
@@ -56,8 +70,9 @@ interface ConvoState {
   messages: ConvoMessage[];
   guided: string[];
   objectives: ObjectiveDef[];
-  /** Ids of ticked objectives. ONLY the player's own words tick a row —
-   *  what the character says never counts. Only ever grows. */
+  /** Ids of ticked objectives: the player said one of a row's keywords, or the
+   *  character covered every learning point that row lists (see
+   *  coveredObjectives). Only ever grows. */
   objectivesDone: string[];
   status: 'idle' | 'sending' | 'error';
   canContinue: boolean;
@@ -88,14 +103,24 @@ export const useConversation = create<ConvoState>((set, get) => {
       // the player may have left for another chapter while this was in flight
       if (s.chapterId !== req.chapterId) return;
       const movedNode = r.advanceTo !== null && r.advanceTo !== s.nodeId;
+      const covered = Array.from(new Set([...s.covered, ...r.newlyCoveredIds]));
+      const objectives = r.objectives ?? s.objectives;
+      // the second way a row ticks: everything it teaches has now been taught.
+      // The player's own words already ticked rows in send(); this adds the ones
+      // the character covered, so a topic explained in unforeseen wording lands.
+      const taught = coveredObjectives(objectives, covered);
       set({
         status: 'idle',
         nodeId: r.nodeId,
-        covered: Array.from(new Set([...s.covered, ...r.newlyCoveredIds])),
+        covered,
         turnsInNode: movedNode ? 0 : req.intro ? s.turnsInNode : s.turnsInNode + 1,
         messages: [...s.messages, { role: 'character', text: r.reply }],
         guided: r.guidedQuestions,
-        objectives: r.objectives ?? s.objectives,
+        objectives,
+        objectivesDone:
+          taught.length > 0
+            ? Array.from(new Set([...s.objectivesDone, ...taught]))
+            : s.objectivesDone,
         canContinue: s.canContinue || r.canContinue,
       });
       // fire-and-forget voice — deflections get voiced too (in character);

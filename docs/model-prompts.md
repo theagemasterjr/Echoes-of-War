@@ -184,23 +184,34 @@ If generating for animation (Meshy rig), export with a calm standing **idle** cl
 **talking** clip — that is what the conversation stage cross-fades between.
 > A photorealistic full-body young Soviet female combat medic of 1942, about nineteen, heavy winter greatcoat over a padded jacket, fur ushanka hat with the flaps down, a canvas medical bag on a strap across her shoulder, mittens tucked in her belt, chapped hands, weary steady expression, standing naturally at ease in the cold. Muted winter palette, film-lighting friendly. **No weapons, no wounds, no blood.**
 
-### `ch4.prop.ferry` — small Volga river ferry (reserved)
-For the future chapter 4 minigame scene — registered in the asset registry, not yet drawn.
-> A small wooden river ferry boat of the 1940s, plain planked hull with a low wheelhouse and a stubby funnel, worn paint, rope fenders along the side, resting level as if on calm water, photorealistic, muted period materials, tabletop-prop proportions.
+### `ch4.piece.*` — the six pieces of the "Operation Uranus" table (all real)
+The chapter 4 minigame is played on the war-room table with the founder's own models, all
+already in `public/models/` and registered:
 
-### `ch4.prop.ruin` — ruined factory wall (reserved)
-For the future chapter 4 minigame scene — registered in the asset registry, not yet drawn.
-> A fragment of a ruined red-brick factory wall with empty window openings and a broken chimney stack rising beside it, scorched brick, rubble at the base, dusted with snow, photorealistic, muted winter materials, tabletop-prop proportions. No people, no wreckage of bodies.
+| Registry id | File | Stands for |
+| --- | --- | --- |
+| `ch4.piece.derrick` | `ch4-piece-derrick.glb` | the Caucasus oil fields |
+| `ch4.piece.barge` | `ch4-piece-barge.glb` | the Volga |
+| `ch4.piece.hammer` | `ch4-piece-hammer.glb` | one arm of the Soviet attack (drawn three times) |
+| `ch4.piece.city` | `ch4-piece-city.glb` | Stalingrad |
+| `ch4.piece.german` | `ch4-piece-soldier.glb` | the German 6th Army (drawn three times) |
+| `ch4.piece.ally` | `ch4-piece-soldier.glb` | the Romanian / Hungarian flank armies (twice) |
+
+**The ally pieces currently share the soldier file** with the German ones — the scene tells
+them apart by tint and size (paler and a little smaller: "less well equipped, more thinly
+spread") and, above all, by their labels. To give the allies a model of their own, drop the
+file in and point `ch4.piece.ally` at it; nothing else changes.
+> A miniature Second World War infantryman as a tabletop war-game piece, plain greatcoat and helmet, rifle slung, standing at ease on a small round base, cast-metal look, muted single-tone finish, no insignia of any nation. No wounds, no blood.
 
 **Chapter 4 drop-in checklist** (each swap is one registry line in `src/assets/registry.tsx`,
 next to a comment showing the exact line):
 1. `public/models/ch4-medic.glb` — **must be exported with an idle loop and a talking
    loop** → uncomment the `ch4.character` glb block and fill in the two real clip names
-   from inside the file.
-2. `public/models/ch4-ferry.glb` → flip `ch4.prop.ferry` to a glb entry (used only once a
-   minigame scene exists — nothing draws it today).
-3. `public/models/ch4-ruin.glb` → flip `ch4.prop.ruin` to a glb entry (same).
-The map marker (`bandages.glb`) is already real — leave it.
+   from inside the file. Until then the conversation runs with a plain stand-in bust: Nina
+   speaks, answers, ticks objectives and hands over to the minigame exactly as she will
+   with the real model.
+2. Optional: a separate ally piece, as above.
+The map marker (`bandages.glb`) and all six table pieces are already real — leave them.
 Also: `public/video/ch4-intro.mp4` (intro film — a styled "coming soon" frame stands in
 until then) and optionally `public/img/ch4-cellar.jpg` (conversation backdrop — then
 uncomment its line in `src/chapters/registry.ts`; do not uncomment before the file exists).

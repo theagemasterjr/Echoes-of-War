@@ -52,9 +52,16 @@ export const CHAPTERS: ChapterMeta[] = [
      * satchel on the lower Volga, north-west of the Caspian. Every marker here
      * is eyeballed to within a degree or two — worth a look, not a re-survey. */
     markerPosition: [1.15, 0, -1.23], markerAssetId: 'ch4.marker', characterAssetId: 'ch4.character',
+    /* the film is not made yet: until the file exists the intro beat holds on
+     * the styled placeholder frame and its CONTINUE goes on to the brief.
+     * Dropping ch4-intro.mp4 in needs no code change at all. */
     introVideo: '/video/ch4-intro.mp4',
     // conversationBackdrop: '/img/ch4-cellar.jpg',  // uncomment once the file exists — a missing image breaks the 3D stage rather than degrading
-    /* no minigameCamera: chapter 4's timeline is plain DOM, not a table scene */
+    /* Looking down on the whole map (about 52°, the paper filling the frame with
+     * the pieces' row along the near edge inside the bottom of it) — the
+     * "Operation Uranus" table. Fits the 8.4 × 6.3 map plus the tray at z 3.2
+     * on any window down to a square one. */
+    minigameCamera: { pos: [0, 7.6, 5.6], target: [0, 0, -0.55] },
   },
   {
     id: 'ch5', index: 5, title: 'The Road Back', subtitle: 'D-Day and the liberation of Europe',

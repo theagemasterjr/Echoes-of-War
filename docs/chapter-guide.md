@@ -42,17 +42,23 @@ and the route the conversation takes. **`ch1.ts` is the worked example — copy 
     across several turns still counts. Keep cues specific to their own point — a bare
     "Britain" would fire on any answer that mentions Britain.
 - `objectives` (optional) — the Objectives panel shown on the left during the
-  conversation. Each objective has an `id`, a short `label`, and a `pointIds` list; it
-  fills as its points are covered and ticks off, with a gold flash, when they all are.
-  Keep the union of all objectives' `pointIds` equal to the full set of learning points,
-  and tune the node `advance` conditions so the last objective checks off right as
-  CONTINUE lights up. Omit `objectives` entirely and the panel simply doesn't show.
+  conversation. Each objective has an `id`, a short `label`, and **two ways to tick off**:
+  - `keywords` — the row lands the instant the PLAYER's own message contains one of these.
+    Lowercase, no apostrophes, and broad: every everyday way a kid might put the idea.
+  - `pointIds` (optional) — the learning points that row is made of. The row also lands
+    once the CHARACTER has covered all of them, which is what catches a player who asked
+    in words no keyword list predicted (coverage is judged on substance, so different
+    wording still counts). Keep the union of all rows' `pointIds` equal to the full set of
+    learning points. Chapters 1–3 use keywords only; chapter 4 uses both.
 
-**The minigame may only test what the character teaches.** Every card in a chapter's
-minigame names the learning point that teaches it (`teachesPointId` — see
-`src/chapters/ch1/timelineStore.ts`). If you add a card, add or widen the point that
-teaches it; if you drop a point, drop its card. That is what stops a player finishing
-all four objectives and then meeting something nobody explained.
+  Omit `objectives` entirely and the panel simply doesn't show.
+
+**The minigame may only test what the character teaches.** Every card or drop in a
+chapter's minigame names the learning point that teaches it (`teachesPointId` — see
+`src/chapters/ch1/timelineStore.ts` and `src/chapters/ch4/uranusStore.ts`). If you add
+one, add or widen the point that teaches it; if you drop a point, drop what tested it.
+That is what stops a player finishing every objective and then meeting something nobody
+explained.
 
 ## The mission brief — `src/content/briefs.json`
 The black screen with the narrator, right after the intro film. Add an entry for the
@@ -75,6 +81,16 @@ script only works out where each written line falls inside it, by listening for 
 pauses, so the words type themselves in time with the voice. It prints each line's
 timing so you can sanity-check it; if a line looks wildly too fast or slow, the pause
 after it was probably too short — re-record with a clearer break between lines.
+
+Finding those pauses needs an audio decoder on your machine: macOS has one built in
+(`afconvert`), and on Windows or Linux the script uses **ffmpeg** (`winget install
+ffmpeg`, or `brew install ffmpeg`). If neither is there it says so and stops, rather than
+writing timings it could not measure.
+
+**The chapter summary's take is timed the same way** — see the `TAKES` table in
+`src/audio/summaryNarration.ts`, which holds one `{ start, end }` per topic, measured off
+the recording with the same silence-finder (`scripts/lib/narration-segments.mjs`). Re-record
+a summary and you re-measure that row.
 
 **Generated instead:** with no such file, `npm run build:briefs` sends each line to the
 API one at a time. On a free plan that path can't use Elderon, so it says so and uses a
@@ -169,11 +185,38 @@ Still for the founder to drop in (everything works with placeholders until then)
 ## Chapter 4 — same pattern, plus extra care with the subject
 Chapter 4 (Turning the Tide — **Nina Volkova**, a nineteen-year-old front-line medic in
 Stalingrad in early February 1943, a few days after the last German troops gave up)
-follows the same shape: one open conversation node with all thirteen learning points
-live from the first turn, four objectives, and a minigame. Its minigame is deliberately
-the simplest one in the game — a plain 2D timeline of eight moments to put in order
-(`src/chapters/ch4/`), with no 3D table scene — so it can be replaced later without
-unpicking anything.
+follows the same shape: one open conversation node with all twenty learning points live
+from the first turn, and **five** objectives, in this order:
+
+1. **The Broken Pact** · 2. **Why Stalingrad** · 3. **Battle in the Ruins** ·
+4. **The Trap** · 5. **The Turning Point**
+
+Those five names are the objectives panel, the five "Learn" lines of the mission brief, and
+the five topics of the closing summary — one order, three places. Change one and change all
+three (and re-time the two recordings).
+
+**Its minigame is "Operation Uranus"** (`src/chapters/ch4/`), played on the war-room table
+with the founder's own red-stained map and six pieces. Five drags, three phases, one
+correct arrangement, no score and no timer:
+
+1. *Mark what Germany came for* — the oil derrick onto the Caucasus, the barge onto the
+   Volga.
+2. *Where do you strike?* — the front line draws itself, the city and the German 6th Army
+   land in the centre with one thin ally piece on each flank, and **three** slots glow for
+   **two** hammers. That mismatch is the puzzle. A hammer dropped on the centre is refused
+   and explained; the flanks lock in.
+3. *Close it* — a third hammer behind the city, and the rest is scripted: the flank arms
+   sweep round and meet, a blue wave crosses the map, the red stain drains away behind it,
+   the ring seals, everything holds still, and the summary comes up.
+
+Two things make it teach rather than just play, and neither is decoration:
+**every piece on the table is labelled** (the flank labels most of all — without
+*Romanian Army* and *Hungarian Army* the player only learns "hit the smaller piece"), and
+**every wrong drop gets Nina's reason, never a bare no**. Both live in
+`src/chapters/ch4/uranusStore.ts` with the rest of the board.
+
+Nothing in the minigame asks anything Nina has not already taught: each slot names the
+learning point that teaches it.
 
 **The tone rules for this chapter are part of the content, not a style note.** They live
 at the top of `src/content/trees/ch4.ts` (`TONE_RULES`) and anyone editing this chapter
@@ -192,20 +235,30 @@ inherits them:
 
 Chapter 6 (Hiroshima) will need the same treatment.
 
-Still for the founder to drop in (everything works with placeholders until then):
-- `public/models/ch4-medic.glb` (needs idle + talking clips) and the two reserved props
-  `ch4-ferry.glb` / `ch4-ruin.glb` — see the Chapter 4 drop-in checklist in
-  `docs/model-prompts.md`. The medic-satchel map marker is already real.
-- `public/video/ch4-intro.mp4` — the intro film. Ruins, snow, a river, a lamp; no
-  casualties on screen.
+**Two things are deliberately placeholders**, and the chapter plays start to finish with
+both of them missing:
+- `public/video/ch4-intro.mp4` — **the intro film does not exist yet.** The beat still runs
+  in the right order and holds on the styled "coming soon" frame, whose CONTINUE goes on to
+  the mission brief. Dropping the file in needs nothing but the file. Ruins, snow, a river,
+  a lamp; no casualties on screen.
+- `public/models/ch4-medic.glb` — **Nina has no 3D model yet.** The conversation stands in
+  a plain bust and is otherwise complete: she speaks, she answers, objectives tick, and
+  CONTINUE hands over to the war table. See the drop-in checklist in `docs/model-prompts.md`.
+
+Also still for the founder (everything works without them):
 - `public/img/ch4-cellar.jpg` — optional conversation backdrop (then uncomment its line
   in `src/chapters/registry.ts`; do not uncomment before the file exists).
 - Nina's voice: set `ELEVENLABS_VOICE_CH4` in `.env.local` (and Vercel), or verify the
   stock "Sarah" id in `src/server/tts.ts`. It must not be chapter 1's voice — both
-  characters are young women. Wrong or missing = silent subtitles.
-- Chapter 4's mission brief lines are written in `src/content/briefs.json`. What remains
-  is the narration: record the take and run `npm run build:briefs` — until then the brief
-  plays silently, with the words typing on at reading pace.
+  characters are young women. Wrong or missing = silent subtitles, in the conversation and
+  for her corrections on the war table alike.
+
+Already done and not to be re-done by hand: the mission brief lines
+(`src/content/briefs.json`) and its recorded take, timed into
+`public/audio/brief/manifest.json`; the closing summary's five topics
+(`src/chapters/ch4/uranusStore.ts`) and its take, timed into
+`src/audio/summaryNarration.ts`; the map images (`public/img/ch4-map-*.jpg` — the two are
+pixel-aligned on purpose, which is what makes phase 3's wipe work) and all six table pieces.
 
 ## Rules of the road
 - Don't edit files outside your chapter's tree file, chapter folder, and the asset registry.

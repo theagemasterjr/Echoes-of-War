@@ -122,15 +122,24 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   //   },
   // },
   'ch4.character': { label: 'Soviet medic figure', source: { kind: 'placeholder', component: P.CharacterBust } },
-  // Reserved for the chapter 4 minigame scene the founder may build later
-  // (chapter 4's timeline is plain DOM today). Registered so the swaps are
-  // ready, but NEITHER is currently rendered anywhere — drawing them is a
-  // future scene's job. Swap each to:
-  // { kind: 'glb', url: '/models/ch4-ferry.glb', scale: 1 }   // eye-tune scale/offset
-  // (the stand-in shapes below are arbitrary — nothing draws them, so they are
-  // only here to keep the ids real until the files arrive)
-  'ch4.prop.ferry': { label: 'Small wooden Volga river ferry', source: { kind: 'placeholder', component: P.ShipProp } },
-  'ch4.prop.ruin': { label: 'Ruined brick factory wall with broken chimney', source: { kind: 'placeholder', component: P.HelmetProp } },
+  // Chapter 4 "Operation Uranus" minigame — the pieces the player lays out on
+  // the red-stained map. Scales are set from each file's measured bounds so the
+  // set reads at one size on the table: the two markers ~0.7 units tall, the
+  // ruined city a low ~0.5 landmark, the soldier figures ~0.7. Every file rests
+  // on its own origin (measured min y = 0), so no offset is needed to keep a
+  // piece out of the tabletop — the scene adds the shared base disc under each.
+  'ch4.piece.derrick': { label: 'Oil derrick — the Caucasus oil fields', source: { kind: 'glb', url: '/models/ch4-piece-derrick.glb', scale: 0.33 } },
+  'ch4.piece.barge': { label: 'Supply barge — the Volga', source: { kind: 'glb', url: '/models/ch4-piece-barge.glb', scale: 0.3 } },
+  'ch4.piece.hammer': { label: 'Soviet hammer — one arm of the attack', source: { kind: 'glb', url: '/models/ch4-piece-hammer.glb', scale: 0.42, offset: [-0.03, 0, 0] } },
+  'ch4.piece.city': { label: 'Ruined city — Stalingrad', source: { kind: 'glb', url: '/models/ch4-piece-city.glb', scale: 0.42 } },
+  // ONE soldier file stands for both armies on the board: three of them are the
+  // German 6th Army in the city, two are the Axis allies holding the flanks.
+  // The scene tells them apart by tint and size (the ally pieces are paler and
+  // a little smaller — "less well equipped, more thinly spread") and, above
+  // all, by their labels. Drop a separate ally model in later by pointing
+  // 'ch4.piece.ally' at its own file; nothing else changes.
+  'ch4.piece.german': { label: 'Soldier figure — German 6th Army', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.29 } },
+  'ch4.piece.ally': { label: 'Soldier figure — Axis ally army (Romanian / Hungarian)', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.255 } },
   'ch5.character': { label: 'Allied medical worker figure', source: { kind: 'placeholder', component: P.CharacterBust } },
   'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
 };
