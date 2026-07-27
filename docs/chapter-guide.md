@@ -260,6 +260,95 @@ Already done and not to be re-done by hand: the mission brief lines
 `src/audio/summaryNarration.ts`; the map images (`public/img/ch4-map-*.jpg` — the two are
 pixel-aligned on purpose, which is what makes phase 3's wipe work) and all six table pieces.
 
+## Chapter 5 — same pattern, told from a hospital tent
+Chapter 5 (The Road Back — **Sister Grace Ellery**, a twenty-six-year-old British nursing
+sister with a field surgical unit outside Bayeux, in late July 1944, seven weeks after
+D-Day) follows the ch4 shape: one open conversation node with all seventeen learning
+points live from the first turn, and **four** objectives, in this order:
+
+1. **The Second Front** · 2. **The Great Build-Up** · 3. **The Deception** · 4. **D-Day**
+
+Those four names are the objectives panel, the four "Learn" lines of the mission brief, and
+the four topics of the closing summary — one order, three places. Change one and change all
+three (and re-record and re-time the two recordings).
+
+**Two things make Grace work, and both are constraints, not colour:**
+
+- **She was not there on 6 June.** She landed on the 10th, onto a beach already working as
+  a port. Every account she gives of the landing morning is attributed — what the men she
+  nursed told her — and she says so out loud at least once. What she saw with her own eyes
+  starts on D+4.
+- **She knows the deception happened, not how it was done.** She lived it: sealed camp,
+  real maps with false place names, assuming Calais like everyone, learning "Normandy"
+  days before sailing and telling no one. She has never heard of inflatable tanks, dummy
+  landing craft, a fake army, or double agents — still secret in July 1944. Asked how, she
+  says she doesn't know how they did it, only that it was done — **and that it fooled her
+  own side too.** That line is the best moment in the chapter; the machinery itself is
+  taught by the brief and the minigame (Elderon is not time-locked; Grace is).
+
+**The tone rules are part of the content**, exactly as in ch4 — they live at the top of
+`src/content/trees/ch5.ts` (`TONE_RULES`): honest never graphic, never dramatic about
+death, never romanticise, individuals not statistics, German prisoners treated and spoken
+of plainly. **Two facts are left out on purpose and must not be added back anywhere in the
+chapter**: aggregate D-Day casualty totals, and any account of what happened to wounded
+men who could not be evacuated. Asked for numbers, she says the number was very large,
+she has no figure, and counting them was not her job.
+
+Her time-lock is late July 1944: no Paris, no May 1945, no atomic bomb, the Pacific only
+"being fought". The Holocaust: rumours she cannot confirm, no speculation.
+
+Already real: both narrations — the mission brief (`src/content/briefs.json` +
+`public/audio/brief/narration/ch5.mp3`, timed into the manifest) and the closing summary
+(`src/chapters/ch5/summary.ts` + `public/audio/summary/ch5.mp3`, timed into
+`src/audio/summaryNarration.ts`). Grace's voice is stock "Lily" in `src/server/tts.ts`
+(`ELEVENLABS_VOICE_CH5` overrides; audition it — she must not sound like Tom).
+The map marker sits on the Normandy coast, recalibrated against ch1/ch3/ch4.
+
+### The minigame — "Show it or hide it"
+Between the conversation and the summary. The board is the supplied Channel map on the
+war-room table: southern England along the top, northern France along the bottom. Eight
+props wait in a row underneath, shuffled, and the player drags each one into one of two
+outlined English regions — **Kent, "Make them look here"** or **South-West England, "Hide
+the real one"**. One question decides all eight, and it stays on screen the whole time:
+*do you want the Germans to see this?* Four were built to be seen (inflatable tank, dummy
+landing craft, fake headquarters sign, radio truck); four hid the real thing (camouflage
+netting, sealed camp, censored post, blackout). **Nothing on screen ever says it is four
+and four** — the counter only ever reads "3 of 8 placed".
+
+A thin arrow runs from each English region across the Channel to the French place it
+decides — Kent to Pas de Calais, the south-west to Normandy — and both are drawn from the
+first frame. That pairing is the whole lesson: what you do on your own coast decides where
+the enemy looks on theirs. A correct piece locks in and earns one line explaining why. A
+piece put in the other region shakes gently and slides home — no penalty, no score, no red,
+and the counter does not move; after a second miss on the same piece Grace offers the
+reasoning, never the answer. The two French places are labels, not targets: a piece let go
+on France simply goes back, with nothing said.
+
+Correct pieces answer on the map: each deception piece slides the grey German command pin
+further toward Calais, and each concealment piece dims the Normandy marker. When the eighth
+lands, a scripted ten-second payoff runs on its own — the pin locks at Calais, the grey
+German markers gather there, the Normandy coast visibly empties, a pause, and then Allied
+markers come ashore into the gap and the beachhead spreads inland. It is markers moving on
+a map: no fighting, no casualties, no numbers anywhere. Then one card — Germany kept its
+strongest reserves at Calais for seven weeks — and the existing summary screen.
+
+Everything the player reads lives in `src/chapters/ch5/ShowOrHideMinigame.tsx`; every rule,
+label, feedback line and hint lives in `showOrHideStore.ts` (that is the file to edit); the
+board is `ShowOrHideScene.tsx`. The ten supplied assets are wired in
+`src/assets/registry.tsx` (`ch5.piece.*`, `ch5.pin.german-command`) plus
+`public/img/ch5-map.png`, and are prepared by `npm run build:ch5-pieces`. **The map image
+is never scaled or cropped** — every zone, marker and path is a point read off its own
+pixels, so the paper on the table keeps the image's exact aspect ratio. The camera is
+pinned by `minigameCamera` on the ch5 registry row and never answers the mouse.
+
+Still placeholders, and the chapter plays start to finish with all of them missing:
+- `public/video/ch5-intro.mp4` — the intro beat holds on the styled "coming soon" frame;
+  dropping the file in needs nothing but the file.
+- Grace's model — the shared bust placeholder holds the stage; the drop-in block is ready
+  in `src/assets/registry.tsx` (`ch5.character`).
+- The conversation backdrop — the registry line stays commented out until the image file
+  exists (an empty reference hangs the 3D scene).
+
 ## Rules of the road
 - Don't edit files outside your chapter's tree file, chapter folder, and the asset registry.
 - All fixed content (dates, claims, minigame facts) must be historically accurate —

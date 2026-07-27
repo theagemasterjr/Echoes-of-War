@@ -164,6 +164,44 @@
           "end": 26.18
         }
       ]
+    },
+    "ch5": {
+      "track": "/audio/brief/narration/ch5.mp3?v=34e2baae49eb",
+      "trackHash": "34e2baae49eb",
+      "duration": 28.42,
+      "voiceName": "Elderon (recorded by hand)",
+      "lines": [
+        {
+          "text": "Your objective: understand how the Allies fought their way back into Europe.",
+          "start": 0.08,
+          "end": 4.22
+        },
+        {
+          "text": "Learn why the Allies had to return to Western Europe at all, and what was waiting for them on that coast.",
+          "start": 4.72,
+          "end": 10.12
+        },
+        {
+          "text": "Learn how Britain became a launch pad, and how the whole invasion came down to a weather forecast.",
+          "start": 11.06,
+          "end": 16.48
+        },
+        {
+          "text": "Learn how Germany was persuaded to look the wrong way.",
+          "start": 17.46,
+          "end": 20.32
+        },
+        {
+          "text": "Learn what happened on the 6th of June, and why holding the ground mattered more than taking it.",
+          "start": 20.86,
+          "end": 25.94
+        },
+        {
+          "text": "Do you accept the mission?",
+          "start": 26.94,
+          "end": 28.04
+        }
+      ]
     }
   }
 }

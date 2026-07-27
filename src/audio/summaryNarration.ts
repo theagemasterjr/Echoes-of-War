@@ -81,6 +81,18 @@ const TAKES: Record<string, SummaryTake> = {
       { start: 39.28, end: 48.86 },
     ],
   },
+  // Four topics, in the order src/chapters/ch5/summary.ts lists them.
+  // Measured off the recording with scripts/lib/narration-segments.mjs:
+  // 16.7–17.4 characters a second across all four.
+  ch5: {
+    track: '/audio/summary/ch5.mp3?v=1',
+    topics: [
+      { start: 0.04, end: 12.6 },
+      { start: 13.42, end: 23.02 },
+      { start: 23.94, end: 34.82 },
+      { start: 35.8, end: 47.82 },
+    ],
+  },
 };
 
 /** The take recorded for a chapter, or null if it has none. */
