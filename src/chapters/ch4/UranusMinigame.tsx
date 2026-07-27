@@ -24,7 +24,7 @@ import { ChapterSummary } from '@/ui/ChapterSummary';
 import { ObjectivesPanel } from '@/ui/ObjectivesPanel';
 import { useConversation } from '@/conversation/engine';
 import { voicePlayer } from '@/audio/voicePlayer';
-import { INSTRUCTION, OBJECTIVE_ROWS, SUMMARY, useUranusStore } from './uranusStore';
+import { BANNER, INSTRUCTION, OBJECTIVE_ROWS, SUMMARY, useUranusStore } from './uranusStore';
 
 /** The ring seals, everything holds still, and the sound drops out — then the
  *  chapter's summary takes the screen. */
@@ -32,6 +32,8 @@ const HOLD_MS = 2000;
 const FADE_MS = 900;
 /** A caption has said its piece after this long. */
 const CAPTION_MS = 7000;
+/** A phase banner holds this long, then hands the screen back to the board. */
+const BANNER_MS = 4500;
 /** So does one of Nikolai's corrections, if the player leaves it alone. */
 const SAID_MS = 14000;
 
@@ -48,6 +50,18 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
   const fromConversation = useConversation((s) => s.objectivesDone);
 
   const [stage, setStage] = useState<'play' | 'hold' | 'summary'>('play');
+
+  // The phase banner: one sentence when the game opens and one at each phase
+  // change — what just happened, and what to do next. It holds a few seconds
+  // and fades; the instruction line at the top stays.
+  const [banner, setBanner] = useState<string | null>(null);
+  useEffect(() => {
+    const text = BANNER[phase];
+    if (!text) return;
+    setBanner(text);
+    const t = setTimeout(() => setBanner(null), BANNER_MS);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   // The close finishes: the voice stops, the board holds still and silent for a
   // couple of seconds, then the screen fades to the summary.
@@ -102,9 +116,30 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
 
       <ObjectivesPanel objectives={OBJECTIVE_ROWS} doneIds={doneIds} />
 
-      {/* Every piece on the table is named. The labels are drawn here, on top of
-          the board, at one readable size whatever the camera does — and they
-          take the easy-read font with every other word in the game. */}
+      {/* the phase banner: what just happened, what to do next */}
+      <AnimatePresence>
+        {banner && stage === 'play' && (
+          <motion.div
+            key={banner}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className="absolute left-1/2 top-[19%] w-full max-w-xl -translate-x-1/2 px-4"
+            aria-live="polite"
+          >
+            <div className="rounded-md border border-amber-200/30 bg-stone-950/85 px-6 py-3.5 text-center backdrop-blur-sm">
+              <p className="text-[15px] leading-relaxed text-amber-50">{banner}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Every piece on the table is named — the same little name tags as the
+          bronze pieces in chapter 2 — and the map's geography is named too.
+          The labels are drawn here, on top of the board, at one readable size
+          whatever the camera does, in the easy-read font with every other word
+          in the game. */}
       {labels.map((label) => (
         <motion.div
           key={label.id}
@@ -117,9 +152,15 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
             top: `${Math.max(4, Math.min(94, label.top))}%`,
           }}
         >
-          <span className="whitespace-nowrap rounded-sm border border-amber-200/25 bg-stone-950/75 px-2 py-0.5 text-[11px] leading-snug tracking-wide text-amber-50/95 backdrop-blur-sm">
-            {label.text}
-          </span>
+          {label.kind === 'geo' ? (
+            <span className="whitespace-nowrap rounded-sm bg-stone-950/45 px-2 py-0.5 text-[10px] uppercase leading-snug tracking-[0.18em] text-amber-100/85 backdrop-blur-sm">
+              {label.text}
+            </span>
+          ) : (
+            <span className="whitespace-nowrap rounded-sm bg-stone-950/60 px-2 py-0.5 text-[11px] leading-snug text-stone-300 backdrop-blur-sm">
+              {label.text}
+            </span>
+          )}
         </motion.div>
       ))}
 

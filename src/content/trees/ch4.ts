@@ -25,11 +25,11 @@ import type { ConstraintTree } from '@/conversation/treeTypes';
  * THE STORY IS TOLD IN FIVE PARTS. They are the five rows of the on-screen
  * Objectives panel, in this order, and every one of them has to land:
  *
- *   1. The Broken Pact ......... pact, mistrust, invasion, hitlerswant
- *   2. Why Stalingrad .......... oil, volga, stalinsname, overstretched
- *   3. Battle in the Ruins ..... rubble, closequarters, hugging, ninaswork
- *   4. The Trap ................ plan, flanks, bothflanks, ring
- *   5. The Turning Point ....... nobreakout, airlift, surrender, changed
+ *   1. The Broken Pact ..................... pact, mistrust, invasion, hitlerswant
+ *   2. Why did Germany choose Stalingrad ... oil, volga, stalinsname, overstretched
+ *   3. Battle in the Ruins ................. rubble, closequarters, hugging, ninaswork
+ *   4. Operation Uranus .................... plan, flanks, bothflanks, ring
+ *   5. The Turning Point ................... nobreakout, airlift, surrender, changed
  *
  * Every learning point belongs to exactly one part — twenty points, no gaps,
  * no duplicates. If you add a point, add it to a part here as well.
@@ -188,7 +188,7 @@ const tree: ConstraintTree = {
     },
     {
       id: 'obj-why',
-      label: 'Why Stalingrad',
+      label: 'Why did Germany choose Stalingrad',
       pointIds: ['oil', 'volga', 'stalinsname', 'overstretched'],
       keywords: [
         'why stalingrad', 'why this city', 'why here', 'why did the fighting happen',
@@ -234,7 +234,7 @@ const tree: ConstraintTree = {
     },
     {
       id: 'obj-trap',
-      label: 'The Trap',
+      label: 'Operation Uranus',
       pointIds: ['plan', 'flanks', 'bothflanks', 'ring'],
       keywords: [
         'the trap', 'trap', 'trapped them', 'how did you trap', 'plan', 'the plan',
@@ -310,7 +310,7 @@ const tree: ConstraintTree = {
           cues: ['wanted our land', 'wanted land', 'land in the east', 'our farmland', 'the wheat', 'grain', 'coal', 'our oil', 'the resources', 'what was under our ground', 'he wanted it for years', 'said so long before', 'always meant to', 'it was in his book', 'room for germans', 'space for his people'],
         },
 
-        // ── PART 2 — Why Stalingrad
+        // ── PART 2 — Why did Germany choose Stalingrad
         {
           id: 'oil',
           text: 'In summer 1942 the German attack drove south-east toward the oil fields in the Caucasus, because an army cannot move without fuel',
@@ -354,7 +354,7 @@ const tree: ConstraintTree = {
           cues: ['my bag', 'dressings', 'bandages', 'first aid', 'a dressing station', 'in the cellar', 'stretcher', 'carried them', 'brought them in', 'under fire', 'across the river at night', 'the ferry', 'stretcher bearers', 'medical orderlies', 'trained with', 'four of us are left', 'frostbite', 'cold hands', 'my job'],
         },
 
-        // ── PART 4 — The Trap
+        // ── PART 4 — Operation Uranus
         {
           id: 'plan',
           text: 'While the fighting ground on inside the city, a counter-attack was being prepared quietly — and nobody in the cellars was told about it beforehand',
