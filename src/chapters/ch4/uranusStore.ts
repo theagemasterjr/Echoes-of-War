@@ -52,17 +52,37 @@ export function mapToWorld([u, v]: MapPoint): [number, number, number] {
 /** The three phases, then the scripted close and the hold before the summary. */
 export type Phase = 'why' | 'strike' | 'close' | 'sealed';
 
-/** One short line at the top of the screen — the only instruction text in the
- *  whole minigame. Everything else is taught by the board. Each line says what
- *  to DO (drag a piece somewhere) as well as what it means, because a player
- *  who has never seen the board cannot be expected to guess that the floating
- *  pieces at the table edge are for picking up. */
+/** One short line at the top of the screen — the only standing instruction
+ *  text in the minigame. One sentence per phase, and each says what to DO
+ *  (drag which piece, to where), because a player who has never seen the board
+ *  cannot be expected to guess that the floating pieces at the table edge are
+ *  for picking up. */
 export const INSTRUCTION: Record<Phase, string> = {
-  why: 'Drag the two markers onto the map — mark what Germany came for.',
-  strike: 'Drag a hammer to where the Red Army should strike.',
-  close: 'One hammer left — drag it in to close the trap.',
+  why: 'Drag the oil rig to the oil fields, and the barge to the Volga River.',
+  strike: 'Drag the two Soviet armies onto the weak flanks north and south of the city.',
+  close: 'Drag the last Soviet army behind the city to close the trap.',
   sealed: 'The ring is closed.',
 };
+
+/** One sentence when a phase opens — the transition moment. It says what just
+ *  happened and what the player does next, then fades; the INSTRUCTION line
+ *  above stays put for anyone who missed it. The first one is the very first
+ *  thing the player reads, so it says what the whole game is. */
+export const BANNER: Record<Phase, string> = {
+  why: 'Help plan the Soviet counter-attack — drag the pieces onto the map.',
+  strike: 'Those are the two things Germany came for — now choose where the Red Army strikes.',
+  close: 'The flanks are set — now close the ring behind the German army.',
+  sealed: '',
+};
+
+/** The places named on the paper itself, in every phase — the geography the
+ *  player has to be able to see at a glance. Positions read off the map
+ *  images; each label hangs at its own point, clear of the drop rings. */
+export const GEO_LABELS: { id: string; text: string; at: MapPoint }[] = [
+  { id: 'geo-volga', text: 'Volga River', at: [0.53, 0.1] },
+  { id: 'geo-oil', text: 'Caucasus Oil Fields', at: [0.85, 0.9] },
+  { id: 'geo-city', text: 'Stalingrad', at: [0.676, 0.56] },
+];
 
 /** Every piece that can end up on the table. `kind` is what a slot accepts. */
 export type PieceId =
@@ -77,17 +97,18 @@ export interface Piece {
   assetId: string;
   /** Which phase puts this piece at the table edge. */
   phase: Phase;
-  /** Label shown once it is correctly placed. */
+  /** What the piece is — under it while it waits at the table edge, and under
+   *  it again once it is placed (unless its slot names it more precisely). */
   label: string;
 }
 
 /** The five draggable pieces, in the order they are needed. */
 export const PIECES: Piece[] = [
-  { id: 'derrick', assetId: 'ch4.piece.derrick', phase: 'why', label: 'Caucasus Oil Fields' },
-  { id: 'barge', assetId: 'ch4.piece.barge', phase: 'why', label: 'The Volga' },
-  { id: 'hammer-1', assetId: 'ch4.piece.hammer', phase: 'strike', label: 'Soviet Attack' },
-  { id: 'hammer-2', assetId: 'ch4.piece.hammer', phase: 'strike', label: 'Soviet Attack' },
-  { id: 'hammer-3', assetId: 'ch4.piece.hammer', phase: 'close', label: 'Soviet Attack' },
+  { id: 'derrick', assetId: 'ch4.piece.derrick', phase: 'why', label: 'Oil Rig' },
+  { id: 'barge', assetId: 'ch4.piece.barge', phase: 'why', label: 'Supply Barge' },
+  { id: 'hammer-1', assetId: 'ch4.piece.hammer', phase: 'strike', label: 'Soviet Army' },
+  { id: 'hammer-2', assetId: 'ch4.piece.hammer', phase: 'strike', label: 'Soviet Army' },
+  { id: 'hammer-3', assetId: 'ch4.piece.hammer', phase: 'close', label: 'Soviet Army' },
 ];
 
 export const pieceById = (id: PieceId) => PIECES.find((p) => p.id === id)!;
@@ -102,6 +123,11 @@ export interface Slot {
    *  stand inside the ally model. The hammer sits just east of the line
    *  instead — the side the Red Army attacked from. */
   seatAt?: MapPoint;
+  /** Names the seated piece more precisely than the piece's own label (the two
+   *  flank armies become "— North" / "— South"), and nudges the tag clear of
+   *  the crowd of tags around the city (map units, from the seat point). */
+  seatLabel?: string;
+  seatLabelNudge?: MapPoint;
   /** How generous the drop target is, in table units. */
   radius: number;
   /** Piece ids this slot will seat. An empty list is a slot that always
@@ -150,6 +176,7 @@ export const SLOTS: Slot[] = [
     phase: 'strike',
     at: [0.51, 0.42],
     seatAt: [0.56, 0.39],
+    seatLabel: 'Soviet Army — North',
     radius: 0.6,
     accepts: ['hammer-1', 'hammer-2'],
     caption: 'This side is held by Romanians — Germany’s allies, not Germans.',
@@ -170,6 +197,7 @@ export const SLOTS: Slot[] = [
     phase: 'strike',
     at: [0.675, 0.74],
     seatAt: [0.735, 0.74],
+    seatLabel: 'Soviet Army — South',
     radius: 0.6,
     accepts: ['hammer-1', 'hammer-2'],
     caption: 'This side is held by Hungarians — Germany’s allies, not Germans.',
@@ -179,6 +207,7 @@ export const SLOTS: Slot[] = [
     id: 'behind',
     phase: 'close',
     at: [0.495, 0.575],
+    seatLabelNudge: [-0.09, -0.01],
     radius: 0.66,
     accepts: ['hammer-3'],
     caption: 'The two attacks meet behind the city. The Sixth Army is inside the ring.',
@@ -219,15 +248,19 @@ export interface Scenery {
 }
 
 export const SCENERY: Scenery[] = [
-  { id: 'city', assetId: 'ch4.piece.city', at: [0.621, 0.552], label: 'Stalingrad', labelNudge: [0.055, 0.008] },
+  // The city carries no label of its own: "Stalingrad" is one of the map's
+  // standing geography labels (GEO_LABELS), on screen from the first frame.
+  { id: 'city', assetId: 'ch4.piece.city', at: [0.621, 0.552] },
   // One label for all three German pieces, not three. They cluster tight
   // around the city but hold ~0.6 table units off its centre — the city model
   // is 0.89 units square, so anything nearer stands inside the ruins.
   { id: 'german-1', assetId: 'ch4.piece.german', at: [0.573, 0.481], german: true },
   { id: 'german-2', assetId: 'ch4.piece.german', at: [0.553, 0.58], german: true, label: 'German 6th Army', labelNudge: [-0.075, 0.055] },
   { id: 'german-3', assetId: 'ch4.piece.german', at: [0.595, 0.64], german: true },
-  { id: 'ally-left', assetId: 'ch4.piece.ally', at: [0.51, 0.42], label: 'Romanian Army', labelNudge: [-0.062, 0.036] },
-  { id: 'ally-right', assetId: 'ch4.piece.ally', at: [0.675, 0.74], label: 'Hungarian Army', labelNudge: [0.058, 0.032] },
+  // Both ally tags sit well out to the west, leaving room for the
+  // "Soviet Army — North / South" tags that arrive under the placed hammers.
+  { id: 'ally-left', assetId: 'ch4.piece.ally', at: [0.51, 0.42], label: 'Romanian Army', labelNudge: [-0.12, 0.05] },
+  { id: 'ally-right', assetId: 'ch4.piece.ally', at: [0.675, 0.74], label: 'Hungarian Army', labelNudge: [-0.085, 0.05] },
 ];
 
 /** The German front line, as it stood in November 1942: north to south, bulging
@@ -270,9 +303,9 @@ export const SWEEPS: Record<'left-flank' | 'right-flank', { from: MapPoint; via:
  */
 export const OBJECTIVE_ROWS: { id: string; label: string }[] = [
   { id: 'obj-pact', label: 'The Broken Pact' },
-  { id: 'obj-why', label: 'Why Stalingrad' },
+  { id: 'obj-why', label: 'Why did Germany choose Stalingrad' },
   { id: 'obj-ruins', label: 'Battle in the Ruins' },
-  { id: 'obj-trap', label: 'The Trap' },
+  { id: 'obj-trap', label: 'Operation Uranus' },
   { id: 'obj-turn', label: 'The Turning Point' },
 ];
 
@@ -290,7 +323,7 @@ export const SUMMARY: SummaryEntry[] = [
     line: 'In 1939 Germany and the Soviet Union promised not to attack each other. In June 1941 Germany broke that promise and invaded.',
   },
   {
-    topic: 'Why Stalingrad',
+    topic: 'Why did Germany choose Stalingrad',
     line: 'The next summer Germany drove south for oil. This city guarded the Volga, the country’s great supply route, and it carried Stalin’s name.',
   },
   {
@@ -298,7 +331,7 @@ export const SUMMARY: SummaryEntry[] = [
     line: 'The city was bombed to rubble, then fought over house by house for months. In the ruins, German tanks and aircraft counted for far less.',
   },
   {
-    topic: 'The Trap',
+    topic: 'Operation Uranus',
     line: 'In November the Red Army struck the Romanian and Hungarian armies holding the flanks, not the Germans in the city. The two attacks met behind it and closed the ring.',
   },
   {
@@ -318,6 +351,9 @@ export interface ScreenLabel {
   /** Percentages of the window. */
   left: number;
   top: number;
+  /** Place names on the paper ('geo') read differently from the name tags
+   *  under the pieces ('piece'). */
+  kind: 'geo' | 'piece';
 }
 
 interface UranusState {

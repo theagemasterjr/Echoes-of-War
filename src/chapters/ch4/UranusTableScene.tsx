@@ -26,7 +26,7 @@ import { useCursor, useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { ASSETS, Asset } from '@/assets/registry';
 import {
-  FRONT_LINE, MAP, PIECES, RING_NORTH, RING_SOUTH, SCENERY, SLOTS, SWEEPS, TRAY_Z,
+  FRONT_LINE, GEO_LABELS, MAP, PIECES, RING_NORTH, RING_SOUTH, SCENERY, SLOTS, SWEEPS, TRAY_Z,
   liveSlots, mapToWorld, pieceById, trayPieces, useUranusStore,
   type MapPoint, type Piece, type PieceId, type Scenery, type Slot,
 } from './uranusStore';
@@ -210,7 +210,7 @@ export function UranusTableScene() {
   }, [sealing, setSeal]);
 
   /* ── labels: gathered here, drawn as DOM ── */
-  useLabelProjection(phaseAge);
+  useLabelProjection(phaseAge, sealAge, trayIn, draggingId);
 
   return (
     <group>
@@ -710,13 +710,20 @@ class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode
 /* ──────────────────────────── labels, projected ─────────────────────────── */
 
 /**
- * Every piece on the table carries a label, and no piece is ever anonymous.
- * Labels are DOM, so this measures where each labelled piece sits on screen and
- * publishes the list; UranusMinigame.tsx draws them. It only publishes when
- * something has actually moved, so a still camera costs one update and then
- * nothing.
+ * Every piece on the table carries a label, and no piece is ever anonymous —
+ * including the pieces still waiting at the table edge, and the two hammers
+ * while they sweep round as the ring closes. The map's own geography (the
+ * Volga, the oil fields, Stalingrad) is named in every phase. Labels are DOM,
+ * so this measures where everything sits on screen and publishes the list;
+ * UranusMinigame.tsx draws them. It only publishes when something has actually
+ * moved, so a still camera costs one update and then nothing.
  */
-function useLabelProjection(phaseAge: React.RefObject<number>) {
+function useLabelProjection(
+  phaseAge: React.RefObject<number>,
+  sealAge: React.RefObject<number>,
+  trayIn: boolean,
+  draggingId: string | null,
+) {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const setLabels = useUranusStore((s) => s.setLabels);
@@ -725,29 +732,55 @@ function useLabelProjection(phaseAge: React.RefObject<number>) {
 
   useFrame(() => {
     const { phase, placed, seal } = useUranusStore.getState();
-    const out: { id: string; text: string; left: number; top: number }[] = [];
+    const out: { id: string; text: string; left: number; top: number; kind: 'geo' | 'piece' }[] = [];
 
-    const add = (id: string, text: string, at: MapPoint, nudge?: MapPoint) => {
-      const [x, , z] = mapToWorld([at[0] + (nudge?.[0] ?? 0), at[1] + (nudge?.[1] ?? 0)]);
+    const addWorld = (id: string, text: string, x: number, z: number, kind: 'geo' | 'piece') => {
       v.set(x, MAP.y + 0.05, z).project(camera);
-      out.push({ id, text, left: ((v.x + 1) / 2) * 100, top: ((1 - v.y) / 2) * 100 });
+      out.push({ id, text, left: ((v.x + 1) / 2) * 100, top: ((1 - v.y) / 2) * 100, kind });
     };
+    const add = (id: string, text: string, at: MapPoint, nudge?: MapPoint, kind: 'geo' | 'piece' = 'piece') => {
+      const [x, , z] = mapToWorld([at[0] + (nudge?.[0] ?? 0), at[1] + (nudge?.[1] ?? 0)]);
+      addWorld(id, text, x, z, kind);
+    };
+
+    // the geography, on the paper from the first frame to the last
+    for (const geo of GEO_LABELS) add(geo.id, geo.text, geo.at, undefined, 'geo');
+
+    // the pieces waiting at the table edge — the label travels home the moment
+    // the piece is picked up, and comes back if the piece is refused
+    if (trayIn) {
+      const tray = trayPieces(phase, placed);
+      for (const [i, piece] of tray.entries()) {
+        if (piece.id === draggingId) continue;
+        addWorld(`tray-${piece.id}`, piece.label, (i - (tray.length - 1) / 2) * TRAY_GAP, TRAY_Z + 0.66, 'piece');
+      }
+    }
 
     // a placed piece's label arrives with the piece
     for (const slot of SLOTS) {
       const pieceId = placed[slot.id];
       if (!pieceId) continue;
-      // the two flank hammers travel as the ring closes — their labels go with
-      // them rather than sit on empty paper
-      if (seal !== 'idle' && SWEEPS[slot.id as keyof typeof SWEEPS]) continue;
-      add(`piece-${slot.id}`, pieceById(pieceId).label, slot.seatAt ?? slot.at, [0, 0.058]);
+      const text = slot.seatLabel ?? pieceById(pieceId).label;
+      const sweep = SWEEPS[slot.id as keyof typeof SWEEPS];
+      if (seal !== 'idle' && sweep) {
+        // the two flank hammers travel as the ring closes — their labels ride
+        // along under them rather than sit on empty paper
+        const t = span(sealAge.current, SEAL.sweepFrom, SEAL.sweepTo);
+        const q = (a: number, b: number, c: number) =>
+          (1 - t) * (1 - t) * a + 2 * t * (1 - t) * b + t * t * c;
+        add(`piece-${slot.id}`, text, [q(sweep.from[0], sweep.via[0], sweep.to[0]), q(sweep.from[1], sweep.via[1], sweep.to[1])], [0, 0.058]);
+        continue;
+      }
+      add(`piece-${slot.id}`, text, slot.seatAt ?? slot.at, slot.seatLabelNudge ?? [0, 0.058]);
     }
 
-    // the static pieces, each as it lands
+    // The static pieces. Their tags wait for the landing animation only while
+    // the board assembles (the strike phase's entrance) — in every later phase
+    // the pieces are already down, and the tags hold through phase changes.
     if (phase !== 'why') {
       for (const [i, piece] of SCENERY.entries()) {
         if (!piece.label) continue;
-        if (phaseAge.current < sceneryDelay(piece, i) + LAND_S * 0.8) continue;
+        if (phase === 'strike' && phaseAge.current < sceneryDelay(piece, i) + LAND_S * 0.8) continue;
         add(`scenery-${piece.id}`, piece.label, piece.at, piece.labelNudge);
       }
     }

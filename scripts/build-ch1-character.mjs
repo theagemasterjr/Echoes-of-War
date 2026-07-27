@@ -18,18 +18,13 @@
  * newer backdrop every time the model was rebuilt.)
  *
  * Run:  node scripts/build-ch1-character.mjs
- *
- * TODO(claude): when the founder's NEW ch1 animations land, also call
- * bakeRestPoseFromClip(idleClip) from ./lib/rest-pose.mjs after the clips are
- * merged (see build-ch2/ch3-character.mjs) so a failed animation start shows
- * a natural still instead of a T-pose. Deliberately not done yet — the
- * current ch1 source files are about to be replaced.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { NodeIO, TextureInfo } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
 import { dedup, weld, resample, prune, meshopt } from '@gltf-transform/functions';
+import { bakeRestPoseFromClip } from './lib/rest-pose.mjs';
 import { MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 
@@ -38,9 +33,9 @@ const arg = (name, dflt) => {
   return i > -1 ? process.argv[i + 1] : dflt;
 };
 const HOME = process.env.HOME;
-const ANIMDIR = `${HOME}/Downloads/ImageToStl.com_e5bc7ded7a13447da844fa55950c34f3`;
-const SRC_IDLE = arg('idle', `${ANIMDIR}/Idle.glb`);
-const SRC_TALK = arg('talking', `${ANIMDIR}/Talking.glb`);
+const ANIMDIR = `${HOME}/Downloads/ImageToStl.com_86de2b4aab53434dbd2f751bcdebd76a`;
+const SRC_IDLE = arg('idle', `${ANIMDIR}/Sitting Idle.glb`);
+const SRC_TALK = arg('talking', `${ANIMDIR}/Talking (1).glb`);
 const TEXDIR = arg('textures', `${HOME}/Downloads/Realisticgirl_Fbx/Business girl.fbm (use this)`);
 const OUT_GLB = 'public/models/ch1-journalist.glb';
 /** clip names the asset registry looks for (ASSETS['ch1.character'].clips) */
@@ -194,6 +189,16 @@ async function main() {
   for (const ch of srcIdle.listChannels()) if (ch.getTargetPath() === 'weights') ch.dispose();
   console.log(`clip "${IDLE_CLIP}": ${srcIdle.listChannels().length} channels, ${clipDuration(srcIdle).toFixed(2)}s`);
   copyAnimationInto(doc, srcTalk, TALK_CLIP);
+
+  /* -- 1b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
+  bakeRestPoseFromClip(srcIdle);
+
+  /* -- 1c. report the seated head position, for the registry's scale/offset */
+  const headNode = root.listNodes().find((n) => n.getName() === 'CC_Base_Head');
+  if (headNode) {
+    const m = headNode.getWorldMatrix();
+    console.log(`seated head bone (rig units): x ${m[12].toFixed(3)}, y ${m[13].toFixed(3)}, z ${m[14].toFixed(3)}`);
+  }
 
   /* -- 2. drop morph targets and unused vertex attributes -------------- */
   // ~1800 shape keys ride along from Character Creator, driven by nothing but

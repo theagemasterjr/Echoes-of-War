@@ -60,9 +60,10 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     label: 'Polish journalist figure',
     source: {
       kind: 'glb', url: '/models/ch1-journalist.glb',
-      // model stands 1.81 units tall with her feet on its own origin; this puts
-      // the top of her head at y = 2.48, framed waist-up by the chapter camera
-      scale: 4.76, offset: [0, -6.13, 0], castShadow: false,
+      // both clips are seated with the top of her head at y 1.33 and her feet
+      // on the model's own origin; offset tuned against ch3/ch4 screenshots so
+      // her head sits on the same on-screen line, with the same slight ch4 turn
+      scale: 4.76, offset: [0, -3.6, -0.5], rotation: [0, -0.25, 0], castShadow: false,
       // both clips are purpose-made loops, so each plays at its own pace
       clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
     },
