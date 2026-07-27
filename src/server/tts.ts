@@ -44,6 +44,16 @@ const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // the ch3 note above for what a professional voice id costs you (silence,
   // with no error on screen).
   ch4: process.env.ELEVENLABS_VOICE_CH4 ?? 'IKne3meq5aSn9XLyUdCD',
+  // 'pFZP5JQG7iQjIQuC4Bku' = ElevenLabs stock "Lily" (British female, warm) —
+  // Sister Grace Ellery. Deliberately NOT ch2's "George" (the other British
+  // voice here) and not any voice another chapter uses; she must sound clearly
+  // different from Tom. TODO(founder): audition it ("Alice",
+  // Xb7hH8MSUJpSbSDYk0k2, is a crisper British female alternate) and verify
+  // the id is listed as premade under GET /v1/voices on this account — a
+  // wrong or professional-tier id is silent subtitles with no on-screen
+  // error (see the ch3 note). ELEVENLABS_VOICE_CH5 overrides without a code
+  // change.
+  ch5: process.env.ELEVENLABS_VOICE_CH5 ?? 'pFZP5JQG7iQjIQuC4Bku',
 };
 
 export function voiceFor(chapterId: ChapterId): string | undefined {

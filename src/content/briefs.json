@@ -60,6 +60,17 @@
         "Do you accept the mission?"
       ],
       "accept": "I ACCEPT"
+    },
+    "ch5": {
+      "lines": [
+        "Your objective: understand how the Allies fought their way back into Europe.",
+        "Learn why the Allies had to return to Western Europe at all, and what was waiting for them on that coast.",
+        "Learn how Britain became a launch pad, and how the whole invasion came down to a weather forecast.",
+        "Learn how Germany was persuaded to look the wrong way.",
+        "Learn what happened on the 6th of June, and why holding the ground mattered more than taking it.",
+        "Do you accept the mission?"
+      ],
+      "accept": "I ACCEPT"
     }
   }
 }
