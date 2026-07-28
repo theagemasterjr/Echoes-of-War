@@ -94,9 +94,17 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     label: 'US sailor figure',
     source: {
       kind: 'glb', url: '/models/ch3-sailor.glb',
-      // Navy1 rig is cm-scale (181 units standing); both clips are seated, so
-      // the offset lifts the seated head to ~2.4 like the other chapters
-      scale: 0.048, offset: [-0.15, -4.0, -0.5], rotation: [0, -0.15, 0], castShadow: false,
+      // Meshy body on a Mixamo rig, metre-scale like ch1/ch4/ch5 — so it takes
+      // the same 4.76 (the cm-scale Navy1 export this replaced worked out to
+      // 4.8 per metre, so the sailor keeps his old size to within 1%). Both
+      // clips are seated, and the offset is set from the measured skinned
+      // silhouette rather than a bone, averaged over the whole idle loop
+      // rather than a single frame (the two rigs breathe by different
+      // amounts, so frame 0 alone would have left him sitting low): this
+      // puts the top of his cap on a mean 2.434, the same line the old
+      // Navy1 export's head rode. Same slight turn, sideways nudge and
+      // depth as before.
+      scale: 4.76, offset: [-0.15, -4.329, -0.5], rotation: [0, -0.15, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
     },
   },
