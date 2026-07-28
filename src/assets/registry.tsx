@@ -10,7 +10,7 @@
 import { Suspense, useMemo, useRef, type FC } from 'react';
 import { useFrame, type ThreeElements } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
-import { MathUtils, type Group, type Object3D } from 'three';
+import { MathUtils, type AnimationClip, type Group, type Object3D } from 'three';
 import * as P from './placeholders';
 
 type GroupProps = ThreeElements['group'];
@@ -65,30 +65,36 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     label: 'Polish journalist figure',
     source: {
       kind: 'glb', url: '/models/ch1-journalist.glb',
-      // both clips are seated with the top of her head at y 1.33 and her feet
-      // on the model's own origin. She used to sit at -4.35, which put her head
-      // half way down the frame while every other chapter's sits at 0.38 — she
-      // read as sunk into the bottom of the shot. -3.95 lifts her head to that
-      // same line (her crown stays a little lower than theirs because this idle
-      // is a slumped pose) while still cropping her at the lap, so her skirt
-      // and legs stay out of shot. Near-frontal, just a hint of turn (founder
-      // found the ch4-style -0.25 too side-on for her)
-      scale: 4.76, offset: [0, -3.95, -0.5], rotation: [0, -0.1, 0], castShadow: false,
+      // Rebuilt July 2026 on a Mixamo rig (mixamorig:* bones) — a metre-scale
+      // rig like ch4/ch5, so the same 4.76 scale applies. headBone measured
+      // (node scripts/inspect-pose.mjs) at y 1.078; 1.078 x 4.76 - 3.64 = 1.49,
+      // matching ch4's on-screen head line. rotation 0.1 rad (~5.7°) plus this
+      // take's own ~1.7° gaze yaw lands her on-screen facing at ~7° toward the
+      // player's right, same as ch4.
+      scale: 4.76, offset: [0, -3.64, -0.5], rotation: [0, 0.1, 0], castShadow: false,
       // both clips are purpose-made loops, so each plays at its own pace
       clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
-      // her idle was animated 17° chin-down (ch5's sits at 4°) — from this
-      // camera she looked at the floor rather than at the player. Lifting the
-      // head bone 11° brings the idle to about 6° down and the talking loop to
-      // roughly level, without leaning her whole body back.
-      headTilt: { bone: 'CC_Base_Head', degrees: 11 },
+      // no headTilt needed this time — both clips already read close to ch4's
+      // target gaze pitch as animated (idle -3.55°, talking -9.77° measured),
+      // and the talking take's yaw was corrected in the build script
+      // (TALK_YAW_FIX) rather than here, since that fix has to live in the
+      // clip itself (see docs/character-animation-guide.md).
     },
   },
   'ch2.character': {
     label: 'RAF pilot figure',
     source: {
       kind: 'glb', url: '/models/ch2-pilot.glb',
-      scale: 0.042, offset: [0, -3.35, -0.6], rotation: [0, -0.3, 0], castShadow: false,
+      // -0.3 dated from the old talking take, which was animated turned toward
+      // the player's right — the model was pre-turned left to compensate. The
+      // July 2026 talking clip is yaw-aligned with the idle (both ≈ -1.5°), so
+      // that pre-turn read as him talking past the player's left shoulder.
+      // 0.15 matches ch4's on-screen facing (a touch toward the player's right).
+      scale: 0.042, offset: [0, -3.35, -0.6], rotation: [0, 0.15, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+      // his talking take is animated 24° chin-down (ch4's sits at 10°) — he
+      // glowered at the desk instead of the player. +14 matches ch4's level.
+      headTilt: { bone: 'ww2_ger_test_archetypeHead', degrees: 14 },
     },
   },
   // Reserved for the chapter 2 minigame scene the founder may build later
@@ -107,18 +113,16 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     label: 'US sailor figure',
     source: {
       kind: 'glb', url: '/models/ch3-sailor.glb',
-      // Meshy body on a Mixamo rig, metre-scale like ch1/ch4/ch5 — so it takes
-      // the same 4.76 (the cm-scale Navy1 export this replaced worked out to
-      // 4.8 per metre, so the sailor keeps his old size to within 1%). Both
-      // clips are seated, and the offset is set from the measured skinned
-      // silhouette rather than a bone, averaged over the whole idle loop
-      // rather than a single frame (the two rigs breathe by different
-      // amounts, so frame 0 alone would have left him sitting low): this
-      // puts the top of his cap on a mean 2.434, the same line the old
-      // Navy1 export's head rode. Same slight turn, sideways nudge and
-      // depth as before.
-      scale: 4.76, offset: [-0.15, -4.329, -0.5], rotation: [0, -0.15, 0], castShadow: false,
+      // Navy1 rig is cm-scale (181 units standing); both clips are seated, so
+      // the offset lifts the seated head to ~2.4 like the other chapters.
+      // rotation was -0.15 for the old talking take; the July 2026 clip is
+      // yaw-aligned with the idle (~1.5°), so 0.1 matches ch4's facing.
+      scale: 0.048, offset: [-0.15, -4.0, -0.5], rotation: [0, 0.1, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+      // the July 2026 talking take sits slightly chin-down and the cap brim
+      // hides his eyes from this camera; a small lift levels the gaze.
+      headTilt: { bone: 'mixamorigHead', degrees: 8 },
+
     },
   },
   // Reserved for the chapter 3 minigame scene the founder may build later.
@@ -144,6 +148,7 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
       // and this brings his face back round to the player.
       scale: 4.76, offset: [0, -3.79, -0.5], rotation: [0, 0.1, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+
     },
   },
   // Chapter 4 "Operation Uranus" minigame — the pieces the player lays out on
@@ -249,11 +254,28 @@ const Glb: FC<
   // Checked every frame, not once on mount: a start command issued at an
   // unlucky moment (mid-transition, remount, hot reload) used to fail silently
   // and leave the character T-posed forever — now a miss just retries next frame.
-  // the bone whose pose gets nudged after the animation has written it
-  const tiltBone = useMemo<Object3D | null>(
-    () => (headTilt ? (shadowed.getObjectByName(headTilt.bone) ?? null) : null),
-    [shadowed, headTilt],
-  );
+  // the bones whose pose gets nudged after the animation has written it.
+  // Some rigs (ch2/ch3 FBX exports) carry several identically-named nodes for
+  // one bone — one per mesh skin cluster — which GLTFLoader renames to
+  // "name", "name_1", "name_2"… on load. Only the instance(s) the playing
+  // clip drives are rewritten by the mixer each frame; tilting any other
+  // copy would ACCUMULATE frame after frame and spin whatever hangs off it
+  // (ch3's eyeballs orbited his head). So: collect every same-named copy,
+  // but each frame tilt only the ones the active clip animates.
+  const tiltBones = useMemo<{ node: Object3D; drivenBy: Set<string> }[]>(() => {
+    if (!headTilt) return [];
+    const trackRoots = (c: AnimationClip) => c.tracks.map((t) => t.name.split('.')[0]);
+    const suffixed = new RegExp(`^${headTilt.bone}(_\\d+)?$`);
+    const found: { node: Object3D; drivenBy: Set<string> }[] = [];
+    shadowed.traverse((o) => {
+      if (!suffixed.test(o.name)) return;
+      const drivenBy = new Set(
+        animations.filter((c) => trackRoots(c).includes(o.name)).map((c) => c.name),
+      );
+      found.push({ node: o, drivenBy });
+    });
+    return found;
+  }, [shadowed, animations, headTilt]);
   const tiltRad = headTilt ? MathUtils.degToRad(headTilt.degrees) : 0;
 
   const lastClip = useRef<string | null>(null);
@@ -264,7 +286,10 @@ const Glb: FC<
     // same-priority frame callbacks in subscription order.
     // Negative because pitching a bone about its own +X tips its face axis
     // down; `degrees` is written the way a person reads it (positive = up).
-    if (tiltBone) tiltBone.rotateX(-tiltRad);
+    // (skip bones the active clip doesn't drive — nothing resets them, so a
+    // per-frame rotate would accumulate into a spin instead of a fixed tilt)
+    for (const b of tiltBones)
+      if (lastClip.current && b.drivenBy.has(lastClip.current)) b.node.rotateX(-tiltRad);
 
     if (!clips) return;
     const name = talking ? clips.talking : clips.idle;

@@ -23,6 +23,8 @@ import { copyToDocument, dedup, weld, resample, prune, meshopt, unpartition } fr
 import { MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 import { bakeRestPoseFromClip } from './lib/rest-pose.mjs';
+import { yawClip, closeLoop } from './lib/clip-fixes.mjs';
+import { Quaternion, Vector3 } from 'three';
 
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -30,9 +32,19 @@ const arg = (name, dflt) => {
 };
 const SRCDIR = 'C:/Users/sagar/Music/chapter 2 eow models';
 const IDLE = arg('idle', `${SRCDIR}/Sitting Idle.fbx.glb`);
-const TALKING = arg('talking', `${SRCDIR}/Sitting Talking.fbx.glb`);
+const TALKING = arg('talking', 'C:/Users/sagar/Music/new talking anims ch1-3/new chapter 2 talking.glb');
 const TEXDIR = arg('textures', `${SRCDIR}/textures (chapter 2 claude)`);
 const OUT_GLB = 'public/models/ch2-pilot.glb';
+
+/* "new chapter 2 talking.glb" talks ~15.5° further to the player's left than
+ * the idle looks. Numbers from `node scripts/inspect-pose.mjs`: idle gaze
+ * sits at −1.5°, this clip sat at −17.0° (idle − talking ≈ 15.5). */
+const TALK_YAW_FIX = 15.5;
+// names as they appear in the idle doc (post-merge target), i.e. colon-stripped
+const YAW_BONES = ['ww2_ger_test_archetypeNeck', 'ww2_ger_test_archetypeHead'];
+/* Seconds of the talking clip's tail spent easing back onto its first frame —
+ * without it the loop restarts with a visible snap. */
+const TALK_LOOP_BLEND = 0.6;
 
 /* ------------------------------------------------------------------ *
  * Material -> texture mapping (from the source FBX's texture wiring).
@@ -76,8 +88,28 @@ async function main() {
     }
 
   /* -- 2. clips: keep idle's real clip, merge talking's in ------------ */
-  const byName = new Map(root.listNodes().map((n) => [n.getName(), n]));
+  // The idle export's FBX->GLB conversion stripped the rig's Maya namespace
+  // colon ("ww2_ger_test_archetypeHips"); "new chapter 2 talking.glb" kept it
+  // ("ww2_ger_test_archetype:Hips") — same 65-bone rig, same names, just a
+  // different converter's namespace serialization (three.js's GLTFLoader
+  // strips this same colon on load, see inspect-pose.mjs). Match by name with
+  // colons stripped on both sides so this isn't mistaken for a rig mismatch.
+  //
+  // The idle doc also has several DUPLICATE nodes per central-body bone name
+  // (Hips/Spine*/Neck/Head/Shoulders each have 2-5 same-named node objects —
+  // one per mesh's separate skin cluster from the FBX export), and only ONE
+  // instance per name is the one idle's own clip actually drives; the rest
+  // are other skins' frozen joints. Retargeting to "whichever node has this
+  // name" can land on a duplicate idle never animates, leaving the true live
+  // joint frozen while an unrelated duplicate jerks around. So the byName map
+  // is built from idle's OWN animated targets first (guaranteed the live
+  // instance) and only falls back to an arbitrary same-named node for bones
+  // idle doesn't animate at all (fingers/toes — no live instance to prefer).
+  const stripColon = (n) => n?.replace(/:/g, '');
   const idleClip = realClip(doc);
+  const byName = new Map(root.listNodes().map((n) => [stripColon(n.getName()), n])); // fallback pass
+  for (const ch of idleClip.listChannels()) // then overwrite with the live instances
+    byName.set(stripColon(ch.getTargetNode()?.getName()), ch.getTargetNode());
   idleClip.setName('Idle_Loop');
 
   const talkDoc = await io.read(TALKING);
@@ -88,7 +120,7 @@ async function main() {
   // brought a duplicate node graph along; prune() clears it afterwards)
   let unmatched = 0;
   for (const ch of talkClip.listChannels()) {
-    const orig = byName.get(ch.getTargetNode()?.getName());
+    const orig = byName.get(stripColon(ch.getTargetNode()?.getName()));
     if (orig) ch.setTargetNode(orig);
     else unmatched++;
   }
@@ -99,7 +131,50 @@ async function main() {
   for (const a of root.listAnimations())
     if (a !== idleClip && a !== talkClip) a.dispose(); // empty "Take 001"s
 
-  /* -- 2b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
+  /* -- 2a2. this talking export's whole rig sits under an explicit "Armature"
+   *      root node (+90° about X — a baked Z-up->Y-up correction — and a
+   *      0.01 unit scale) that idle's rig doesn't have: idle's exporter baked
+   *      that same correction into every bone instead of leaving it as a root
+   *      transform, so its Hips sits directly under an identity ancestor.
+   *      "ww2_ger_test_archetypeHips" is the only bone parented directly to
+   *      that root, so once retargeted onto idle's un-rotated hierarchy only
+   *      ITS translation+rotation channels are in the wrong frame — every
+   *      other bone's channel is relative to its own parent BONE, unaffected
+   *      by the root discrepancy. Confirmed with the raw numbers: rotating
+   *      talk's Hips frame-0 translation (-0.27, 2.41, -55.01) by +90° about
+   *      X gives (-0.27, 55.01, 2.41), matching idle's Hips (0.05, 54.52,
+   *      1.88) — so the fix is that one rotation, no rescale (idle's
+   *      hierarchy is already unscaled, so the root's 0.01 is dropped, not
+   *      applied). */
+  const ARMATURE_ROT = new Quaternion(0.7071068, 0, 0, 0.7071068); // talkDoc's "Armature" node rotation
+  const hipsNode = byName.get('ww2_ger_test_archetypeHips');
+  let hipsFixed = 0;
+  for (const ch of talkClip.listChannels()) {
+    if (ch.getTargetNode() !== hipsNode) continue;
+    const targetPath = ch.getTargetPath();
+    if (targetPath !== 'translation' && targetPath !== 'rotation') continue;
+    const out = ch.getSampler().getOutput();
+    const el = targetPath === 'rotation' ? [0, 0, 0, 1] : [0, 0, 0];
+    for (let i = 0; i < out.getCount(); i++) {
+      out.getElement(i, el);
+      if (targetPath === 'translation') {
+        const v = new Vector3(...el).applyQuaternion(ARMATURE_ROT);
+        out.setElement(i, [v.x, v.y, v.z]);
+      } else {
+        const q = ARMATURE_ROT.clone().multiply(new Quaternion(...el));
+        out.setElement(i, [q.x, q.y, q.z, q.w]);
+      }
+    }
+    hipsFixed++;
+  }
+  console.log(`Hips: rotated ${hipsFixed} channel(s) into idle's un-rotated root frame`);
+
+  /* -- 2b. bring the talking clip's gaze round to the camera, and make it
+           loop cleanly (see TALK_YAW_FIX / closeLoop above) -------------- */
+  if (TALK_YAW_FIX) yawClip(talkClip, doc, YAW_BONES, TALK_YAW_FIX);
+  closeLoop(talkClip, TALK_LOOP_BLEND);
+
+  /* -- 2c. idle frame 0 becomes the rest pose (no more T-pose fallback) */
   bakeRestPoseFromClip(idleClip);
 
   /* -- 3. drop unused vertex attributes ------------------------------- */
