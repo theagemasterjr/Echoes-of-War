@@ -54,6 +54,16 @@ const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // error (see the ch3 note). ELEVENLABS_VOICE_CH5 overrides without a code
   // change.
   ch5: process.env.ELEVENLABS_VOICE_CH5 ?? 'pFZP5JQG7iQjIQuC4Bku',
+  // 'nPczCjzI2devNBz1zQrb' = ElevenLabs stock "Brian" (mature male, deep and
+  // calm) — Dr Kenzo Arita, who is forty-four and speaks quietly. Deliberately
+  // the only older male voice here: ch2 "George", ch3 "Will" and ch4 "Charlie"
+  // are all young men and would blur into each other and into him.
+  // TODO(founder): audition it — "Eric" (cjVigY5qzO86Huf0OWal) and "Roger"
+  // (CwhRBWXzGAHq8TQ4Fs17) are the other calm middle-aged premades — and verify
+  // the id is listed as premade under GET /v1/voices on this account. A wrong
+  // or professional-tier id is silent subtitles with no on-screen error (see
+  // the ch3 note above). ELEVENLABS_VOICE_CH6 overrides without a code change.
+  ch6: process.env.ELEVENLABS_VOICE_CH6 ?? 'nPczCjzI2devNBz1zQrb',
 };
 
 export function voiceFor(chapterId: ChapterId): string | undefined {

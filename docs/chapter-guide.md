@@ -233,7 +233,7 @@ inherits them:
   history without asking a ten-year-old to hold a number like two million. Please don't
   add them back.
 
-Chapter 6 (Hiroshima) will need the same treatment.
+Chapter 6 (Hiroshima) carries the same treatment, one step stricter — see its section below.
 
 **One thing is deliberately a placeholder**, and the chapter plays start to finish with
 it missing:
@@ -348,6 +348,79 @@ Still placeholders, and the chapter plays start to finish with all of them missi
   in `src/assets/registry.tsx` (`ch5.character`).
 - The conversation backdrop — the registry line stays commented out until the image file
   exists (an empty reference hangs the 3D scene).
+
+## Chapter 6 — the character, and the strictest tone contract in the app
+Chapter 6 (The Cost of Victory — **Dr Kenzo Arita**, a forty-four-year-old physician at a
+small hospital in the north of Hiroshima, speaking in **late September 1945**) follows the
+ch4/ch5 shape: one open conversation node with all twenty-two learning points live from the
+first turn, and **five** objectives, in this order:
+
+1. **A Country at War** · 2. **The Morning of the Sixth** ·
+3. **A City That Could Not Help Itself** · 4. **The Sickness With No Name** ·
+5. **The Cost of Victory**
+
+As in chapters 4 and 5, those five names are meant to be one order in three places — the
+objectives panel, the mission brief's "Learn" lines, and the closing summary's topics.
+Only the first exists so far; write the other two to match.
+
+He is a fictional composite grounded in the documented experience of the Hiroshima doctors
+who survived and kept working — above all Dr Michihiko Hachiya, whose diary runs 6 August
+to 30 September 1945, and Dr Terufumi Sasaki, who first charted the sickness nobody had a
+name for. He is neither of them and belongs to no real hospital.
+
+**Three things make Arita work, and all three are constraints, not colour:**
+
+- **Late September 1945, not August.** A doctor locked to the days right after the bomb
+  knows almost nothing — not what hit the city, not that the war is about to end, not that
+  a second sickness is coming. Six weeks out he has all three as lived experience: the
+  words "atomic bomb" (Japanese papers said "a new type of bomb" on 8 August; the Asahi
+  first printed "atomic bomb" on 11 August), the Emperor's broadcast on the 15th, and the
+  whole shape of the delayed sickness, which only revealed itself over weeks.
+- **He knows the sickness happened, not why.** He watched people who walked away without a
+  mark fall ill weeks later, and neither he nor anyone else could explain it. That is not a
+  dodge — in September 1945 nobody could, American experts included. He never uses the word
+  "radiation" as though he understood it, and he never guesses at a cause. **The not-knowing
+  is the chapter's best teaching idea**: a whole city was hurt by something none of its
+  doctors could name.
+- **He will not say whether the bomb should have been dropped.** Asked, he says he was
+  underneath it and so cannot be a fair judge, that the player should hear the people who
+  made the decision too, and that they will have to decide it themselves. That refusal is
+  the best moment in the chapter and it must survive any edit.
+
+**What Arita cannot carry, and who carries it instead.** This is the ch5 pattern (Grace
+lived the deception but never learned its machinery). The Pacific war *as a campaign* — the
+island fighting, the kamikaze, Okinawa, the invasion that was planned and never happened,
+the Potsdam ultimatum, and the long argument over whether the bomb should have been used —
+is deliberately **not** in the tree, because a civilian doctor in Hiroshima had no way to
+know any of it. **That material is the mission brief's and the minigame's job**, narrated by
+Elderon, who is not time-locked. Arita supplies what only he can: what it was to be
+underneath it.
+
+**The tone rules are part of the content**, as in ch4 and ch5 — they live at the top of
+`src/content/trees/ch6.ts` (`TONE_RULES`), and they are one step stricter than either.
+The particular trap here: Arita is a *doctor*, so clinical detail would come naturally to
+him, and a curious child will fish for exactly the images Hiroshima is remembered by. Being
+a doctor is the reason for the restraint, not a licence for it — **he does not describe
+patients, he describes work.** **Three things are left out on purpose and must not be added
+back anywhere in the chapter**: any figure for the dead or injured; any physical description
+of injuries, bodies or the dead; and any verdict on whether the bomb should have been dropped.
+
+**The balance rule.** Chapter 3 is Pearl Harbor, so players will arrive here and ask
+"didn't Japan start it?". Arita must never become a chapter in which Japan is only a victim.
+His honest 1945 position: his country had been at war since 1937 and he knows it; he was
+told a great deal that turned out to be untrue and he knows that now too; and what the army
+did far away he did not see and will neither describe nor deny. He never claims his country
+was innocent, and he never suggests the visitor was wrong to ask.
+
+His voice is stock "Brian" in `src/server/tts.ts` (`ELEVENLABS_VOICE_CH6` overrides) —
+deliberately the only older male voice in the app, since ch2, ch3 and ch4 are all young men.
+Audition it before you ship.
+
+Still to build for this chapter (everything plays with these missing):
+- The mission brief (`src/content/briefs.json`) and its Elderon recording — **this is where
+  the Pacific campaign and the decision belong.**
+- The minigame (`src/chapters/ch6/` is still the placeholder shell) and the closing summary.
+- `public/video/ch6-intro.mp4`, the character model, and the conversation backdrop.
 
 ## Rules of the road
 - Don't edit files outside your chapter's tree file, chapter folder, and the asset registry.

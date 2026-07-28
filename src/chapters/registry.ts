@@ -82,7 +82,7 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch6', index: 6, title: 'The Cost of Victory', subtitle: 'The Pacific war ends',
     dates: '1945', location: 'Hiroshima, Japan',
-    characterName: 'Placeholder: Hiroshima doctor', characterRole: 'Hospital doctor',
+    characterName: 'Dr Kenzo Arita', characterRole: 'Hospital doctor, Hiroshima',
     markerPosition: [3.83, 0, -0.70], markerAssetId: 'ch6.marker', characterAssetId: 'ch6.character',
   },
 ];
