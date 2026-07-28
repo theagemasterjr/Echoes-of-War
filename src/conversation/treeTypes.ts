@@ -25,6 +25,10 @@ export interface ConstraintTree {
     /** How to stay in character when probed at the boundaries. */
     deflectionStyle: string;
   };
+  /** Pre-written in-character greeting returned WITHOUT an AI call when the
+   *  chapter opens (same wording every visit, so its voice audio caches too).
+   *  Omit it and the server falls back to generating one with the model. */
+  intro?: string;
   /** Pre-written in-character lines returned WITHOUT an AI call when input screening trips. */
   deflections: {
     abusive: string;

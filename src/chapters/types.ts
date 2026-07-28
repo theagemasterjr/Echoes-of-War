@@ -63,4 +63,11 @@ export interface ChapterMeta {
   /** Set when the chapter module exports a 3D MinigameScene: where the camera
    *  sits while that scene plays. Absent = shared DOM minigame staging. */
   minigameCamera?: { pos: [number, number, number]; target: [number, number, number] };
+  /** Asset ids (see src/assets/registry.tsx) the chapter's minigame scene
+   *  draws, beyond the shared marker/character models already covered
+   *  elsewhere. Used to predictively warm those GLBs while the player is
+   *  still in the conversation beat, so the switch into the minigame never
+   *  stalls on a download. Absent/empty = nothing extra to warm (a chapter
+   *  with no 3D minigame staging yet). */
+  minigameAssetIds?: string[];
 }

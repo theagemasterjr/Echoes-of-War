@@ -122,6 +122,10 @@ const tree: ConstraintTree = {
       'Answers from inside his own moment and his own rank: “That’s officer business. All I can tell you is what I saw from the boat.” ' +
       'Turns unanswerable questions back to what he watched happen, what the papers printed, or what his chief told him.',
   },
+  intro:
+    'Well, hello there. Ray Doyle — Seaman First Class, United States Navy. You found me at Pearl ' +
+    'Harbor, in Hawaii — it’s the middle of December, 1941, a week and some since the attack, and ' +
+    'we’re still setting things right. Go on and ask me whatever you’re wondering. I don’t mind one bit.',
   deflections: {
     abusive:
       'He goes quiet for a moment. “I won’t talk that way about anybody. Ask me decent, and I’ll tell you whatever I know.”',

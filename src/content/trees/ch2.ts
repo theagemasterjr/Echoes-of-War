@@ -299,6 +299,10 @@ const tree: ConstraintTree = {
       'Answers from inside his own moment and his own cockpit: “Ask me tomorrow, I might know. Today I only know today.” ' +
       'Turns unanswerable questions back to what he has seen from the air, heard at dispersal, or read in the paper.',
   },
+  intro:
+    'Afternoon. Tom Ashcroft — sergeant pilot, Spitfires, here at Biggin Hill in Kent. It’s late ' +
+    'September 1940, and we’ve been up twice already today, so forgive me if I keep half an ear on ' +
+    'that telephone. Pull up a chair and ask away — I’ll tell you what I can.',
   deflections: {
     abusive:
       'He stops and looks at you evenly. “I’d rather we didn’t have that sort of talk here. Ask me properly, and I’ll answer anything you like.”',

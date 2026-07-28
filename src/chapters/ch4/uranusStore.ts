@@ -39,8 +39,11 @@ import type { SummaryEntry } from '../types';
 /** Where the paper map lies on the tabletop, in table units. The aspect is the
  *  images' own (1448 × 1086), so nothing is stretched. */
 export const MAP = { w: 8.4, d: 6.3, z: -0.55, y: 0.014 } as const;
-/** The near edge of the table, where liftable pieces wait. */
-export const TRAY_Z = 3.2;
+/** The near edge of the table, where liftable pieces wait. Kept well inside the
+ *  camera's vertical frame (see `minigameCamera` on the ch4 registry row) — at
+ *  3.2 the tray sat right on the bottom edge of the shot and the pieces were
+ *  clipped; pulling it in toward the map keeps them fully on screen. */
+export const TRAY_Z = 2.5;
 
 export type MapPoint = readonly [u: number, v: number];
 
@@ -64,14 +67,16 @@ export const INSTRUCTION: Record<Phase, string> = {
   sealed: 'The ring is closed.',
 };
 
-/** One sentence when a phase opens — the transition moment. It says what just
- *  happened and what the player does next, then fades; the INSTRUCTION line
- *  above stays put for anyone who missed it. The first one is the very first
- *  thing the player reads, so it says what the whole game is. */
+/** One or two short sentences when a phase opens — the transition moment. It
+ *  says what just happened and what the player does next, then fades; the
+ *  INSTRUCTION line above stays put for anyone who missed it. The first one is
+ *  the very first thing the player reads, so it says what the whole game is
+ *  AND how to play it — pick up, drag, let go — since nothing else on screen
+ *  teaches the mechanic before the player is expected to use it. */
 export const BANNER: Record<Phase, string> = {
-  why: 'Help plan the Soviet counter-attack — drag the pieces onto the map.',
-  strike: 'Those are the two things Germany came for — now choose where the Red Army strikes.',
-  close: 'The flanks are set — now close the ring behind the German army.',
+  why: 'Help plan the Soviet counter-attack. Pick up a piece waiting at the bottom of the table, drag it onto a glowing spot on the map, and let go to place it.',
+  strike: 'Those are the two things Germany came for. Now pick up each Soviet army and drag it onto a glowing flank, north and south of the city — the weak points, not the strong one.',
+  close: 'The flanks are set. Drag the last Soviet army onto the glowing spot behind the city to close the ring and trap them.',
   sealed: '',
 };
 
@@ -175,7 +180,9 @@ export const SLOTS: Slot[] = [
     id: 'left-flank',
     phase: 'strike',
     at: [0.51, 0.42],
-    seatAt: [0.56, 0.39],
+    // Pushed further east of the ally piece than the original [0.56, 0.39] —
+    // that was close enough that the seated hammer visually overlapped it.
+    seatAt: [0.585, 0.375],
     seatLabel: 'Soviet Army — North',
     radius: 0.6,
     accepts: ['hammer-1', 'hammer-2'],
@@ -196,7 +203,9 @@ export const SLOTS: Slot[] = [
     id: 'right-flank',
     phase: 'strike',
     at: [0.675, 0.74],
-    seatAt: [0.735, 0.74],
+    // Pushed further east of the ally piece than the original [0.735, 0.74]
+    // for the same reason as the left flank above.
+    seatAt: [0.765, 0.74],
     seatLabel: 'Soviet Army — South',
     radius: 0.6,
     accepts: ['hammer-1', 'hammer-2'],
@@ -206,7 +215,9 @@ export const SLOTS: Slot[] = [
   {
     id: 'behind',
     phase: 'close',
-    at: [0.495, 0.575],
+    // Moved from [0.495, 0.575] — that spot sat close enough to german-2 for
+    // the two models to overlap once the last hammer seated there.
+    at: [0.47, 0.6],
     seatLabelNudge: [-0.09, -0.01],
     radius: 0.66,
     accepts: ['hammer-3'],
@@ -256,7 +267,10 @@ export const SCENERY: Scenery[] = [
   // is 0.89 units square, so anything nearer stands inside the ruins.
   { id: 'german-1', assetId: 'ch4.piece.german', at: [0.573, 0.481], german: true },
   { id: 'german-2', assetId: 'ch4.piece.german', at: [0.553, 0.58], german: true, label: 'German 6th Army', labelNudge: [-0.075, 0.055] },
-  { id: 'german-3', assetId: 'ch4.piece.german', at: [0.595, 0.64], german: true },
+  // Nudged further from german-2 than a straight ~0.6-unit ring around the
+  // city would put it — at the original spot the two figures stood close
+  // enough to visually overlap.
+  { id: 'german-3', assetId: 'ch4.piece.german', at: [0.61, 0.665], german: true },
   // Both ally tags sit well out to the west, leaving room for the
   // "Soviet Army — North / South" tags that arrive under the placed hammers.
   { id: 'ally-left', assetId: 'ch4.piece.ally', at: [0.51, 0.42], label: 'Romanian Army', labelNudge: [-0.12, 0.05] },
@@ -278,10 +292,10 @@ export const FRONT_LINE: MapPoint[] = [
  * side and end at the same point in the west (the 'behind' slot).
  */
 export const RING_NORTH: MapPoint[] = [
-  [0.655, 0.552], [0.625, 0.495], [0.57, 0.475], [0.52, 0.505], [0.495, 0.575],
+  [0.655, 0.552], [0.625, 0.495], [0.57, 0.475], [0.52, 0.505], [0.47, 0.6],
 ];
 export const RING_SOUTH: MapPoint[] = [
-  [0.655, 0.552], [0.64, 0.618], [0.585, 0.652], [0.523, 0.63], [0.495, 0.575],
+  [0.655, 0.552], [0.64, 0.618], [0.585, 0.652], [0.523, 0.63], [0.47, 0.6],
 ];
 
 /** The curved paths the two flank hammers sweep along as the ring closes:
@@ -289,8 +303,8 @@ export const RING_SOUTH: MapPoint[] = [
  *  actually stands), a control point that bows them round the outside, and the
  *  meeting point behind the city. */
 export const SWEEPS: Record<'left-flank' | 'right-flank', { from: MapPoint; via: MapPoint; to: MapPoint }> = {
-  'left-flank': { from: [0.56, 0.39], via: [0.372, 0.452], to: [0.495, 0.575] },
-  'right-flank': { from: [0.735, 0.74], via: [0.542, 0.79], to: [0.495, 0.575] },
+  'left-flank': { from: [0.585, 0.375], via: [0.372, 0.452], to: [0.47, 0.6] },
+  'right-flank': { from: [0.765, 0.74], via: [0.542, 0.79], to: [0.47, 0.6] },
 };
 
 /* ───────────────────────── the objectives panel ───────────────────────── */

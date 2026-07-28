@@ -1,11 +1,13 @@
 'use client';
 /**
- * Chapter 3 minigame, DOM layer — the round banner, the opened letter, the
- * score screen and the chapter's narrated summary. The documents themselves
- * live in the 3D scene (LetterTableScene); this layer is every word the player
- * reads, because 3D text is unreadable at this camera and never dyslexia-safe.
- * Root is pointer-events-none so canvas taps reach the table; the letter page
- * and the buttons opt back in.
+ * Chapter 3 minigame, DOM layer — the round banner, the score screen and the
+ * chapter's narrated summary. The documents AND the opened letter's actual
+ * words live in the 3D scene now (LetterTableScene's OpenLetterSheet, a paper
+ * sheet with the text on it held up in front of the camera); this layer only
+ * supplies the controls around it — read aloud, put it back, commit — plus a
+ * spoken-sentence caption while the voice reads and the "ruled this one out"
+ * note once a wrong document is committed. Root is pointer-events-none so
+ * canvas taps reach the table; the control strip opts back in.
  *
  * Two screens close the chapter, in this order: a score screen that says only
  * "N of 3 on the first try" (no content — nothing should be said twice), and
@@ -130,9 +132,12 @@ export function LettersMinigame({ chapterId, onComplete }: MinigameProps) {
 }
 
 /**
- * The opened letter: a full parchment page, in the game's paper colours, over
- * the document lifting off the table behind it. Plain DOM text throughout, so
- * the easy-read font and the large text size apply to it like everywhere else.
+ * The controls around the opened letter. The letter's actual words are a 3D
+ * paper sheet held up in front of the camera (LetterTableScene's
+ * OpenLetterSheet) — this is only the strip beneath it: read aloud, a caption
+ * of the sentence being spoken (the words themselves are on the page, not
+ * here — this is just so a spoken line is never audio-only), the "ruled this
+ * one out" note, and put-it-back / commit.
  */
 function LetterPage({ docId, chapterId }: { docId: string; chapterId: ChapterId }) {
   const doc = docById(docId);
@@ -159,84 +164,63 @@ function LetterPage({ docId, chapterId }: { docId: string; chapterId: ChapterId 
 
   return (
     <motion.div
-      className="pointer-events-auto absolute inset-0 z-10 flex items-center justify-center bg-black/55 p-5"
+      className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-end gap-3 p-5 pb-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      /* the delay is the point: the document is seen lifting off the table
-         first, and the page fades in over it — together they read as
-         "it opened and zoomed" */
+      /* the delay is the point: the letter is seen opening in 3D first, and
+         this strip fades in under it — together they read as one motion */
       transition={{ duration: reduced ? 0 : 0.35, delay: reduced ? 0 : 0.18 }}
       role="dialog"
       aria-modal="true"
       aria-label="Document"
     >
-      <div
-        className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-sm px-7 py-6 md:px-9 md:py-8"
-        style={{
-          background: 'linear-gradient(158deg, #f0e5cb 0%, #e2d3ad 55%, #cfbd94 100%)',
-          border: '1px solid rgba(120, 96, 58, 0.55)',
-          boxShadow: '0 26px 70px rgba(0, 0, 0, 0.65)',
-          color: '#2b2318',
-        }}
-      >
-        <p className="text-[15px] leading-[1.95] md:text-base">
-          {aloud.sentences.map((s, i) => (
-            <span
-              key={i}
-              className="rounded-sm transition-colors duration-200"
-              style={
-                i === aloud.spokenIndex
-                  ? { backgroundColor: 'rgba(176, 122, 32, 0.28)', boxShadow: '0 0 0 3px rgba(176, 122, 32, 0.28)' }
-                  : undefined
-              }
-            >
-              {s}{' '}
-            </span>
-          ))}
+      {aloud.playing && aloud.spokenIndex >= 0 && (
+        <p className="max-w-lg rounded-sm bg-stone-950/80 px-4 py-2 text-center text-xs leading-relaxed text-amber-100 backdrop-blur-sm">
+          {aloud.sentences[aloud.spokenIndex]}
         </p>
+      )}
 
-        {ruledOut && (
-          <div className="mt-6 rounded-sm border border-[#8a6a3a]/50 bg-[#d8c69c]/60 p-4">
-            <p className="text-[11px] uppercase tracking-[0.25em] text-[#6b4f26]">
-              You ruled this one out
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed">{doc.correction}</p>
-          </div>
-        )}
+      {ruledOut && (
+        <div className="pointer-events-auto w-full max-w-md rounded-sm border border-[#8a6a3a]/50 bg-stone-950/85 p-4 text-center backdrop-blur-sm">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-amber-200/60">
+            You ruled this one out
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed text-stone-200">{doc.correction}</p>
+        </div>
+      )}
 
-        <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#8a6a3a]/40 pt-5">
-          <div className="flex flex-col items-start gap-1">
+      <div className="pointer-events-auto flex w-full max-w-md flex-wrap items-center justify-between gap-3 rounded-md border border-[#7a5c30]/50 bg-stone-950/85 p-4 backdrop-blur-sm">
+        <div className="flex flex-col items-start gap-1">
+          <button
+            onClick={aloud.playing ? aloud.stop : aloud.start}
+            disabled={aloud.status === 'loading'}
+            className="rounded-sm border border-amber-200/40 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-amber-100 transition hover:bg-amber-200/10 disabled:opacity-50"
+          >
+            {aloud.playing ? '■ Stop reading' : aloud.status === 'loading' ? 'Reading…' : '▶ Read aloud'}
+          </button>
+          {aloud.status === 'unavailable' && (
+            <span className="text-[10px] text-stone-400">voice unavailable</span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={leave}
+            className="rounded-sm border border-amber-200/40 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-amber-100 transition hover:bg-amber-200/10"
+          >
+            Put it back
+          </button>
+          {!ruledOut && (
             <button
-              onClick={aloud.playing ? aloud.stop : aloud.start}
-              disabled={aloud.status === 'loading'}
-              className="rounded-sm border border-[#7a5c30]/70 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-[#4a3a20] transition hover:bg-[#7a5c30]/15 disabled:opacity-50"
+              onClick={() => {
+                aloud.stop();
+                commit(docId);
+              }}
+              className="rounded-sm border border-amber-200/50 bg-amber-200/15 px-5 py-2 text-[11px] uppercase tracking-[0.2em] text-amber-100 transition hover:bg-amber-200/25"
             >
-              {aloud.playing ? '■ Stop reading' : aloud.status === 'loading' ? 'Reading…' : '▶ Read aloud'}
+              This is the real one
             </button>
-            {aloud.status === 'unavailable' && (
-              <span className="text-[10px] text-[#6b5a3c]">voice unavailable</span>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={leave}
-              className="rounded-sm border border-[#7a5c30]/70 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-[#4a3a20] transition hover:bg-[#7a5c30]/15"
-            >
-              Put it back
-            </button>
-            {!ruledOut && (
-              <button
-                onClick={() => {
-                  aloud.stop();
-                  commit(docId);
-                }}
-                className="rounded-sm border border-[#5c4520] bg-[#5c4520] px-5 py-2 text-[11px] uppercase tracking-[0.2em] text-[#f3e7cb] transition hover:bg-[#6d5228]"
-              >
-                This is the real one
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </motion.div>

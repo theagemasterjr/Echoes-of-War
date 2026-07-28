@@ -41,6 +41,11 @@ export async function POST(req: NextRequest) {
 
   try {
     if (body.intro) {
+      // A scripted greeting on the tree costs nothing: no text call, and its
+      // unchanging wording means the voice line caches after one synthesis.
+      if (tree.intro) {
+        return NextResponse.json({ ...base, reply: tree.intro });
+      }
       // The greeting is the same every visit — generate it once ever and
       // reuse it (saves both the text call and, downstream, its voice call).
       // Keyed on the character's own prompt, so the moment a founder edits the

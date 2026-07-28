@@ -32,8 +32,9 @@ const HOLD_MS = 2000;
 const FADE_MS = 900;
 /** A caption has said its piece after this long. */
 const CAPTION_MS = 7000;
-/** A phase banner holds this long, then hands the screen back to the board. */
-const BANNER_MS = 4500;
+/** A phase banner holds this long, then hands the screen back to the board.
+ *  Long enough to read the extra how-to-play sentence on the first banner. */
+const BANNER_MS = 6000;
 /** So does one of Nikolai's corrections, if the player leaves it alone. */
 const SAID_MS = 14000;
 
