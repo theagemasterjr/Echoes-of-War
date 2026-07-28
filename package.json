@@ -8,6 +8,7 @@
     "start": "next start",
     "build:ch1-character": "node scripts/build-ch1-character.mjs",
     "build:ch5-character": "node scripts/build-ch5-character.mjs",
+    "build:ch5-pieces": "node scripts/build-ch5-pieces.mjs",
     "build:briefs": "node scripts/build-brief-audio.mjs",
     "set:backdrop": "node scripts/set-backdrop.mjs"
   },

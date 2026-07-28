@@ -52,9 +52,6 @@ export const CHAPTERS: ChapterMeta[] = [
      * satchel on the lower Volga, north-west of the Caspian. Every marker here
      * is eyeballed to within a degree or two — worth a look, not a re-survey. */
     markerPosition: [1.15, 0, -1.23], markerAssetId: 'ch4.marker', characterAssetId: 'ch4.character',
-    /* the film is not made yet: until the file exists the intro beat holds on
-     * the styled placeholder frame and its CONTINUE goes on to the brief.
-     * Dropping ch4-intro.mp4 in needs no code change at all. */
     introVideo: '/video/ch4-intro.mp4',
     conversationBackdrop: '/img/ch4-ruins.jpg',
     /* Looking down on the whole map (about 52°, the paper filling the frame with
@@ -66,9 +63,21 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch5', index: 5, title: 'The Road Back', subtitle: 'D-Day and the liberation of Europe',
     dates: '1944', location: 'Normandy, France',
-    characterName: 'Placeholder: Allied medical worker', characterRole: 'Field medical worker',
-    markerPosition: [-0.23, 0, -1.32], markerAssetId: 'ch5.marker', characterAssetId: 'ch5.character',
+    characterName: 'Sister Grace Ellery', characterRole: 'Nursing sister, field surgical unit',
+    /* recalibrated to the current map texture (the old [-0.23, 0, -1.32] was
+     * from the pre-retexture survey): interpolated from the three known-good
+     * markers (ch1 Warsaw, ch3 Pearl Harbor, ch4 Stalingrad), which puts the
+     * helmet on the Normandy coast at ~49.4N 0.9W — and comfortably clear of
+     * ch2's Kent marker to the north-west. */
+    markerPosition: [-0.13, 0, -1.27], markerAssetId: 'ch5.marker', characterAssetId: 'ch5.character',
+    introVideo: '/video/ch5-intro.mp4',
     conversationBackdrop: '/img/ch5-studio.jpg',
+    /* Looking down on the Channel map (the paper filling the frame with the two
+     * rows of pieces along the near edge inside the bottom of it) — the
+     * "Show it or hide it" table. Setting this is also what pins the camera:
+     * SceneRouter places it absolutely every frame and ignores the pointer, so
+     * the view never drifts, orbits or answers the mouse while the player drags. */
+    minigameCamera: { pos: [0, 7.4, 5.3], target: [0, 0, -0.95] },
   },
   {
     id: 'ch6', index: 6, title: 'The Cost of Victory', subtitle: 'The Pacific war ends',
