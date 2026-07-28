@@ -1,23 +1,51 @@
 /**
  * Bakes the founder-exported Ch1 journalist model into a web-ready GLB.
  *
+ * Rebuilt July 2026 onto a Mixamo rig (`mixamorig:*` bones). The founder's
+ * previous take was on a Character Creator rig (`CC_Base_*` bones, named
+ * materials like `Std_Skin_Head`); re-animating through Mixamo re-rigged the
+ * character AND destroyed every mesh/material name (generic `objN` /
+ * `matNmat`). So this build does two things the other chapters' scripts
+ * don't have to:
+ *   1. reconcile the idle/talking root-frame convention (same shape of fix
+ *      as ch2/ch3 — see step 2a below);
+ *   2. re-attach Character-Creator textures to anonymous Mixamo primitives by
+ *      matching each primitive's triangle count / UV bbox / position bbox
+ *      against the OLD ch1-journalist.glb (which still has correct material
+ *      names) and inheriting its name. See MESH_MATERIAL_MAP below — the
+ *      match was exact (triangle counts agree to within a handful of tris,
+ *      almost certainly from a different weld pass) for all 39 primitives,
+ *      so the map is hardcoded rather than computed at build time; the
+ *      per-primitive comparison that produced it is recorded next to each
+ *      entry.
+ *
  * Input (defaults; override with --idle / --talking / --textures):
- *   - TWO GLBs of the SAME character exported from the animation tool, each
- *     carrying one clip: an idle loop and a talking loop. They share geometry,
- *     skeleton and node names; only the clip differs. Neither has textures,
- *     and both drag along ~1800 unused morph targets (most of the file size).
- *   - Character Creator ".fbm" folder with the texture files (…_Diffuse/
- *     _Normal/_Opacity). Material names in the GLB match the file stems.
+ *   - IDLE: an FBX2glTF conversion of the Mixamo "Sitting Idle" take —
+ *     mixamorig:* bones (colons kept), meshes obj1..obj18, materials
+ *     mat0mat..mat38mat with no textures. Its scene root ("RootNode") is
+ *     identity — no baked rotation/scale.
+ *   - TALKING: an imagetostl.com conversion of the Mixamo "Sitting Talking"
+ *     take on the SAME rig, but its whole skeleton is authored in
+ *     centimetres and its scene root ("Armature") carries a +90 degrees-
+ *     about-X rotation and a 0.01 uniform scale (a baked Z-up -> Y-up + cm->m
+ *     conversion that the idle's converter instead flattened into identity
+ *     and metre units). Every bone's translation channel needs the 0.01
+ *     unscaled once copied onto idle's metre-scale hierarchy, and
+ *     mixamorig:Hips — the only bone parented directly to Armature — also
+ *     needs the root rotation applied on top (see step 2a).
+ *   - TEXTURES: Character Creator ".fbm" folder (…_Diffuse/_Normal/_Opacity).
+ *     Material names assigned below match the file stems.
  *
  * Output:
  *   - public/models/ch1-journalist.glb   (one model, both clips, textures
  *     baked, morphs stripped, welded, meshopt)
  *
- * The conversation backdrop is NOT this script's job — `scripts/set-backdrop.mjs`
- * owns that file. (It used to be built here too, which quietly overwrote a
- * newer backdrop every time the model was rebuilt.)
+ * Before writing the output this script copies the CURRENT
+ * public/models/ch1-journalist.glb (the CC-rig build, and the only
+ * reference for the old material names) to
+ * C:/Users/sagar/Music/new talking anims ch1-3/ch1-journalist.CCrig-backup.glb
  *
- * Run:  node scripts/build-ch1-character.mjs
+ * Run:  node --max-old-space-size=8192 scripts/build-ch1-character.mjs
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,30 +53,36 @@ import { NodeIO, TextureInfo } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
 import { dedup, weld, resample, prune, meshopt } from '@gltf-transform/functions';
 import { bakeRestPoseFromClip } from './lib/rest-pose.mjs';
-import { closeLoop } from './lib/clip-fixes.mjs';
+import { yawClip, closeLoop } from './lib/clip-fixes.mjs';
 import { MeshoptEncoder } from 'meshoptimizer';
+import { Quaternion, Vector3 } from 'three';
 import sharp from 'sharp';
 
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
   return i > -1 ? process.argv[i + 1] : dflt;
 };
-const HOME = process.env.HOME;
-const ANIMDIR = `${HOME}/Downloads/ImageToStl.com_86de2b4aab53434dbd2f751bcdebd76a`;
-const SRC_IDLE = arg('idle', `${ANIMDIR}/Sitting Idle.glb`);
-const SRC_TALK = arg('talking', `${ANIMDIR}/Talking (1).glb`);
-const TEXDIR = arg('textures', `${HOME}/Downloads/Realisticgirl_Fbx/Business girl.fbm (use this)`);
+const SRCDIR = 'C:/Users/sagar/Music/new talking anims ch1-3/ch1 take 2';
+const SRC_IDLE = arg('idle', `${SRCDIR}/Sitting Idle (3).glb`);
+const SRC_TALK = arg('talking', `${SRCDIR}/Sitting Talking (1).glb`);
+const TEXDIR = arg('textures', 'C:/Users/sagar/Downloads/Realisticgirl_Fbx/Business girl.fbm');
 const OUT_GLB = 'public/models/ch1-journalist.glb';
+const CCRIG_BACKUP = 'C:/Users/sagar/Music/new talking anims ch1-3/ch1-journalist.CCrig-backup.glb';
 /** clip names the asset registry looks for (ASSETS['ch1.character'].clips) */
 const IDLE_CLIP = 'Idle_Loop';
 const TALK_CLIP = 'Idle_Talking_Loop';
+
+/* This talking take was animated with the head turned well off to her own
+ * right: `node scripts/inspect-pose.mjs` (after the root-frame fix below —
+ * that's what makes these numbers meaningful) measured idle gaze yaw at
+ * +1.7° and this clip at -39.3° (idle - talking ~= 41). Set to 0 for a
+ * talking take that already faces the same way as the idle. */
+const TALK_YAW_FIX = 41;
+const YAW_BONES = ['mixamorig:Neck', 'mixamorig:Head'];
 /* Seconds of the talking clip's tail spent easing back onto its first frame,
- * so the loop restarts without a visible snap (see scripts/lib/clip-fixes.mjs
- * — same fix ch4's talking take needed). `node scripts/inspect-glb.mjs` on the
- * last built ch1-journalist.glb showed this take's own seam was already under
- * 1°, so this is mostly a guard against a future re-export landing rougher;
- * `0` would skip it entirely. */
-const TALK_LOOP_BLEND = 0.5;
+ * so the loop restarts without a visible snap (see scripts/lib/clip-fixes.mjs). */
+const TALK_LOOP_BLEND = 0.6;
+
 /** the one real clip in each source file; everything else is a 1-frame stub */
 const isPoseClip = (a) => a.listChannels().length > 1 && clipDuration(a) > 0.5;
 const clipDuration = (a) =>
@@ -59,12 +93,10 @@ const clipDuration = (a) =>
  * size = max diffuse edge; normal = max normal-map edge (omit = drop);
  * alpha: 'mask' | 'blend' uses the _Opacity map (or the diffuse PNG's own
  * alpha); 'invisible' renders nothing (tearline/occlusion shells would
- * otherwise draw as black film over the eyes).
+ * otherwise draw as black film over the eyes). Unchanged from the CC-rig
+ * build — only the mesh/primitive -> material NAME assignment below is new.
  * ------------------------------------------------------------------ */
 const RECIPES = [
-  // head UVs come out the right way up from this exporter (the earlier one
-  // V-flipped them and needed `flipV: true` here — check the mouth if you
-  // re-export: a flip mismatch smears the lips down onto the chin)
   { m: 'Std_Skin_Head', size: 2048, normal: 1024, rough: 0.55 },
   { m: 'Std_Skin_Body', size: 1024, rough: 0.55 },
   { m: 'Std_Skin_Arm', size: 1024, rough: 0.55 },
@@ -94,6 +126,55 @@ const RECIPES = [
 ];
 const recipeFor = (name) =>
   RECIPES.filter((r) => name.startsWith(r.m)).sort((a, b) => b.m.length - a.m.length)[0];
+
+/**
+ * New-mesh (obj1..obj18) primitive index -> old-model material stem, in
+ * primitive order. Derived by comparing every primitive's triangle count, UV
+ * bbox and normalized position bbox against the CCrig-backup.glb reference
+ * (the old build's primitives, which still hold correct material names) —
+ * dump each file's per-primitive {mesh, tris, posBBox, uvBBox} with
+ * gltf-transform's NodeIO/Accessor APIs (getElement, not getArray — these
+ * files' accessors are int-quantized) to reproduce the comparison. Confidence
+ * notes inline; every entry matched on an exact or near-exact (±a few tris,
+ * from a different weld pass) triangle count AND a consistent position bbox.
+ */
+const MESH_MATERIAL_MAP = {
+  // 3 barrette clusters (obj1, obj7, obj16) are geometrically identical in
+  // triangle count (816 / 10320 / 1968 = Flower / Pearl / Butterfly) to
+  // THREE separate old meshes (Jewelry_Barrette_02.004, _02_0.001, _02_1.001)
+  // that differ only in position. Which specific old mesh each corresponds
+  // to doesn't matter for texturing — same three materials either way.
+  obj1: ['Flower', 'Pearl', 'Butterfly'], // exact tri match (816/10320/1968)
+  obj2: ['Hair_Transparency'], // exact tri match (32096) -> Straight_long_low
+  obj3: ['Pearl', 'Flower'], // exact tri match (640/204) -> Jewelry_Barrette_01
+  obj4: ['Business_Suit'], // exact tri match (4431)
+  obj5: ['Std_Tongue'], // exact tri match (592)
+  // CC_Base_Eye: 4 prims, all 320 tris, two near-duplicate shells per side
+  // (sclera+cornea style double geometry) — the OLD reference model names
+  // BOTH shells per side the same ("Std_Eye_R.002" x2, "Std_Eye_L.002" x2,
+  // confirmed dedup'd from an originally separate Std_Cornea in the RECIPES
+  // table, which is now otherwise unused for ch1). Side picked by position:
+  // lower x (0.47-0.49 normalized) = R, higher x (0.51-0.53) = L, matching
+  // the old model's own low-x=R/high-x=L convention.
+  obj6: ['Std_Eye_R', 'Std_Eye_R', 'Std_Eye_L', 'Std_Eye_L'], // exact tri match (320 x4)
+  obj7: ['Flower', 'Pearl', 'Butterfly'], // exact tri match (816/10320/1968)
+  obj8: ['Close_collar_short_sleeves_shirt'], // exact tri match (4513)
+  obj9: ['Female_Angled_Transparency', 'Female_Angled_Base_Transparency'], // exact tri match (912/168)
+  obj10: ['Std_Upper_Teeth', 'Std_Lower_Teeth'], // exact tri match (2362/2480)
+  // CC_Base_EyeOcclusion: 144 tris/prim in both old and new -> invisible shell
+  obj11: ['Std_Eye_Occlusion_R', 'Std_Eye_Occlusion_L'],
+  obj12: ['Hair_Transparency', 'Scalp_Transparency'], // exact/near tri match (17187~17188 / 1284) -> Twist_Half_Up
+  obj13: ['High_Heels'], // exact tri match (1752)
+  // CC_Base_TearLine: 136 tris/prim in both old and new -> invisible shell
+  // (distinct from EyeOcclusion's 144 tris — no ambiguity between the two)
+  obj14: ['Std_Tearline_R', 'Std_Tearline_L'],
+  obj15: ['Hair_T_Transparency', 'Hair_B_Transparency'], // exact tri match (2204/1202) -> Chunky_Highlights_Bangs
+  obj16: ['Flower', 'Pearl', 'Butterfly'], // exact tri match (816/10320/1968)
+  obj17: ['Pencil_skirt'], // exact tri match (4146)
+  // CC_Base_Body: 6 prims, same order in both old and new (near-exact tri
+  // matches: 8316/3892/8366~8368/4518~4528/1784~1788/1200)
+  obj18: ['Std_Skin_Head', 'Std_Skin_Body', 'Std_Skin_Arm', 'Std_Skin_Leg', 'Std_Nails', 'Std_Eyelash'],
+};
 
 /** "Hair_Transparency.001" -> { stem: "Hair_Transparency", suffix: "_0001" } */
 function parseName(matName) {
@@ -127,9 +208,11 @@ async function buildTexture(doc, key, build) {
 }
 
 /**
- * Rebuilds `srcAnim` inside `doc`, re-pointing every channel at the same-named
- * node there. The two exports share one rig, so matching on name is exact —
- * we assert full coverage rather than trusting it.
+ * Rebuilds `srcAnim` (living in a possibly different document) inside `doc`,
+ * re-pointing every channel at the same-named node there. Idle and talking
+ * share one rig with identical node names (mixamorig:* bones AND obj1..obj18
+ * mesh nodes match by name on both sides, colons and all) — no normalization
+ * needed, but coverage is still asserted rather than trusted.
  */
 function copyAnimationInto(doc, srcAnim, name) {
   const byName = new Map(doc.getRoot().listNodes().map((n) => [n.getName(), n]));
@@ -140,7 +223,6 @@ function copyAnimationInto(doc, srcAnim, name) {
   const missing = new Set();
 
   for (const ch of srcAnim.listChannels()) {
-    // morph-target tracks are dead weight here — the targets get stripped below
     if (ch.getTargetPath() === 'weights') continue;
     const target = byName.get(ch.getTargetNode()?.getName());
     if (!target) {
@@ -181,37 +263,116 @@ async function main() {
     .registerExtensions(ALL_EXTENSIONS)
     .registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
 
+  /* -- 0. back up the CC-rig build: the only material-name reference and
+   *      rollback, before this script ever touches the output path. Only
+   *      ever done ONCE — this script's own output must never overwrite the
+   *      backup on a second run. ------------------------------------------ */
+  if (!fs.existsSync(CCRIG_BACKUP) && fs.existsSync(OUT_GLB)) {
+    fs.mkdirSync(path.dirname(CCRIG_BACKUP), { recursive: true });
+    fs.copyFileSync(OUT_GLB, CCRIG_BACKUP);
+    console.log(`backed up current ${OUT_GLB} -> ${CCRIG_BACKUP}`);
+  }
+
   const doc = await io.read(SRC_IDLE);
   const root = doc.getRoot();
   doc.createExtension(EXTTextureWebP).setRequired(true);
 
   /* -- 1. one model, both clips --------------------------------------- */
-  // The idle export is the base; the talking export contributes only its clip.
   const talkDoc = await io.read(SRC_TALK);
   const srcIdle = root.listAnimations().find(isPoseClip);
   const srcTalk = talkDoc.getRoot().listAnimations().find(isPoseClip);
   if (!srcIdle) throw new Error(`no animated clip in ${SRC_IDLE}`);
   if (!srcTalk) throw new Error(`no animated clip in ${SRC_TALK}`);
   for (const a of root.listAnimations()) if (a !== srcIdle) a.dispose(); // 1-frame stubs
-  srcIdle.setName(IDLE_CLIP); // already in this document — just rename it
+  srcIdle.setName(IDLE_CLIP);
   for (const ch of srcIdle.listChannels()) if (ch.getTargetPath() === 'weights') ch.dispose();
   console.log(`clip "${IDLE_CLIP}": ${srcIdle.listChannels().length} channels, ${clipDuration(srcIdle).toFixed(2)}s`);
   const talkAnim = copyAnimationInto(doc, srcTalk, TALK_CLIP);
+
+  /* -- 2a. this talking export's whole rig sits under an explicit
+   *      "Armature" root node that idle's export doesn't have: idle's
+   *      converter baked that same correction into every bone instead of
+   *      leaving it as a root transform, so its scene root is identity.
+   *      Two distinct corrections fall out of that, confirmed against
+   *      idle's own rest-pose values (not assumed):
+   *
+   *      (a) UNITS — this whole rig is authored in centimetres (Armature's
+   *      0.01 scale converts it to metres only inside its own document).
+   *      Mixamo bakes a translation key on every bone every frame, and
+   *      idle's are meter-scale (e.g. rest mixamorig:Spine translation.y =
+   *      0.0860); talking's raw Spine translation.y = 8.6041 — exactly
+   *      100x. Left uncorrected, copying these onto idle's meter-scale
+   *      hierarchy compounds a 100x-too-long bone at every level of the
+   *      chain (measured: the talking clip's head landed 46m in the air).
+   *      So every translation channel's VALUES are scaled by Armature's
+   *      0.01, not just Hips's.
+   *
+   *      (b) ROOT ORIENTATION — mixamorig:Hips is the only bone parented
+   *      directly to Armature, so it alone also inherits Armature's
+   *      rotation once retargeted onto idle's un-rotated hierarchy; every
+   *      other bone's channel is relative to its own parent BONE, so (a) is
+   *      the only fix it needs. Confirmed: idle's rest Hips translation is
+   *      (0.0000165, 1.09346, -0.02837); talking's raw Hips local
+   *      (0.00165, -2.837, -109.346), scaled by 0.01 and rotated by
+   *      Armature's rotation, lands on (0.0000165, 1.09346, -0.02837) — an
+   *      exact match. ------------------------------------------------- */
+  const armatureNode = talkDoc.getRoot().listScenes()[0].listChildren()[0];
+  const armRot = new Quaternion(...armatureNode.getRotation());
+  const armScale = armatureNode.getScale()[0];
+  if (armScale !== 1) {
+    let scaled = 0;
+    for (const ch of talkAnim.listChannels()) {
+      if (ch.getTargetPath() !== 'translation') continue;
+      const out = ch.getSampler().getOutput();
+      const el = [0, 0, 0];
+      for (let i = 0; i < out.getCount(); i++) {
+        out.getElement(i, el);
+        out.setElement(i, el.map((v) => v * armScale));
+      }
+      scaled++;
+    }
+    console.log(`talking clip: scaled ${scaled} translation channel(s) by ${armScale} (rig authored in cm)`);
+  }
+  if (armRot.w !== 1 || armRot.x || armRot.y || armRot.z) {
+    const hips = root.listNodes().find((n) => n.getName() === 'mixamorig:Hips');
+    let fixed = 0;
+    for (const ch of talkAnim.listChannels()) {
+      if (ch.getTargetNode() !== hips) continue;
+      const p = ch.getTargetPath();
+      if (p !== 'rotation' && p !== 'translation') continue;
+      const out = ch.getSampler().getOutput();
+      const el = p === 'rotation' ? [0, 0, 0, 1] : [0, 0, 0];
+      for (let i = 0; i < out.getCount(); i++) {
+        out.getElement(i, el);
+        if (p === 'translation') {
+          const v = new Vector3(...el).applyQuaternion(armRot); // already scaled above
+          out.setElement(i, [v.x, v.y, v.z]);
+        } else {
+          const q = armRot.clone().multiply(new Quaternion(...el));
+          out.setElement(i, [q.x, q.y, q.z, q.w]);
+        }
+      }
+      fixed++;
+    }
+    console.log(
+      `Hips: applied talking export's root axis rotation (${armRot.x.toFixed(3)},${armRot.y.toFixed(3)},${armRot.z.toFixed(3)},${armRot.w.toFixed(3)}) across ${fixed} channel(s) (idle's root is identity, this one wasn't)`,
+    );
+  }
+
+  if (TALK_YAW_FIX) yawClip(talkAnim, doc, YAW_BONES, TALK_YAW_FIX);
   if (TALK_LOOP_BLEND) closeLoop(talkAnim, TALK_LOOP_BLEND);
 
-  /* -- 1b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
+  /* -- 2b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
   bakeRestPoseFromClip(srcIdle);
 
-  /* -- 1c. report the seated head position, for the registry's scale/offset */
-  const headNode = root.listNodes().find((n) => n.getName() === 'CC_Base_Head');
+  /* -- 2c. report the seated head position, for the registry's scale/offset */
+  const headNode = root.listNodes().find((n) => n.getName() === 'mixamorig:Head');
   if (headNode) {
     const m = headNode.getWorldMatrix();
     console.log(`seated head bone (rig units): x ${m[12].toFixed(3)}, y ${m[13].toFixed(3)}, z ${m[14].toFixed(3)}`);
   }
 
-  /* -- 2. drop morph targets and unused vertex attributes -------------- */
-  // ~1800 shape keys ride along from Character Creator, driven by nothing but
-  // 1-frame stub clips — they are the bulk of the 53 MB source files.
+  /* -- 3. drop morph targets and unused vertex attributes -------------- */
   let morphs = 0;
   for (const mesh of root.listMeshes()) {
     for (const prim of mesh.listPrimitives()) {
@@ -238,8 +399,25 @@ async function main() {
         }
   if (dropped.size) console.log('dropped attributes:', [...dropped].join(', '));
 
-  /* -- 3. bake textures per material ---------------------------------- */
-  // the exporter writes a KHR_materials_specular block we fully override below
+  /* -- 4. rename anonymous materials to their matched old-model names -- */
+  console.log('\n-- material mapping (new mesh/prim -> old name) --');
+  const unmapped = [];
+  for (const mesh of root.listMeshes()) {
+    const names = MESH_MATERIAL_MAP[mesh.getName()];
+    mesh.listPrimitives().forEach((prim, i) => {
+      const mat = prim.getMaterial();
+      const newName = names?.[i];
+      if (!newName) {
+        unmapped.push(`${mesh.getName()}[${i}] (mat "${mat?.getName()}")`);
+        return;
+      }
+      console.log(`  ${mesh.getName()}[${i}] "${mat.getName()}" -> "${newName}"`);
+      mat.setName(newName);
+    });
+  }
+  if (unmapped.length) throw new Error(`unmapped primitives: ${unmapped.join(', ')}`);
+
+  /* -- 5. bake textures per material ---------------------------------- */
   for (const ext of root.listExtensionsUsed())
     if (ext.extensionName === 'KHR_materials_specular') ext.dispose();
   for (const mat of root.listMaterials()) {
@@ -264,16 +442,10 @@ async function main() {
     const useOpacity = r.alpha && opacity && !(await isUniformWhite(opacity));
     const diffuseHasAlpha = (await sharp(diffuse).metadata()).hasAlpha === true;
 
-    // alpha = the diffuse PNG's own alpha × the _Opacity map (either may be
-    // missing). Replacing one with the other exposes the PNG's undefined RGB
-    // under transparent pixels (usually black) — e.g. brows became black slabs.
     const hasAlpha = !!r.alpha && (useOpacity || diffuseHasAlpha);
 
     const key = `${path.basename(diffuse)}|${useOpacity ? path.basename(opacity) : 'noop'}|${r.size}`;
     const tex = await buildTexture(doc, key, async () => {
-      // sharp applies ops in libvips' fixed internal order, not call order —
-      // removeAlpha would strip a freshly joined channel. So: one pipeline per
-      // stage, buffers in between.
       let stage1 = sharp(diffuse)
         .resize(r.size, r.size, { fit: 'inside', withoutEnlargement: true })
         .removeAlpha();
@@ -330,7 +502,7 @@ async function main() {
     );
   }
 
-  /* -- 4. shrink: weld duplicated verts, resample anims, compress ----- */
+  /* -- 6. shrink: weld duplicated verts, resample anims, compress ----- */
   const vertsBefore = root
     .listMeshes()
     .flatMap((m) => m.listPrimitives())

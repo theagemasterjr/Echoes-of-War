@@ -61,10 +61,13 @@ for (const file of process.argv.slice(2)) {
     if (o.isSkinnedMesh) skins.push(o);
   });
   const bone = (...names) => names.map((n) => inner.getObjectByName(n)).find(Boolean);
-  // ch1 is a Character Creator rig, the rest are Mixamo — ':' is stripped on load
-  const head = bone('mixamorigHead', 'CC_Base_Head');
-  const hips = bone('mixamorigHips', 'CC_Base_Hips');
-  const spine = bone('mixamorigSpine2', 'CC_Base_Spine02', 'CC_Base_Spine01');
+  // ch1 was rebuilt July 2026 onto a plain Mixamo rig (was Character Creator,
+  // "CC_Base_*", kept here as a fallback for the old backed-up build); ch2 is
+  // Mixamo but keeps its Maya archetype namespace instead of "mixamorig", the
+  // rest are plain Mixamo — ':' is stripped on load either way
+  const head = bone('mixamorigHead', 'CC_Base_Head', 'ww2_ger_test_archetypeHead');
+  const hips = bone('mixamorigHips', 'CC_Base_Hips', 'ww2_ger_test_archetypeHips');
+  const spine = bone('mixamorigSpine2', 'CC_Base_Spine02', 'CC_Base_Spine01', 'ww2_ger_test_archetypeSpine2');
   const bones = skins[0]?.skeleton.bones ?? [];
 
   for (const clip of gltf.animations) {
