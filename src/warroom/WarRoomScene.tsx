@@ -1,6 +1,7 @@
 'use client';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Html, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
 import { CHAPTERS } from '@/chapters/registry';
 import { useAppStore } from '@/state/appStore';
@@ -32,6 +33,7 @@ export function WarRoomScene() {
     <group>
       <fog attach="fog" args={['#0c0a08', 16, 34]} />
       <color attach="background" args={['#0c0a08']} />
+      <LoadingVeil />
 
       <ambientLight intensity={0.35} color="#ffe0b3" />
       {/* the lamp is the key light — a spotlight aimed at the map center (single
@@ -63,6 +65,71 @@ export function WarRoomScene() {
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const LOAD_VEIL_FADE_MS = 650;
+/** Hard ceiling in case loading never actually settles (a stalled fetch,
+ *  say) — the map must never stay hidden behind the veil forever. */
+const LOAD_VEIL_MAX_WAIT_MS = 4000;
+
+/** Loading veil for the map's first paint: the table/map GLBs (and whichever
+ *  chapter marker is active) load asynchronously and used to pop straight in
+ *  the instant each one was ready. This tracks three.js's shared loading
+ *  manager (what useGLTF reports through via drei's useProgress) and fades a
+ *  DOM veil out once everything queued at mount has resolved. Only the first
+ *  settle counts — once faded it's gone for good, so an unrelated background
+ *  load later (e.g. hovering a marker prefetches its intro video) never
+ *  brings the veil back over an already-visible map. */
+function LoadingVeil() {
+  const [fading, setFading] = useState(false);
+  const [gone, setGone] = useState(false);
+  const settled = useRef(false);
+
+  // The useProgress store updates synchronously from the loaders — in the
+  // middle of rendering whichever component kicked off the load — so the veil
+  // must not subscribe via the hook (that's a setState during another
+  // component's render). Instead each store change just (re)arms a short
+  // timer, and the "is everything loaded?" decision is read fresh once the
+  // load queue has been quiet for a beat.
+  useEffect(() => {
+    const settle = () => {
+      if (settled.current) return;
+      settled.current = true;
+      setFading(true);
+      setTimeout(() => setGone(true), LOAD_VEIL_FADE_MS);
+    };
+    // hard ceiling, set once — never postponed by later loading activity
+    const hardStop = setTimeout(settle, LOAD_VEIL_MAX_WAIT_MS);
+    let quiet: ReturnType<typeof setTimeout> | null = null;
+    const poke = () => {
+      if (quiet) clearTimeout(quiet);
+      quiet = setTimeout(() => {
+        if (!useProgress.getState().active) settle();
+      }, 80);
+    };
+    const unsub = useProgress.subscribe(poke);
+    poke(); // everything may already be cached, with no loads ever starting
+    return () => {
+      clearTimeout(hardStop);
+      if (quiet) clearTimeout(quiet);
+      unsub();
+    };
+  }, []);
+
+  if (gone) return null;
+  return (
+    <Html fullscreen style={{ pointerEvents: 'none', zIndex: 30 }}>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: '#0c0a08',
+          opacity: fading ? 0 : 1,
+          transition: `opacity ${LOAD_VEIL_FADE_MS}ms ease-out`,
+        }}
+      />
+    </Html>
+  );
+}
+
 /** The lamp bulb wavers like a real 1940s incandescent — layered slow sines
  *  with an occasional deeper dip. Intensity only: moving the light would make
  *  the shadows swim. */
@@ -86,34 +153,65 @@ function FlickeringLamp() {
 }
 
 const MOTE_COUNT = 90;
-/** Faint dust drifting through the lamp beam over the map. */
+/** How far a mote meanders sideways from its anchor. Anchors are spawned
+ *  inset from the table edges by at least this much, so the drift can never
+ *  carry a mote off the table area. */
+const MOTE_WANDER = 0.28;
+const MOTE_Y_MIN = 0.15;
+const MOTE_Y_MAX = 3.6;
+/** Faint dust drifting in the lamp beam over the map — each mote meanders
+ *  slowly sideways and sinks like real dust, then recycles to the top of the
+ *  beam. Every coordinate is a bounded function of elapsed time around a
+ *  fixed anchor (not an accumulated velocity), so motes keep moving forever
+ *  but can never wander off the table area. */
 function DustMotes() {
   const points = useRef<THREE.Points>(null);
   const still = useMemo(prefersReducedMotion, []);
-  const { positions, seeds } = useMemo(() => {
+  const { positions, anchors, seeds } = useMemo(() => {
     const positions = new Float32Array(MOTE_COUNT * 3);
-    const seeds = new Float32Array(MOTE_COUNT * 2);
+    const anchors = new Float32Array(MOTE_COUNT * 3);
+    const seeds = new Float32Array(MOTE_COUNT * 3);
     for (let i = 0; i < MOTE_COUNT; i++) {
-      positions[i * 3] = THREE.MathUtils.randFloat(-3.5, 4.5);
-      positions[i * 3 + 1] = THREE.MathUtils.randFloat(0.15, 3.6);
-      positions[i * 3 + 2] = THREE.MathUtils.randFloat(-2.6, 3);
-      seeds[i * 2] = Math.random() * Math.PI * 2; // sway phase
-      seeds[i * 2 + 1] = THREE.MathUtils.randFloat(0.015, 0.05); // fall speed
+      // table area, inset by the wander radius so drift stays over the table
+      const x = THREE.MathUtils.randFloat(-3.5 + MOTE_WANDER, 4.5 - MOTE_WANDER);
+      const y = THREE.MathUtils.randFloat(MOTE_Y_MIN, MOTE_Y_MAX);
+      const z = THREE.MathUtils.randFloat(-2.6 + MOTE_WANDER, 3 - MOTE_WANDER);
+      anchors[i * 3] = x;
+      anchors[i * 3 + 1] = y;
+      anchors[i * 3 + 2] = z;
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+      seeds[i * 3] = Math.random() * Math.PI * 2; // drift phase
+      seeds[i * 3 + 1] = THREE.MathUtils.randFloat(0.15, 0.4); // drift speed
+      seeds[i * 3 + 2] = THREE.MathUtils.randFloat(0.04, 0.1); // sink speed
     }
-    return { positions, seeds };
+    return { positions, anchors, seeds };
   }, []);
 
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock }) => {
     if (!points.current || still) return;
     const t = clock.elapsedTime;
     const pos = points.current.geometry.attributes.position;
     const arr = pos.array as Float32Array;
+    const amp = MOTE_WANDER / 1.6; // two summed sines peak at 1.6x
+    const range = MOTE_Y_MAX - MOTE_Y_MIN;
     for (let i = 0; i < MOTE_COUNT; i++) {
-      const phase = seeds[i * 2];
-      arr[i * 3] += Math.sin(t * 0.3 + phase) * 0.012 * delta * 60;
-      arr[i * 3 + 1] -= seeds[i * 2 + 1] * delta;
-      arr[i * 3 + 2] += Math.cos(t * 0.23 + phase) * 0.009 * delta * 60;
-      if (arr[i * 3 + 1] < 0.1) arr[i * 3 + 1] = 3.6; // recycle settled dust
+      const phase = seeds[i * 3];
+      const speed = seeds[i * 3 + 1];
+      const sink = seeds[i * 3 + 2];
+      // meandering sideways drift: two incommensurate sines so the path
+      // wanders rather than orbits, bounded by MOTE_WANDER either way
+      arr[i * 3] =
+        anchors[i * 3] +
+        (Math.sin(t * speed + phase) + 0.6 * Math.sin(t * speed * 2.3 + phase * 3.1)) * amp;
+      arr[i * 3 + 2] =
+        anchors[i * 3 + 2] +
+        (Math.cos(t * speed * 0.9 + phase) + 0.6 * Math.cos(t * speed * 1.7 + phase * 2.2)) * amp;
+      // slow steady sink, recycling to the top of the beam
+      let y = (anchors[i * 3 + 1] - MOTE_Y_MIN - t * sink) % range;
+      if (y < 0) y += range;
+      arr[i * 3 + 1] = MOTE_Y_MIN + y;
     }
     pos.needsUpdate = true;
   });

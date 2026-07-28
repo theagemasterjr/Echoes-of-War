@@ -6,6 +6,7 @@ import { chapterMeta } from '@/chapters/registry';
 import { useConversation } from './engine';
 import { ObjectivesPanel } from '@/ui/ObjectivesPanel';
 import { voicePlayer } from '@/audio/voicePlayer';
+import { useSettingsStore } from '@/state/settingsStore';
 
 /** Cinematic dialogue: character in the 3D stage, subtitle-style text below. */
 export function ConversationUI({
@@ -17,6 +18,12 @@ export function ConversationUI({
   const meta = chapterMeta(chapterId);
   const convo = useConversation();
   const [draft, setDraft] = useState('');
+  // The subtitles setting only ever hides caption text while voice is doing
+  // the talking; with voice off, text is the only thing carrying the line, so
+  // it always shows regardless of the setting.
+  const subtitlesEnabled = useSettingsStore((s) => s.subtitlesEnabled);
+  const voiceEnabled = useSettingsStore((s) => s.voiceEnabled);
+  const showSubtitleText = subtitlesEnabled || !voiceEnabled;
   // Voice is the default way to talk — every conversation opens in voice mode
   // wherever the browser supports it (checked on mount, so the server render
   // stays deterministic). "Type instead" switches to the text box any time.
@@ -117,6 +124,7 @@ export function ConversationUI({
               text={lastCharacterLine}
               className="text-[15px] leading-relaxed text-stone-100"
               onDone={() => setLineDone(true)}
+              hidden={!showSubtitleText}
             />
           )}
           {convo.status === 'sending' && lastCharacterLine !== '' && (
@@ -320,6 +328,9 @@ function VoiceModeButton({ onOpen }: { onOpen: () => void }) {
  */
 function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () => void }) {
   const convo = useConversation();
+  const subtitlesEnabled = useSettingsStore((s) => s.subtitlesEnabled);
+  const voiceEnabled = useSettingsStore((s) => s.voiceEnabled);
+  const showSubtitleText = subtitlesEnabled || !voiceEnabled;
   const [mode, setMode] = useState<'ready' | 'listening' | 'thinking' | 'speaking'>(
     voicePlayer.speaking ? 'speaking' : 'ready',
   );
@@ -481,7 +492,8 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
         ) : mode === 'thinking' ? (
           <p className="animate-pulse text-stone-500">…</p>
         ) : (
-          lastCharacterLine && (
+          lastCharacterLine &&
+          showSubtitleText && (
             <SubtitleLine
               key={msgCount}
               text={lastCharacterLine}
@@ -551,13 +563,17 @@ function splitSentences(text: string): string[] {
  *  share of the clip proportional to its length), so the words stay locked to
  *  the voice instead of drifting off pre-computed timers. With no voice, each
  *  sentence waits for a tap, so slow readers are never rushed. Calls onDone
- *  when the last sentence is shown. */
+ *  when the last sentence is shown. `hidden` keeps the pacing effects (and
+ *  the onDone call they end in) running while rendering nothing — used when
+ *  the subtitles setting is off but voice is on, so guided questions still
+ *  unlock in step with the (unseen) line. */
 function SubtitleLine({
-  text, className, onDone,
+  text, className, onDone, hidden,
 }: {
   text: string;
   className?: string;
   onDone?: () => void;
+  hidden?: boolean;
 }) {
   const sentences = useMemo(() => splitSentences(text), [text]);
   const [i, setI] = useState(0);
@@ -636,6 +652,11 @@ function SubtitleLine({
   useEffect(() => {
     if (last) doneRef.current?.();
   }, [last]);
+
+  // `hidden` assumes the voice is carrying the line. If the voice never
+  // arrived (tapMode — no key, rate limit, network), the text is the only
+  // channel left, so it shows regardless of the subtitles setting.
+  if (hidden && !tapMode) return null;
 
   return (
     <div

@@ -311,6 +311,10 @@ function SettingsMenu() {
   const setReadingFont = useSettingsStore((s) => s.setReadingFont);
   const textSize = useSettingsStore((s) => s.textSize);
   const setTextSize = useSettingsStore((s) => s.setTextSize);
+  const voiceEnabled = useSettingsStore((s) => s.voiceEnabled);
+  const setVoiceEnabled = useSettingsStore((s) => s.setVoiceEnabled);
+  const subtitlesEnabled = useSettingsStore((s) => s.subtitlesEnabled);
+  const setSubtitlesEnabled = useSettingsStore((s) => s.setSubtitlesEnabled);
   const easyRead = readingFont === 'lexend';
 
   const resetProgress = () => {
@@ -353,6 +357,52 @@ function SettingsMenu() {
                 aria-label="Volume"
               />
             </label>
+            <div className="my-3 h-px bg-stone-800" />
+            {/* ---- voice: character speech + narration on/off (default on),
+                and the caption text that goes with it. Off skips every voice
+                fetch and playback, so testing never spends TTS tokens. ---- */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={voiceEnabled}
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className={`flex w-full items-center justify-between gap-2 rounded-sm border px-3 py-2.5 text-left text-xs transition ${
+                voiceEnabled
+                  ? 'border-amber-200/70 bg-amber-200/15 text-amber-100'
+                  : 'border-stone-600 text-stone-200 hover:bg-stone-800'
+              }`}
+            >
+              <span>Character voice</span>
+              <span
+                aria-hidden
+                className={`rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${
+                  voiceEnabled ? 'bg-amber-200/90 text-stone-950' : 'bg-stone-700 text-stone-200'
+                }`}
+              >
+                {voiceEnabled ? 'On' : 'Off'}
+              </span>
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={subtitlesEnabled}
+              onClick={() => setSubtitlesEnabled(!subtitlesEnabled)}
+              className={`mt-1.5 flex w-full items-center justify-between gap-2 rounded-sm border px-3 py-2.5 text-left text-xs transition ${
+                subtitlesEnabled
+                  ? 'border-amber-200/70 bg-amber-200/15 text-amber-100'
+                  : 'border-stone-600 text-stone-200 hover:bg-stone-800'
+              }`}
+            >
+              <span>Subtitles</span>
+              <span
+                aria-hidden
+                className={`rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${
+                  subtitlesEnabled ? 'bg-amber-200/90 text-stone-950' : 'bg-stone-700 text-stone-200'
+                }`}
+              >
+                {subtitlesEnabled ? 'On' : 'Off'}
+              </span>
+            </button>
             <div className="my-3 h-px bg-stone-800" />
             {/* ---- reading: font + size. Both write to the settings store,
                 which useReadingPreferences mirrors onto <html>. ---- */}

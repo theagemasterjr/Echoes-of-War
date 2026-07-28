@@ -67,7 +67,9 @@ export function ShowOrHideScene() {
 
   // warm every model the board needs, so nothing pops in late
   useEffect(() => {
-    const ids = new Set([...PIECES.map((p) => p.assetId), 'ch5.pin.german-command']);
+    const ids = new Set([
+      ...PIECES.map((p) => p.assetId), 'ch5.pin.german-command', 'ch4.piece.german',
+    ]);
     for (const id of ids) {
       const src = glbSource(id);
       if (src) useGLTF.preload(src.url);
@@ -527,8 +529,15 @@ function DivisionMarker({
   );
 }
 
-/** An Allied marker coming ashore into the gap at Normandy. A marker on a map
- *  and nothing more: the payoff never shows fighting. */
+/** How tall a landing figure stands on this board. The same file renders at
+ *  about 0.7 units on the ch4 board (see the registry's own comment there) —
+ *  a full miniature would straddle the whole short hop these markers make, so
+ *  this brings it down to a marker's presence rather than a piece's. */
+const TROOP_SCALE = 0.45;
+
+/** An Allied marker coming ashore into the gap at Normandy — the same soldier
+ *  figure the registry already has, tinted blue instead of drawn as a bare
+ *  dot. A marker on a map and nothing more: the payoff never shows fighting. */
 function LandingChip({
   from, to, payoffAge,
 }: {
@@ -537,7 +546,7 @@ function LandingChip({
   payoffAge: React.RefObject<number>;
 }) {
   const group = useRef<THREE.Group>(null);
-  const mat = useRef<THREE.MeshStandardMaterial>(null);
+  const figure = useRef<THREE.Group>(null);
   const a = useMemo(() => new THREE.Vector3(...mapToWorld(from)), [from]);
   const b = useMemo(() => new THREE.Vector3(...mapToWorld(to)), [to]);
 
@@ -552,18 +561,16 @@ function LandingChip({
       MAP.y + 0.03,
       THREE.MathUtils.lerp(a.z, b.z, t),
     );
-    if (mat.current) mat.current.opacity = Math.min(1, t * 4);
+    // the old marker faded in with opacity; the model pops in at scale instead
+    // — the same quick beat, fully in a quarter of the way across the span
+    if (figure.current) figure.current.scale.setScalar(TROOP_SCALE * Math.min(1, t * 4));
   });
 
   return (
     <group ref={group} visible={false}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.14, 24]} />
-        <meshStandardMaterial
-          ref={mat} color="#7fb2e8" emissive="#7fb2e8" emissiveIntensity={0.5}
-          transparent opacity={0} depthWrite={false}
-        />
-      </mesh>
+      <group ref={figure} scale={0}>
+        <PieceModel assetId="ch4.piece.german" tint={1.1} blue />
+      </group>
     </group>
   );
 }
@@ -709,7 +716,7 @@ function Base() {
  * asset registry by id, so swapping a model stays a registry-only edit.
  */
 function ClonedModel({
-  url, scale, offset, rotation, tint, grey,
+  url, scale, offset, rotation, tint, grey, blue,
 }: {
   url: string;
   scale: number;
@@ -717,6 +724,7 @@ function ClonedModel({
   rotation: [number, number, number];
   tint: number;
   grey: boolean;
+  blue: boolean;
 }) {
   const { scene } = useGLTF(url);
   const model = useMemo(() => {
@@ -749,8 +757,17 @@ function ClonedModel({
         const g = mat.color.r * 0.299 + mat.color.g * 0.587 + mat.color.b * 0.114;
         mat.color.setRGB(g, g, g * 1.04);
       }
+      // Landing troops read as one blue-tinted silhouette, keeping whatever
+      // shading the model already carries — the same trick as the grey
+      // markers above, pushed toward blue instead of desaturated.
+      if (blue) {
+        const g = mat.color.r * 0.299 + mat.color.g * 0.587 + mat.color.b * 0.114;
+        mat.color.setRGB(g * 0.45, g * 0.68, g * 1.3);
+        mat.emissive.setRGB(0.05, 0.12, 0.3);
+        mat.emissiveIntensity = 0.55;
+      }
     }
-  }, [model, tint, grey]);
+  }, [model, tint, grey, blue]);
 
   return <primitive object={model.root} scale={scale} position={offset} rotation={rotation} />;
 }
@@ -759,17 +776,21 @@ function ClonedModel({
  *  becomes a plain block and its label still names it, so a missing model costs
  *  the game a picture but never a turn. */
 function PieceModel({
-  assetId, tint = 1, grey = false,
+  assetId, tint = 1, grey = false, blue = false,
 }: {
   assetId: string;
   tint?: number;
   grey?: boolean;
+  blue?: boolean;
 }) {
   const src = glbSource(assetId);
   const fallback = (
     <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
       <boxGeometry args={[0.34, 0.6, 0.34]} />
-      <meshStandardMaterial color={grey ? '#8a8a8f' : '#7a5c32'} roughness={0.5} metalness={0.45} />
+      <meshStandardMaterial
+        color={blue ? '#4f7fd0' : grey ? '#8a8a8f' : '#7a5c32'}
+        roughness={0.5} metalness={0.45}
+      />
     </mesh>
   );
   if (!src) return fallback;
@@ -782,6 +803,7 @@ function PieceModel({
         rotation={src.rotation ?? [0, 0, 0]}
         tint={tint}
         grey={grey}
+        blue={blue}
       />
     </ModelBoundary>
   );

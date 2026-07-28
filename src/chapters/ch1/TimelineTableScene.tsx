@@ -21,6 +21,15 @@ const SPACING_MAX = 1.3;
 export const ROW_Z = -0.3;
 const colX = (i: number, spacing: number) => (i - (EVENTS.length - 1) / 2) * spacing;
 
+/** Minimum center-to-center distance (in the row's x/y plane) a piece being
+ *  dragged keeps from every other piece it passes — a shade over two figure
+ *  radii (the invisible grab cylinder is 0.45 across, so the models
+ *  themselves are smaller than that). No physics engine: the dragged piece
+ *  just adds enough extra hop height, on top of its normal "picked up" lift,
+ *  to keep this distance whenever a neighbour is close in x — see
+ *  `positions` below. */
+const MIN_PIECE_SEP = 0.5;
+
 /**
  * Fit the whole row on screen, whatever the window. Measures how wide the
  * camera actually sees at the row's depth and divides that among the eight
@@ -53,6 +62,10 @@ export function TimelineTableScene() {
   const dragInfo = useRef<{ id: string | null; moved: boolean; startX: number; startY: number }>({
     id: null, moved: false, startX: 0, startY: 0,
   });
+  // Every piece registers its own current position here (see WoodenPiece);
+  // whichever piece is being dragged reads it to hop clear of anyone it
+  // passes close by instead of clipping through them (MIN_PIECE_SEP above).
+  const positions = useRef(new Map<string, THREE.Vector3>()).current;
 
   // While dragging, follow the pointer horizontally along the row.
   useFrame(({ pointer }) => {
@@ -127,6 +140,7 @@ export function TimelineTableScene() {
           dragX={dragX}
           spacing={spacing}
           cardScale={cardScale}
+          positions={positions}
           onPointerDown={startDrag}
         />
       ))}
@@ -212,6 +226,7 @@ function WoodenPiece({
   dragX,
   spacing,
   cardScale,
+  positions,
   onPointerDown,
 }: {
   event: TimelineEvent;
@@ -219,15 +234,24 @@ function WoodenPiece({
   dragX: React.RefObject<number>;
   spacing: number;
   cardScale: number;
+  positions: Map<string, THREE.Vector3>;
   onPointerDown: (id: string, e: ThreeEvent<PointerEvent>) => void;
 }) {
   const group = useRef<THREE.Group>(null);
   const snapped = useRef(false);
+  // this piece's last-known position, shared with the others via `positions`
+  // so a dragged piece can see where everyone else currently is
+  const pos = useRef(new THREE.Vector3());
   const index = useTimelineStore((s) => s.order.indexOf(event.id));
   const selected = useTimelineStore((s) => s.selected === event.id);
   const locked = useTimelineStore((s) => s.locked.includes(event.id));
   const [hovered, setHovered] = useState(false);
   useCursor(hovered && !locked);
+
+  useEffect(() => {
+    positions.set(event.id, pos.current);
+    return () => void positions.delete(event.id);
+  }, [positions, event.id]);
 
   useFrame(({ clock }, delta) => {
     const g = group.current;
@@ -237,6 +261,19 @@ function WoodenPiece({
     if (dragging) {
       tx = dragX.current;
       ty = 0.45;
+      // hop clear of anyone this piece is passing close by, rather than
+      // sliding straight through them (positions are last frame's, one
+      // frame stale — imperceptible at 60fps, and avoids reading our own
+      // not-yet-updated entry)
+      let extra = 0;
+      positions.forEach((p, id) => {
+        if (id === event.id) return;
+        const dx = tx - p.x;
+        if (Math.abs(dx) >= MIN_PIECE_SEP) return;
+        const clearY = Math.sqrt(MIN_PIECE_SEP * MIN_PIECE_SEP - dx * dx);
+        extra = Math.max(extra, clearY - Math.max(0, ty - p.y));
+      });
+      ty += extra;
     } else if (selected) {
       ty = 0.22 + Math.sin(clock.elapsedTime * 2.6) * 0.03;
     }
@@ -244,6 +281,7 @@ function WoodenPiece({
       // first frame: appear in place instead of gliding in from the origin
       g.position.set(tx, ty, ROW_Z);
       snapped.current = true;
+      pos.current.copy(g.position);
       return;
     }
     // small hop while traveling, so swaps read as a lift-and-place
@@ -253,6 +291,7 @@ function WoodenPiece({
     g.position.x += (tx - g.position.x) * k;
     g.position.y += (ty - g.position.y) * (dragging ? Math.min(1, k * 1.6) : k);
     g.position.z = ROW_Z;
+    pos.current.copy(g.position);
   });
 
   return (

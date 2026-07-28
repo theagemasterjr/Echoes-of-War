@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { audioManager, type MusicTrackId } from '@/audio/audioManager';
 import { voicePlayer } from '@/audio/voicePlayer';
+import { setNarrationVoiceEnabled } from '@/audio/narrationPlayer';
 
 /** Reading typeface. 'default' is the game's Inter; 'lexend' is the
  *  easy-read (dyslexia-friendly) face applied to every word on screen. */
@@ -15,10 +16,18 @@ interface SettingsState {
   soundtrack: MusicTrackId;
   readingFont: ReadingFont;
   textSize: TextSize;
+  /** Character voice / narration on or off (default on). Off skips all
+   *  playback AND never fetches TTS — see voicePlayer.speak / narrationAudio. */
+  voiceEnabled: boolean;
+  /** Caption text alongside spoken dialogue (default on). Forced on
+   *  regardless of this flag whenever voiceEnabled is off — see ConversationUI. */
+  subtitlesEnabled: boolean;
   setVolume: (v: number) => void;
   setSoundtrack: (t: MusicTrackId) => void;
   setReadingFont: (f: ReadingFont) => void;
   setTextSize: (s: TextSize) => void;
+  setVoiceEnabled: (v: boolean) => void;
+  setSubtitlesEnabled: (v: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -28,6 +37,8 @@ export const useSettingsStore = create<SettingsState>()(
       soundtrack: 'main-theme',
       readingFont: 'default',
       textSize: 'normal',
+      voiceEnabled: true,
+      subtitlesEnabled: true,
       setVolume: (volume) => {
         audioManager.setVolume(volume);
         voicePlayer.setVolume(volume);
@@ -39,6 +50,15 @@ export const useSettingsStore = create<SettingsState>()(
       // the rest, so nothing else in the game has to know about them.
       setReadingFont: (readingFont) => set({ readingFont }),
       setTextSize: (textSize) => set({ textSize }),
+      // The one switch for every character voice + recorded narration: cuts
+      // whatever is speaking now and stops speak()/narrationAudio() from ever
+      // starting another line while it's off.
+      setVoiceEnabled: (voiceEnabled) => {
+        voicePlayer.setEnabled(voiceEnabled);
+        setNarrationVoiceEnabled(voiceEnabled);
+        set({ voiceEnabled });
+      },
+      setSubtitlesEnabled: (subtitlesEnabled) => set({ subtitlesEnabled }),
     }),
     {
       name: 'eow-settings-v1',

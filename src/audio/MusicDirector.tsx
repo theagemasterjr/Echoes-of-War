@@ -15,12 +15,14 @@ import { useAppStore } from '@/state/appStore';
 import { useSettingsStore } from '@/state/settingsStore';
 import { audioManager, MUSIC_TRACK_IDS } from './audioManager';
 import { voicePlayer } from './voicePlayer';
+import { setNarrationVoiceEnabled } from './narrationPlayer';
 
 export function MusicDirector() {
   const view = useAppStore((s) => s.view);
   const pending = useAppStore((s) => s.pending);
   const volume = useSettingsStore((s) => s.volume);
   const soundtrack = useSettingsStore((s) => s.soundtrack);
+  const voiceEnabled = useSettingsStore((s) => s.voiceEnabled);
 
   const effectiveView = pending ?? view;
   // the theme belongs to the title screen and the map. It fades the moment a
@@ -45,6 +47,15 @@ export function MusicDirector() {
     audioManager.setVolume(volume);
     voicePlayer.setVolume(volume);
   }, [volume]);
+
+  // Same rehydration gap as volume above: persist sets voiceEnabled directly
+  // on load without going through setVoiceEnabled, so the audio layer's
+  // module-level flags (voicePlayer, narrationPlayer) need this to catch up —
+  // including a saved "off" from a previous visit.
+  useEffect(() => {
+    voicePlayer.setEnabled(voiceEnabled);
+    setNarrationVoiceEnabled(voiceEnabled);
+  }, [voiceEnabled]);
 
   // Pause the moment the tab is hidden; resume when it's visible again.
   useEffect(() => {
