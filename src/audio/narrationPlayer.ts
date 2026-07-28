@@ -25,8 +25,29 @@ const SILENCE =
 let el: HTMLAudioElement | null = null;
 let unlocked = false;
 
-/** The one element every mission brief plays through. */
+// Voice on/off (settings toggle, default on) — the same switch that gates
+// character TTS in voicePlayer.ts. This is the low point every recorded
+// narration (mission briefs, chapter summaries) plays through, so disabling
+// it here is enough: narrationAudio() below hands back null, and every
+// caller already falls back to its silent, wall-clock reveal pace when the
+// element isn't there (see MissionBrief / summaryNarration) — same visuals,
+// no sound, nothing played.
+let voiceOn = true;
+
+export function setNarrationVoiceEnabled(v: boolean) {
+  voiceOn = v;
+  if (!voiceOn) {
+    try {
+      el?.pause();
+    } catch {}
+  }
+}
+
+/** The one element every mission brief plays through. Returns null while
+ *  voice is switched off, which is exactly what every caller already treats
+ *  as "no recording for this" — the text still reveals itself, just silently. */
 export function narrationAudio(): HTMLAudioElement | null {
+  if (!voiceOn) return null;
   if (el) return el;
   if (typeof window === 'undefined' || typeof Audio === 'undefined') return null;
   try {

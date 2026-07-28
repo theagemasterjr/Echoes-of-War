@@ -16,6 +16,12 @@ let url: string | null = null;
 let volume = 0.8;
 let token = 0; // bumps on every speak()/stop() so stale fetches drop their result
 
+// Voice on/off (settings toggle, default on). This is THE gate for every
+// character line: speak() below returns before it ever calls fetch, so
+// switching this off costs zero ElevenLabs tokens — nothing to skip
+// downstream, callers never even reach the network.
+let enabled = true;
+
 // Voice-mode support: listeners hear when a line starts and (naturally) ends.
 // stop() ends silently — a manual stop must not trigger "auto-listen next".
 type VoiceEvent = 'start' | 'end';
@@ -58,6 +64,19 @@ export const voicePlayer = {
     if (el) el.volume = volume;
   },
 
+  /** Settings toggle. Turning it off cuts whatever is speaking right now
+   *  (silently — no 'end' event, same as stop()) and every speak() call
+   *  after this returns before it fetches anything. */
+  setEnabled(v: boolean) {
+    enabled = v;
+    if (!enabled) this.stop();
+  },
+
+  /** Is voice currently allowed to play at all? */
+  get enabled() {
+    return enabled;
+  },
+
   /** Is a character line playing right now? */
   get speaking() {
     return playing;
@@ -95,6 +114,7 @@ export const voicePlayer = {
   },
 
   async speak(text: string, chapterId: ChapterId) {
+    if (!enabled) return; // voice is off — never fetch, never play
     const audio = ensureEl();
     if (!audio || !text.trim()) return;
     const mine = ++token; // this call owns playback until the next speak/stop

@@ -7,19 +7,20 @@
  *
  * Everything here is motion and light. Hovering lifts a document a little and
  * warms it; tapping it lifts it off the table toward the camera over about
- * half a second while the DOM layer fades the full page in over it (the words
- * are DOM text in LettersMinigame.tsx — no 3D text anywhere). Closing reverses
- * the lift. A committed document keeps a quiet green ring; a ruled-out one a
- * red ring, and falls into shadow.
+ * half a second, while its sealed model settles into the reading pose behind
+ * a plain paper sheet (OpenLetterSheet below) that carries the actual words,
+ * held up in front of the camera. Closing reverses the lift. A committed
+ * document keeps a quiet green ring; a ruled-out one a red ring, and falls
+ * into shadow.
  *
  * Rules and content live in lettersStore.ts.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useCursor, useGLTF } from '@react-three/drei';
+import { Text, useCursor, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { ASSETS, Asset } from '@/assets/registry';
-import { ROUNDS, useLettersStore } from './lettersStore';
+import { ROUNDS, docById, useLettersStore } from './lettersStore';
 
 /** Roomiest the row ever gets; narrow windows tighten it (see useRowLayout). */
 const SPACING_MAX = 1.5;
@@ -75,6 +76,7 @@ export function LetterTableScene() {
   const roundIndex = useLettersStore((s) => s.roundIndex);
   const stage = useLettersStore((s) => s.stage);
   const slots = useLettersStore((s) => s.slots);
+  const openId = useLettersStore((s) => s.openId);
   const { spacing } = useRowLayout();
   const round = ROUNDS[roundIndex];
   const source = glbSource(round.assetId);
@@ -116,6 +118,90 @@ export function LetterTableScene() {
             x={colX(i, spacing)}
           />
         ))}
+
+      {/* the open letter: a plain paper sheet held up in front of the camera,
+          the words rendered right on it — see OpenLetterSheet */}
+      {stage === 'rounds' && openId && <OpenLetterSheet key={openId} docId={openId} />}
+    </group>
+  );
+}
+
+/** How far in front of the camera the sheet is held, and how big. Sized
+ *  against the camera's own vertical FOV (BASE_FOV = 45° in SceneRouter, the
+ *  narrowest this view ever gets — a wider window only ever widens it) so the
+ *  sheet's top and bottom edges stay on screen: at 3 units out the frustum is
+ *  ~2.49 tall, and 1.9 leaves a comfortable margin on every window shape while
+ *  still holding the longest letter (~570 characters) at a legible size. */
+const SHEET_DISTANCE = 3;
+const SHEET_W = 1.4;
+const SHEET_H = 1.9;
+/** The sealed document behind it takes ~0.5s to settle into its reading pose
+ *  (see DocumentSlot's useFrame); the sheet waits out most of that before it
+ *  shows, so the two read as one motion — lift, then open into the page —
+ *  instead of the flat page popping in ahead of the model. */
+const SHEET_REVEAL_MS = 260;
+
+/**
+ * The opened letter's actual words, in the game's paper colours. A single flat
+ * sheet held up in front of the camera every frame (billboarded, like the
+ * chapter backdrop in SceneRouter) rather than nested under the sealed
+ * document's own tilt — that keeps the text always level and always facing
+ * the player, whatever the physical prop's model happens to be.
+ *
+ * Plain drei Text on a paper-coloured plane: no DOM, no per-sentence
+ * highlighting — simple enough to stay dyslexia-safe-sized and legible for a
+ * 10-14 year old reader at a glance. The read-aloud toggle, the "ruled out"
+ * note and the close/commit buttons stay in the DOM control strip
+ * (LettersMinigame.tsx) since they're interface, not the letter itself.
+ */
+function OpenLetterSheet({ docId }: { docId: string }) {
+  const doc = docById(docId);
+  const group = useRef<THREE.Group>(null);
+  const forward = useMemo(() => new THREE.Vector3(), []);
+  const at = useMemo(() => new THREE.Vector3(), []);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(false);
+    const t = setTimeout(() => setReady(true), SHEET_REVEAL_MS);
+    return () => clearTimeout(t);
+  }, [docId]);
+
+  // tracked every frame (even before it's visible) so it's never a frame late
+  // to wherever the camera is looking once it does appear
+  useFrame(({ camera }) => {
+    const g = group.current;
+    if (!g) return;
+    camera.getWorldDirection(forward);
+    at.copy(camera.position).addScaledVector(forward, SHEET_DISTANCE);
+    g.position.copy(at);
+    g.quaternion.copy(camera.quaternion);
+  });
+
+  return (
+    <group ref={group} visible={ready}>
+      {/* a shade darker and a touch larger behind the paper — reads as a thin frame */}
+      <mesh position={[0, 0, -0.008]}>
+        <planeGeometry args={[SHEET_W + 0.06, SHEET_H + 0.06]} />
+        <meshBasicMaterial color="#5c4520" depthWrite={false} />
+      </mesh>
+      <mesh>
+        <planeGeometry args={[SHEET_W, SHEET_H]} />
+        <meshBasicMaterial color="#e7d8b4" depthWrite={false} />
+      </mesh>
+      <Text
+        position={[0, SHEET_H / 2 - 0.14, 0.005]}
+        fontSize={0.058}
+        maxWidth={SHEET_W - 0.24}
+        lineHeight={1.4}
+        letterSpacing={0.01}
+        color="#2b2318"
+        anchorX="center"
+        anchorY="top"
+        textAlign="left"
+      >
+        {doc.text}
+      </Text>
     </group>
   );
 }
@@ -198,9 +284,10 @@ function DocumentSlot({
   }, [anyOpen]);
 
   // warm on hover, shadowed once ruled out — a discrete change, not a per-frame
-  // one, so the tint costs nothing while the table sits still
+  // one, so the tint costs nothing while the table sits still. Kept subtle: a
+  // document should feel noticed, not lit up like a prize.
   useEffect(() => {
-    const factor = dimmed ? 0.3 : lit ? 1.22 : 1;
+    const factor = dimmed ? 0.3 : lit ? 1.08 : 1;
     for (const { mat, base } of model.tints) mat.color.copy(base).multiplyScalar(factor);
   }, [model, dimmed, lit]);
 
@@ -248,8 +335,9 @@ function DocumentSlot({
           <boxGeometry args={[DOC_W * 1.15, 0.34, DOC_D * 1.2]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
-        {/* the warm reading lamp that follows a hovered document */}
-        {lit && <pointLight position={[0, 0.9, 0.4]} intensity={6} distance={3} color="#ffcf7d" />}
+        {/* the warm reading lamp that follows a hovered document — a hint, not
+            a spotlight */}
+        {lit && <pointLight position={[0, 0.9, 0.4]} intensity={2.2} distance={2.4} color="#ffcf7d" />}
       </group>
 
       {/* the rings stay on the table in the document's own place, so a lifted

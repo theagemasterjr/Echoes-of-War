@@ -25,6 +25,20 @@ export const MUSIC_TRACK_IDS = Object.keys(TRACK_SRC) as MusicTrackId[];
 const FADE_IN_MS = 1750;
 const FADE_OUT_MS = 450;
 
+/**
+ * The theme was getting lost under everything else at the same slider
+ * position, so music gets a fixed boost here — not by nudging the slider's
+ * default value (that would just relabel "0.8" as loud, not make the track
+ * louder), but by applying real gain on top of whatever the player has the
+ * slider set to. `<audio>.volume` tops out at 1, so the boost is clamped
+ * there: past roughly two-thirds up the slider, the track is already at its
+ * loudest and the rest of the travel just approaches it.
+ */
+const MUSIC_GAIN = 1.5;
+function musicGain(v: number): number {
+  return Math.max(0, Math.min(1, v * MUSIC_GAIN));
+}
+
 function isTrackId(id: string): id is TrackId {
   return Object.prototype.hasOwnProperty.call(TRACK_SRC, id);
 }
@@ -99,14 +113,14 @@ class Track {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
-    if (this.el) this.el.volume = v;
+    if (this.el) this.el.volume = musicGain(v);
   }
 
   play() {
     if (this.target === 'in') return;
     this.target = 'in';
     this.attemptPlay();
-    this.fadeTo(this.masterVolume, FADE_IN_MS);
+    this.fadeTo(musicGain(this.masterVolume), FADE_IN_MS);
   }
 
   stop() {

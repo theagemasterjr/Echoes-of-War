@@ -146,6 +146,10 @@ const tree: ConstraintTree = {
       'men I nursed were, and I will tell you what they told me.” Turns unanswerable questions back ' +
       'to the tent, the ward, the crossing, the men.',
   },
+  intro:
+    'Hello there — mind the tent flap, it sticks. I’m Sister Grace Ellery, a nursing sister with a ' +
+    'British surgical unit, just outside Bayeux in Normandy. It’s late July, 1944 — seven weeks or ' +
+    'so since the landings, and we’ve hardly stopped. Sit yourself down and ask me whatever you’d like.',
   deflections: {
     abusive:
       'She looks at you the way she looks at a difficult patient — steady, unimpressed, not unkind. “I have nursed soldiers for three years; you will have to do a great deal better than that to ruffle me. Now — ask me something worth answering.”',

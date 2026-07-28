@@ -25,6 +25,7 @@ import { NodeIO, TextureInfo } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
 import { dedup, weld, resample, prune, meshopt } from '@gltf-transform/functions';
 import { bakeRestPoseFromClip } from './lib/rest-pose.mjs';
+import { closeLoop } from './lib/clip-fixes.mjs';
 import { MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 
@@ -41,6 +42,13 @@ const OUT_GLB = 'public/models/ch1-journalist.glb';
 /** clip names the asset registry looks for (ASSETS['ch1.character'].clips) */
 const IDLE_CLIP = 'Idle_Loop';
 const TALK_CLIP = 'Idle_Talking_Loop';
+/* Seconds of the talking clip's tail spent easing back onto its first frame,
+ * so the loop restarts without a visible snap (see scripts/lib/clip-fixes.mjs
+ * — same fix ch4's talking take needed). `node scripts/inspect-glb.mjs` on the
+ * last built ch1-journalist.glb showed this take's own seam was already under
+ * 1°, so this is mostly a guard against a future re-export landing rougher;
+ * `0` would skip it entirely. */
+const TALK_LOOP_BLEND = 0.5;
 /** the one real clip in each source file; everything else is a 1-frame stub */
 const isPoseClip = (a) => a.listChannels().length > 1 && clipDuration(a) > 0.5;
 const clipDuration = (a) =>
@@ -188,7 +196,8 @@ async function main() {
   srcIdle.setName(IDLE_CLIP); // already in this document — just rename it
   for (const ch of srcIdle.listChannels()) if (ch.getTargetPath() === 'weights') ch.dispose();
   console.log(`clip "${IDLE_CLIP}": ${srcIdle.listChannels().length} channels, ${clipDuration(srcIdle).toFixed(2)}s`);
-  copyAnimationInto(doc, srcTalk, TALK_CLIP);
+  const talkAnim = copyAnimationInto(doc, srcTalk, TALK_CLIP);
+  if (TALK_LOOP_BLEND) closeLoop(talkAnim, TALK_LOOP_BLEND);
 
   /* -- 1b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
   bakeRestPoseFromClip(srcIdle);

@@ -15,6 +15,11 @@ export const CHAPTERS: ChapterMeta[] = [
     conversationBackdrop: '/img/ch1-studio.jpg',
     /* across the war-room table, nearly level (~9° down), close on the figure row */
     minigameCamera: { pos: [0, 1.7, 6.6], target: [0, 0.55, -0.3] },
+    // the eight timeline figures (src/chapters/ch1/timelineStore.ts EVENTS)
+    minigameAssetIds: [
+      'ch1.figure.versailles', 'ch1.figure.depression', 'ch1.figure.hitler', 'ch1.figure.rhineland',
+      'ch1.figure.munich', 'ch1.figure.pact', 'ch1.figure.invasion', 'ch1.figure.declarations',
+    ],
   },
   {
     id: 'ch2', index: 2, title: 'Standing Alone', subtitle: 'The Battle of Britain',
@@ -28,6 +33,8 @@ export const CHAPTERS: ChapterMeta[] = [
     /* high over the table so the box row sits in the upper third and the
      * piece row across the lower third, full-scale pieces on normal windows */
     minigameCamera: { pos: [0, 4.6, 7.0], target: [0, 0.1, -0.6] },
+    // the five matching pieces (src/chapters/ch2/matchStore.ts MOMENTS)
+    minigameAssetIds: ['ch2.piece.boat', 'ch2.piece.carriage', 'ch2.piece.bomber', 'ch2.piece.cathedral', 'ch2.piece.crown'],
   },
   {
     id: 'ch3', index: 3, title: 'A World at War', subtitle: 'Pearl Harbor and a global conflict',
@@ -40,6 +47,8 @@ export const CHAPTERS: ChapterMeta[] = [
     /* looking down at the row of four flat documents (~37° with the built-in
      * tilt) — room for the round banner above and the confirm panel below */
     minigameCamera: { pos: [0, 2.9, 5.6], target: [0, 0.15, -0.3] },
+    // the three sealed documents (src/chapters/ch3/lettersStore.ts ROUNDS), each rendered four times
+    minigameAssetIds: ['ch3.doc.decree', 'ch3.doc.folder', 'ch3.doc.envelope'],
   },
   {
     id: 'ch4', index: 4, title: 'Turning the Tide', subtitle: 'Stalingrad',
@@ -59,6 +68,8 @@ export const CHAPTERS: ChapterMeta[] = [
      * "Operation Uranus" table. Fits the 8.4 × 6.3 map plus the tray at z 3.2
      * on any window down to a square one. */
     minigameCamera: { pos: [0, 7.6, 5.6], target: [0, 0, -0.55] },
+    // the draggable pieces + standing scenery (src/chapters/ch4/uranusStore.ts PIECES, SCENERY)
+    minigameAssetIds: ['ch4.piece.derrick', 'ch4.piece.barge', 'ch4.piece.hammer', 'ch4.piece.city', 'ch4.piece.german', 'ch4.piece.ally'],
   },
   {
     id: 'ch5', index: 5, title: 'The Road Back', subtitle: 'D-Day and the liberation of Europe',
@@ -78,6 +89,12 @@ export const CHAPTERS: ChapterMeta[] = [
      * SceneRouter places it absolutely every frame and ignores the pointer, so
      * the view never drifts, orbits or answers the mouse while the player drags. */
     minigameCamera: { pos: [0, 7.4, 5.3], target: [0, 0, -0.95] },
+    // the eight sortable props + the German command pin (src/chapters/ch5/showOrHideStore.ts PIECES)
+    minigameAssetIds: [
+      'ch5.piece.inflatable-tank', 'ch5.piece.dummy-landing-craft', 'ch5.piece.fake-hq-sign', 'ch5.piece.radio-truck',
+      'ch5.piece.camouflage-netting', 'ch5.piece.sealed-camp-gate', 'ch5.piece.mail-sack', 'ch5.piece.blackout-screen',
+      'ch5.pin.german-command',
+    ],
   },
   {
     id: 'ch6', index: 6, title: 'The Cost of Victory', subtitle: 'The Pacific war ends',

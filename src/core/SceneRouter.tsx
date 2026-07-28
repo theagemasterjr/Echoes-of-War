@@ -9,6 +9,7 @@ import { chapterMeta, loadChapter } from '@/chapters/registry';
 import { WarRoomScene } from '@/warroom/WarRoomScene';
 import { ASSETS, Asset, assetIsAnimated } from '@/assets/registry';
 import { useCharacterSpeaking } from '@/conversation/useCharacterSpeaking';
+import { useModelPreload } from './useModelPreload';
 import type { Beat, ChapterId } from '@/chapters/types';
 
 /** Camera for chapters whose minigame plays in its own 3D scene (module
@@ -30,6 +31,8 @@ const MAX_FOV = 68;
 /** Everything inside the single persistent <Canvas>. */
 export function SceneRouter() {
   const view = useAppStore((s) => s.view);
+  // predictive: warms the next screen's models so its transition never stalls
+  useModelPreload();
   // Hold the horizontal composition on any window narrower than 16:9: keep the
   // 16:9 horizontal field of view by widening the vertical one, so nothing at
   // the sides is ever cropped away on laptops / non-maximized windows. Wider
