@@ -147,6 +147,12 @@ Characters that come with animations get one extra field on their registry entry
 and the talking clip takes over while the character is speaking. Chapter 1 shows the
 pattern (see the ch1 section of `docs/model-prompts.md` for the full build steps).
 
+**Adding or replacing a character's animation** — a new idle or talking take from
+Mixamo/Meshy — is its own short recipe, the same for every chapter:
+`docs/character-animation-guide.md`. It covers the build command, how to position the
+character on camera, and the fixes for the two problems these takes reliably have (the
+character talking to someone off screen, and a jump every time the loop restarts).
+
 ## Chapter 2 — a second worked example
 Chapter 2 (Standing Alone — Tom Ashcroft, sergeant pilot, late September 1940) is now
 built to the same shape as chapter 1: a single open conversation node with every

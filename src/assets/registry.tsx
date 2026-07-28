@@ -10,7 +10,7 @@
 import { Suspense, useMemo, useRef, type FC } from 'react';
 import { useFrame, type ThreeElements } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
-import type { Group } from 'three';
+import { MathUtils, type Group, type Object3D } from 'three';
 import * as P from './placeholders';
 
 type GroupProps = ThreeElements['group'];
@@ -33,6 +33,11 @@ type AssetSource =
        *  talking takes over while the `talking` prop is true. idleTimeScale
        *  slows the idle clip (lets a talking loop double as a calm idle). */
       clips?: { idle: string; talking: string; idleTimeScale?: number };
+      /** lifts (or drops) the character's gaze without re-recording the clip:
+       *  every frame, after the animation has posed the skeleton, this bone is
+       *  pitched by `degrees` (positive = look up) about its own side axis.
+       *  For a clip animated too far chin-down to read on camera. */
+      headTilt?: { bone: string; degrees: number };
     };
 
 export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
@@ -61,13 +66,21 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     source: {
       kind: 'glb', url: '/models/ch1-journalist.glb',
       // both clips are seated with the top of her head at y 1.33 and her feet
-      // on the model's own origin. Dropped low on purpose (founder request):
-      // the bottom of the frame crops her at the upper body, so her lap, skirt
-      // and legs stay out of shot; near-frontal, just a hint of turn (founder
+      // on the model's own origin. She used to sit at -4.35, which put her head
+      // half way down the frame while every other chapter's sits at 0.38 — she
+      // read as sunk into the bottom of the shot. -3.95 lifts her head to that
+      // same line (her crown stays a little lower than theirs because this idle
+      // is a slumped pose) while still cropping her at the lap, so her skirt
+      // and legs stay out of shot. Near-frontal, just a hint of turn (founder
       // found the ch4-style -0.25 too side-on for her)
-      scale: 4.76, offset: [0, -4.35, -0.5], rotation: [0, -0.1, 0], castShadow: false,
+      scale: 4.76, offset: [0, -3.95, -0.5], rotation: [0, -0.1, 0], castShadow: false,
       // both clips are purpose-made loops, so each plays at its own pace
       clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
+      // her idle was animated 17° chin-down (ch5's sits at 4°) — from this
+      // camera she looked at the floor rather than at the player. Lifting the
+      // head bone 11° brings the idle to about 6° down and the talking loop to
+      // roughly level, without leaning her whole body back.
+      headTilt: { bone: 'CC_Base_Head', degrees: 11 },
     },
   },
   'ch2.character': {
@@ -125,8 +138,11 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     source: {
       kind: 'glb', url: '/models/ch4-medic.glb',
       // Ch49 rig is metre-scale; both clips are seated with the head at y 1.30,
-      // so this puts the top of the head at ~2.40 like the other chapters
-      scale: 4.76, offset: [0, -3.79, -0.5], rotation: [0, -0.25, 0], castShadow: false,
+      // so this puts the top of the head at ~2.40 like the other chapters.
+      // Turned a touch toward the player's right (it used to be -0.25, turned
+      // the other way): his talking loop twists the shoulders away from camera,
+      // and this brings his face back round to the player.
+      scale: 4.76, offset: [0, -3.79, -0.5], rotation: [0, 0.1, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
     },
   },
@@ -196,9 +212,10 @@ const Glb: FC<
     offset?: [number, number, number];
     castShadow?: boolean;
     clips?: { idle: string; talking: string; idleTimeScale?: number };
+    headTilt?: { bone: string; degrees: number };
     talking?: boolean;
   } & Omit<GroupProps, 'scale' | 'rotation'>
-> = ({ url, scale = 1, rotation = [0, 0, 0], offset = [0, 0, 0], castShadow = true, clips, talking = false, ...props }) => {
+> = ({ url, scale = 1, rotation = [0, 0, 0], offset = [0, 0, 0], castShadow = true, clips, headTilt, talking = false, ...props }) => {
   const group = useRef<Group>(null);
   const { scene, animations } = useGLTF(url);
   const { actions } = useAnimations(animations, group);
@@ -220,8 +237,23 @@ const Glb: FC<
   // Checked every frame, not once on mount: a start command issued at an
   // unlucky moment (mid-transition, remount, hot reload) used to fail silently
   // and leave the character T-posed forever — now a miss just retries next frame.
+  // the bone whose pose gets nudged after the animation has written it
+  const tiltBone = useMemo<Object3D | null>(
+    () => (headTilt ? (shadowed.getObjectByName(headTilt.bone) ?? null) : null),
+    [shadowed, headTilt],
+  );
+  const tiltRad = headTilt ? MathUtils.degToRad(headTilt.degrees) : 0;
+
   const lastClip = useRef<string | null>(null);
   useFrame(() => {
+    // Gaze correction. The clip rewrites the bone's rotation every frame, so
+    // this has to be re-applied every frame AND after the mixer has run —
+    // which it is: useAnimations subscribes its update above, and r3f calls
+    // same-priority frame callbacks in subscription order.
+    // Negative because pitching a bone about its own +X tips its face axis
+    // down; `degrees` is written the way a person reads it (positive = up).
+    if (tiltBone) tiltBone.rotateX(-tiltRad);
+
     if (!clips) return;
     const name = talking ? clips.talking : clips.idle;
     const next = actions[name];
@@ -250,7 +282,7 @@ export const Asset: FC<{ assetId: AssetId; talking?: boolean } & Omit<GroupProps
   const entry = ASSETS[assetId];
   if (!entry) return null;
   if (entry.source.kind === 'glb') {
-    const { url, scale, rotation, offset, castShadow, clips } = entry.source;
+    const { url, scale, rotation, offset, castShadow, clips, headTilt } = entry.source;
     const { scale: _s, rotation: _r, ...rest } = props;
     return (
       <Suspense fallback={null}>
@@ -266,7 +298,7 @@ export const Asset: FC<{ assetId: AssetId; talking?: boolean } & Omit<GroupProps
         <Glb
           key={url}
           url={url} scale={scale} rotation={rotation} offset={offset}
-          castShadow={castShadow} clips={clips} talking={talking} {...rest}
+          castShadow={castShadow} clips={clips} headTilt={headTilt} talking={talking} {...rest}
         />
       </Suspense>
     );
