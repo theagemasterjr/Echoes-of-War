@@ -68,6 +68,7 @@ export const CHAPTERS: ChapterMeta[] = [
     dates: '1944', location: 'Normandy, France',
     characterName: 'Placeholder: Allied medical worker', characterRole: 'Field medical worker',
     markerPosition: [-0.23, 0, -1.32], markerAssetId: 'ch5.marker', characterAssetId: 'ch5.character',
+    conversationBackdrop: '/img/ch5-studio.jpg',
   },
   {
     id: 'ch6', index: 6, title: 'The Cost of Victory', subtitle: 'The Pacific war ends',
