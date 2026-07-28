@@ -138,7 +138,19 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   // 'ch4.piece.ally' at its own file; nothing else changes.
   'ch4.piece.german': { label: 'Soldier figure — German 6th Army', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.29 } },
   'ch4.piece.ally': { label: 'Soldier figure — Axis ally army (Romanian / Hungarian)', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.255 } },
-  'ch5.character': { label: 'Allied medical worker figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  'ch5.character': {
+    label: 'Allied medical worker figure',
+    source: {
+      kind: 'glb', url: '/models/ch5-nurse.glb',
+      // Meshy body on a Mixamo rig, metre-scale like ch1/ch4 — so it takes the
+      // same 4.76. Both clips are seated with the head bone at y 1.138 (a shade
+      // taller in the seat than ch4's 1.109), and the offset is set from that:
+      // 4.76 × 1.138 − 3.93 puts the head on ~1.49, the line ch2/ch3/ch4 all
+      // sit on. Same −0.25 turn and −0.5 depth as the other chapters.
+      scale: 4.76, offset: [0, -3.93, -0.5], rotation: [0, -0.25, 0], castShadow: false,
+      clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+    },
+  },
   'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
 };
 
@@ -214,7 +226,17 @@ export const Asset: FC<{ assetId: AssetId; talking?: boolean } & Omit<GroupProps
     const { scale: _s, rotation: _r, ...rest } = props;
     return (
       <Suspense fallback={null}>
+        {/* key by url so swapping models unmounts the old one instead of
+            re-using it. Without this, one <Glb> instance walks from chapter to
+            chapter and its animation mixer can end up holding the PREVIOUS
+            chapter's clips while pointing at the new chapter's skeleton.
+            three.js strips ':' out of track names, so ch4's "mixamorig:Hips"
+            sanitizes to "mixamorigHips" — the exact bone names ch3 and ch5
+            really use. The clips therefore bind instead of failing safely, and
+            drive the new rig from the wrong animation until its mesh collapses
+            and the character vanishes. A fresh mount gets a fresh mixer. */}
         <Glb
+          key={url}
           url={url} scale={scale} rotation={rotation} offset={offset}
           castShadow={castShadow} clips={clips} talking={talking} {...rest}
         />
