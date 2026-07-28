@@ -93,6 +93,25 @@ const TAKES: Record<string, SummaryTake> = {
       { start: 35.8, end: 47.82 },
     ],
   },
+  // Nine topics, in the order src/chapters/ch6/summary.ts lists them.
+  // Measured off the recording with scripts/lib/narration-segments.mjs:
+  // 14.2–18.7 characters a second across all nine. The take opens with a
+  // spoken "Chapter 6. The Cost of Victory." header (0.06–2.54s), which is
+  // why topic one starts at 3.44 — the screen simply holds until then.
+  ch6: {
+    track: '/audio/summary/ch6.mp3?v=1',
+    topics: [
+      { start: 3.44, end: 6.08 },
+      { start: 6.82, end: 13 },
+      { start: 13.5, end: 23.9 },
+      { start: 24.44, end: 34.62 },
+      { start: 35.14, end: 39.94 },
+      { start: 40.36, end: 47.04 },
+      { start: 48.04, end: 54.08 },
+      { start: 54.64, end: 64.5 },
+      { start: 65.54, end: 81.94 },
+    ],
+  },
 };
 
 /** The take recorded for a chapter, or null if it has none. */

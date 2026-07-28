@@ -99,8 +99,24 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch6', index: 6, title: 'The Cost of Victory', subtitle: 'The Pacific war ends',
     dates: '1945', location: 'Hiroshima, Japan',
-    characterName: 'Placeholder: Hiroshima doctor', characterRole: 'Hospital doctor',
+    characterName: 'Doctor Kenzo Sato', characterRole: 'Doctor, relief hospital',
+    /* Verified against the current map texture (2026-07-28) by extracting the
+     * world-map GLB's texture and plotting this position on it: the lantern
+     * sits on south-western Honshu at the Seto Inland Sea — the Hiroshima
+     * region — so unlike ch3/ch4/ch5 this marker needed NO recalibration. */
     markerPosition: [3.83, 0, -0.70], markerAssetId: 'ch6.marker', characterAssetId: 'ch6.character',
+    /* the film is not made yet: until the file exists the intro beat holds on
+     * the styled placeholder frame and its CONTINUE goes on to the brief.
+     * Dropping ch6-intro.mp4 into public/video/ needs no code change at all. */
+    introVideo: '/video/ch6-intro.mp4',
+    /* TODO(founder): conversation backdrop — leave commented out until the
+     * image file physically exists (an empty reference hangs the 3D scene):
+     * conversationBackdrop: '/img/ch6-hospital.jpg', */
+    /* Looking down on "The Voices" table — four pieces around a clear centre,
+     * the slip stack along the near edge. Setting this is also what pins the
+     * camera: SceneRouter places it absolutely every frame and ignores the
+     * pointer, so the view never drifts, orbits or answers the mouse. */
+    minigameCamera: { pos: [0, 7.0, 5.4], target: [0, 0, -0.35] },
   },
 ];
 

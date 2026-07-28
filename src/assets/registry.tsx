@@ -196,6 +196,18 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   // same file stands in for the division markers that gather at Calais.
   'ch5.pin.german-command': { label: 'Grey German command pin', source: { kind: 'glb', url: '/models/ch5-pin-german-command.glb', scale: 3.47 } },
   'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  // Chapter 6 "The Voices" minigame — four pieces stand for four people, plus
+  // the paper crane (hidden until the end) and the paper slip the quotes ride
+  // on. Scales are set from each file's measured bounds (build-ch6-pieces.mjs
+  // prints them) so the four voice pieces share a similar footprint (~0.6);
+  // the flat pieces (slide rule, document, slip) are scaled by footprint, not
+  // height. Every file rests on its own origin.
+  'ch6.piece.helmet-pack': { label: 'Steel helmet on a folded pack — the soldier', source: { kind: 'glb', url: '/models/ch6-piece-helmet-pack.glb', scale: 1.4 } },
+  'ch6.piece.lantern': { label: 'Paper lantern — the civilian', source: { kind: 'glb', url: '/models/ch6-piece-lantern.glb', scale: 0.7 } },
+  'ch6.piece.slide-rule': { label: 'Slide rule on papers — the scientist', source: { kind: 'glb', url: '/models/ch6-piece-slide-rule.glb', scale: 1.5 } },
+  'ch6.piece.pen-document': { label: 'Fountain pen on a document — the leader', source: { kind: 'glb', url: '/models/ch6-piece-pen-document.glb', scale: 1.6 } },
+  'ch6.piece.crane': { label: 'Folded paper crane — hidden until the end', source: { kind: 'glb', url: '/models/ch6-piece-crane.glb', scale: 1.9 } },
+  'ch6.piece.slip': { label: 'Aged paper slip — carries each spoken line', source: { kind: 'glb', url: '/models/ch6-piece-slip.glb', scale: 1.8 } },
 };
 
 /** Does this asset carry its own skeletal animation? (Stages skip the Float bob for these.) */

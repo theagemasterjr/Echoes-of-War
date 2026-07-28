@@ -71,6 +71,22 @@
         "Do you accept the mission?"
       ],
       "accept": "I ACCEPT"
+    },
+    "ch6": {
+      "lines": [
+        "Summer, 1945. In Europe, the war has been over since May. Germany has surrendered. The crowds have already been in the streets.",
+        "In the Pacific, nothing has stopped.",
+        "Both sides are preparing for the same thing — an invasion of the Japanese home islands that everyone expects to be the hardest fighting of the entire war.",
+        "That invasion never comes. Something else does.",
+        "In a relief hospital on the northern edge of Hiroshima, a doctor named Kenzo Sato has been working without rest since the 6th of August. He was outside the city that morning. He walked into it afterwards.",
+        "Talk to him and learn why the war carried on for months after Germany surrendered.",
+        "Learn what both sides were preparing for, and why there was no ending left that came cheaply.",
+        "Learn what happened on the morning of the 6th of August, and why a single aircraft raised no alarm.",
+        "Learn what followed — for Japan, and for the world that came after.",
+        "Doctor Sato is waiting.",
+        "Do you accept the mission?"
+      ],
+      "accept": "I ACCEPT"
     }
   }
 }
