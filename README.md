@@ -32,5 +32,7 @@ conversations (the character asks you to repeat, by design).
 
 - **Fill in a chapter:** see `docs/chapter-guide.md`.
 - **Generate the real 3D models:** see `docs/model-prompts.md` (Meshy prompts).
+- **Add or replace a character's animation:** see `docs/character-animation-guide.md`
+  (build command, on-camera positioning, and what to do when a clip looks wrong).
 - **Debug menu:** type `debug` anywhere in the app — jump to any chapter/beat,
   reset the save, or open the character test screen.

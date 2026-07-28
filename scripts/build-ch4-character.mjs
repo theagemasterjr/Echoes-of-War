@@ -24,6 +24,7 @@ import { copyToDocument, dedup, weld, resample, prune, meshopt, unpartition, tex
 import { MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 import { bakeRestPoseFromClip } from './lib/rest-pose.mjs';
+import { yawClip, closeLoop } from './lib/clip-fixes.mjs';
 
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -31,11 +32,24 @@ const arg = (name, dflt) => {
 };
 const SRCDIR = 'C:/Users/sagar/Music/chapter 4 eow models';
 const IDLE = arg('idle', `${SRCDIR}/Sitting Idle (2).glb`);
-const TALKING = arg('talking', `${SRCDIR}/Talking (2).glb`);
+const TALKING = arg('talking', `${SRCDIR}/Sitting Talking.glb`);
 const OUT_GLB = 'public/models/ch4-medic.glb';
 
 /* roughness per material — skin shinier than cloth */
 const ROUGHNESS = { Ch_49_body1: 0.75, Ch_49_body2: 0.75, Ch_49_eyelashes: 0.85 };
+
+/* "Sitting Talking" is animated with his head turned away: he delivers the
+ * whole loop looking ~41° to his right of where the idle looks, which on the
+ * dead-on chapter camera reads as talking to someone off screen. yawClip()
+ * turns it back (see scripts/lib/clip-fixes.mjs for why it can't be fixed with
+ * the registry's rotation). Numbers from `node scripts/inspect-pose.mjs`:
+ * idle gaze sits at +1.7°, this clip sat at −39.4°.
+ * Set to 0 for a talking take that already faces the same way as the idle. */
+const TALK_YAW_FIX = 41;
+const YAW_BONES = ['mixamorig:Neck', 'mixamorig:Head'];
+/* Seconds of the talking clip's tail spent easing back onto its first frame —
+ * without it the loop restarts with a visible snap (this take's was 77°). */
+const TALK_LOOP_BLEND = 0.6;
 
 const realClip = (doc) =>
   doc.getRoot().listAnimations().find((a) => a.listChannels().length > 0);
@@ -81,10 +95,15 @@ async function main() {
   for (const a of root.listAnimations())
     if (a !== idleClip && a !== talkClip) a.dispose();
 
-  /* -- 2b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
+  /* -- 2b. bring the talking clip's gaze round to the camera, and make it
+           loop cleanly (see TALK_YAW_FIX / closeLoop above) -------------- */
+  if (TALK_YAW_FIX) yawClip(talkClip, doc, YAW_BONES, TALK_YAW_FIX);
+  closeLoop(talkClip, TALK_LOOP_BLEND);
+
+  /* -- 2c. idle frame 0 becomes the rest pose (no more T-pose fallback) */
   bakeRestPoseFromClip(idleClip);
 
-  /* -- 2c. report the seated head height, for the registry's scale/offset */
+  /* -- 2d. report the seated head height, for the registry's scale/offset */
   const head = byName.get('mixamorig:HeadTop_End');
   if (head) {
     const m = head.getWorldMatrix();
