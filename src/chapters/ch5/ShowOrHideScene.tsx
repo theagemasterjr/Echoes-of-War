@@ -28,7 +28,7 @@ import * as THREE from 'three';
 import { ASSETS } from '@/assets/registry';
 import {
   BEACHHEAD, DIVISIONS, LANDINGS, MAP, PAYOFF, PIECES, PIN_LABEL, PIN_PATH, PIN_PLAY_MAX, TARGETS,
-  TARGET_RADIUS, TRAY_Z, ZONES, countIn, mapToWorld, pieceById, pinTravel, seatIndex,
+  STRIP_Z, TARGET_RADIUS, TRAY_Z, ZONES, countIn, mapToWorld, pieceById, pinTravel, seatIndex,
   targetById, trayPieces, traySeat, useShowOrHideStore, zoneById, zoneSeat,
   type MapPoint, type Piece, type PieceId, type Zone, type ZoneId,
 } from './showOrHideStore';
@@ -40,6 +40,9 @@ const LIFT = 0.34;
 const LINE_Y = MAP.y + 0.02;
 /** The base every playing piece stands on (the models have none of their own). */
 const BASE_R = 0.2;
+/** How long the board takes to clear itself before the payoff runs. Quick on
+ *  purpose — the table tidying up, not a pause. Mirrored by the DOM's fade. */
+const CLEAR_S = 0.34;
 
 const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 /** 0→1 across [from, to]. */
@@ -71,13 +74,16 @@ export function ShowOrHideScene() {
     }
   }, []);
 
-  /* ── the payoff clock ── */
-  const payoffAge = useRef(0);
+  /* ── the payoff clock ──
+        The eighth piece lands, the table clears itself (labels, plates, tints),
+        and only then does the payoff start — so it plays on a clean map. The
+        animation's own timings are untouched; it simply begins a beat later. */
+  const payoffAge = useRef(-CLEAR_S);
   const playing = stage === 'play';
   useEffect(() => {
     if (stage !== 'payoff') return;
-    payoffAge.current = 0;
-    const t = setTimeout(() => setStage('card'), PAYOFF.done * 1000);
+    payoffAge.current = -CLEAR_S;
+    const t = setTimeout(() => setStage('card'), (CLEAR_S + PAYOFF.done) * 1000);
     return () => clearTimeout(t);
   }, [stage, setStage]);
 
@@ -371,11 +377,12 @@ function ZoneRing({ zone, lit, quiet }: { zone: Zone; lit: boolean; quiet: boole
   const r = zone.radius;
 
   useFrame(({ clock }, delta) => {
-    const k = 1 - Math.exp(-8 * delta);
+    // a quick, deliberate clear when the board fills — the table tidying itself
+    // before the payoff, not a glitch
+    const k = 1 - Math.exp(-(quiet ? 14 : 8) * delta);
     const pulse = 0.5 + 0.5 * Math.sin(clock.elapsedTime * 2.1);
-    // once the board is full the rings stop asking for attention
-    const wantRing = quiet ? 0.12 : lit ? 0.85 : 0.28 + pulse * 0.16;
-    const wantFill = quiet ? 0.03 : lit ? 0.3 : 0.07 + pulse * 0.05;
+    const wantRing = quiet ? 0 : lit ? 0.95 : 0.55 + pulse * 0.12;
+    const wantFill = quiet ? 0 : lit ? 0.34 : 0.15 + pulse * 0.04;
     if (ring.current) ring.current.opacity += (wantRing - ring.current.opacity) * k;
     if (fill.current) fill.current.opacity += (wantFill - fill.current.opacity) * k;
   });
@@ -385,12 +392,11 @@ function ZoneRing({ zone, lit, quiet }: { zone: Zone; lit: boolean; quiet: boole
       <mesh>
         <circleGeometry args={[r * 0.94, 44]} />
         <meshBasicMaterial
-          ref={fill} color="#ffcf7d" transparent opacity={0.07}
-          depthWrite={false} blending={THREE.AdditiveBlending}
+          ref={fill} color="#f0c98a" transparent opacity={0.15} depthWrite={false}
         />
       </mesh>
       <mesh position={[0, 0, 0.002]}>
-        <ringGeometry args={[r * 0.9, r, 52]} />
+        <ringGeometry args={[r * 0.955, r, 64]} />
         <meshBasicMaterial
           ref={ring} color="#ffd89a" transparent opacity={0.28}
           depthWrite={false} blending={THREE.AdditiveBlending}
@@ -824,25 +830,26 @@ function useLabelProjection(payoffAge: React.RefObject<number>, draggingId: stri
     const { order, placed, stage } = useShowOrHideStore.getState();
     const out: {
       id: string; text: string; note?: string; left: number; top: number;
-      kind: 'piece' | 'zone' | 'target'; dim?: number; row?: number;
+      kind: 'piece' | 'zone' | 'target' | 'pin'; dim?: number; row?: number;
     }[] = [];
 
     const addWorld = (
       id: string, text: string, x: number, z: number,
-      kind: 'piece' | 'zone' | 'target', note?: string, dim?: number, row?: number,
+      kind: 'piece' | 'zone' | 'target' | 'pin', note?: string, dim?: number, row?: number,
     ) => {
       v.set(x, MAP.y + 0.05, z).project(camera);
       out.push({ id, text, note, dim, kind, row, left: ((v.x + 1) / 2) * 100, top: ((1 - v.y) / 2) * 100 });
     };
 
-    // the two English zones, named above their rings
+    // the two English zones, named INSIDE their own outlined region near its
+    // top — the paper is cropped tight and Kent has no room above it
     for (const zone of ZONES) {
-      const [x, , z] = mapToWorld(zone.at);
-      addWorld(`zone-${zone.id}`, zone.label, x, z - zone.radius - 0.34, 'zone', zone.subLabel);
+      const [x, , z] = mapToWorld(zone.labelAt);
+      addWorld(`zone-${zone.id}`, zone.label, x, z, 'zone', zone.subLabel);
     }
 
     // German command, named and travelling with its pin
-    addWorld('pin-german', PIN_LABEL, pinAt.x, pinAt.z + 0.42, 'piece');
+    addWorld('pin-german', PIN_LABEL, pinAt.x, pinAt.z + 0.42, 'pin');
 
     // the two French places
     const concealed = countIn(placed, 'conceal');
@@ -857,7 +864,7 @@ function useLabelProjection(payoffAge: React.RefObject<number>, draggingId: stri
     for (const piece of trayPieces(order, placed)) {
       if (piece.id === draggingId) continue;
       const seat = traySeat(order.indexOf(piece.id));
-      addWorld(`tray-${piece.id}`, piece.name, seat.x, seat.z + 0.6, 'piece', piece.note);
+      addWorld(`tray-${piece.id}`, piece.name, seat.x, seat.z + 0.24, 'piece', piece.note);
     }
 
     // And the pieces locked into a zone. Their names go in a column under the
@@ -877,13 +884,18 @@ function useLabelProjection(payoffAge: React.RefObject<number>, draggingId: stri
       addWorld(`placed-${piece.id}`, piece.name, zx, zz + zone.radius, 'piece', undefined, undefined, row);
     }
 
+    // where the feedback strip goes: the middle of the clear band between the
+    // paper's near edge and the tray, measured rather than guessed
+    v.set(0, MAP.y, STRIP_Z).project(camera);
+    const stripTop = ((1 - v.y) / 2) * 100;
+
     // one update per real change, never one per frame
     const key = out
       .map((l) => `${l.id}:${l.left.toFixed(1)}:${l.top.toFixed(1)}:${l.dim ?? 1}:${l.row ?? -1}`)
-      .join('|');
+      .join('|') + `#${stripTop.toFixed(1)}`;
     if (key !== last.current) {
       last.current = key;
-      setLabels(out);
+      setLabels(out, stripTop);
     }
     // the payoff clock is read here only so this hook re-runs with it
     void payoffAge;

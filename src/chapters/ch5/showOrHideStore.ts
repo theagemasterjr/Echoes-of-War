@@ -39,8 +39,24 @@ export const MAP = {
 
 /** The pieces wait in ONE row below the map. Two rows cost too much table
  *  depth — the camera had to pull back far enough to shrink the board, and the
- *  front row's labels landed on the back row's pieces. */
-export const TRAY_Z = 2.0;
+ *  front row's labels landed on the back row's pieces.
+ *
+ *  The row sits far enough back to leave a clear band between the paper's near
+ *  edge and the first piece: that band is where the feedback strip lives, and
+ *  it is the only reason this number is not smaller. */
+export const TRAY_Z = 2.32;
+/**
+ * Where every feedback line is drawn, whichever piece earned it: the clear band
+ * between the paper's near edge and the first piece in the tray.
+ *
+ * Above the map looks emptier but is not: the Kent pieces stand tall and their
+ * tops rise past the paper's far edge, straight through where a strip up there
+ * would sit. So the strip sits at the bottom of the paper instead, just inside
+ * its near edge — over the empty southern border, below every piece and label
+ * on the board and above the tray. A two-line line is the widest it ever gets
+ * and it still clears the first piece in the tray.
+ */
+export const STRIP_Z = MAP.z + MAP.d / 2 - 0.18;
 export const TRAY_GAP = 1.08;
 
 export type MapPoint = readonly [u: number, v: number];
@@ -73,6 +89,11 @@ export interface Zone {
    *  centre of its ring (map units). Kent's is pushed west so the list runs
    *  down the open Channel instead of over the Pas de Calais marker. */
   listNudge: MapPoint;
+  /** Where the zone's own name plate sits — INSIDE the outlined region, near
+   *  its top. Read off the map image: the paper is cropped tight and Kent has
+   *  no headroom above it, and both points clear the map's own printed place
+   *  names ("Kent" at y 240, "South-West England" at y 285–325). */
+  labelAt: MapPoint;
 }
 
 export type TargetId = 'normandy' | 'calais';
@@ -92,6 +113,7 @@ export const ZONES: Zone[] = [
     radius: (150 / MAP_PX.w) * MAP.w,
     target: 'normandy',
     listNudge: [0, 0.13],
+    labelAt: px(392, 178),
   },
   {
     id: 'deceive',
@@ -101,6 +123,7 @@ export const ZONES: Zone[] = [
     radius: (150 / MAP_PX.w) * MAP.w,
     target: 'calais',
     listNudge: [-0.105, 0.13],
+    labelAt: px(1298, 78),
   },
 ];
 
@@ -362,7 +385,7 @@ export interface ScreenLabel {
   note?: string;
   left: number;
   top: number;
-  kind: 'piece' | 'zone' | 'target';
+  kind: 'piece' | 'zone' | 'target' | 'pin';
   /** Targets dim as the real landing is concealed. */
   dim?: number;
   /** Row in a zone's list of placed pieces. Four name tags cannot fit inside one
@@ -388,12 +411,17 @@ interface ShowOrHideState {
   nudge: { text: string; at: number } | null;
   stage: Stage;
   labels: ScreenLabel[];
+  /** Where the feedback strip sits, as a percentage down the window. Measured
+   *  by the scene from the clear band between the paper's near edge and the
+   *  first piece in the tray, so the strip follows the board at any window
+   *  size instead of guessing a fixed offset. */
+  stripTop: number;
 
   reset: () => void;
   /** Seat a piece, bounce it, or ignore it. Returns what happened. */
   tryDrop: (pieceId: PieceId, zoneId: ZoneId | null, onFrance: boolean) => DropResult;
   setStage: (stage: Stage) => void;
-  setLabels: (labels: ScreenLabel[]) => void;
+  setLabels: (labels: ScreenLabel[], stripTop: number) => void;
 }
 
 export type DropResult = 'placed' | 'wrong' | 'ignored';
@@ -407,6 +435,7 @@ const fresh = () => ({
   nudge: null,
   stage: 'play' as Stage,
   labels: [] as ScreenLabel[],
+  stripTop: 62,
 });
 
 /** Grace's hints go through the same voice the conversation uses. Silent and
@@ -465,7 +494,7 @@ export const useShowOrHideStore = create<ShowOrHideState>((set, get) => ({
   },
 
   setStage: (stage) => set({ stage }),
-  setLabels: (labels) => set({ labels }),
+  setLabels: (labels, stripTop) => set({ labels, stripTop }),
 }));
 
 /* ────────────────────────────── board queries ────────────────────────────── */
@@ -487,9 +516,9 @@ export function zoneSeat(zone: Zone, indexInZone: number): [number, number, numb
   const col = indexInZone % 2;
   const row = Math.floor(indexInZone / 2) % 2;
   const [x, y, z] = mapToWorld(zone.at);
-  // nudged south inside the ring: the pieces stand tall, and centred they would
-  // poke up into the zone's own name plate
-  return [x + (col - 0.5) * gap, y, z + (row - 0.5) * gap + 0.16];
+  // pushed into the lower half of the ring: the pieces stand tall, and the
+  // zone's name plate now sits inside the region above them
+  return [x + (col - 0.5) * gap, y, z + (row - 0.5) * gap + 0.34];
 }
 
 /** How many pieces are already seated in a zone (drives the cluster order). */
