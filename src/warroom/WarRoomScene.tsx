@@ -79,35 +79,40 @@ const LOAD_VEIL_MAX_WAIT_MS = 4000;
  *  load later (e.g. hovering a marker prefetches its intro video) never
  *  brings the veil back over an already-visible map. */
 function LoadingVeil() {
-  const { active } = useProgress();
   const [fading, setFading] = useState(false);
   const [gone, setGone] = useState(false);
   const settled = useRef(false);
 
-  const settle = () => {
-    if (settled.current) return;
-    settled.current = true;
-    setFading(true);
-    setTimeout(() => setGone(true), LOAD_VEIL_FADE_MS);
-  };
-
-  // hard ceiling, set once — never postponed by later loading activity
+  // The useProgress store updates synchronously from the loaders — in the
+  // middle of rendering whichever component kicked off the load — so the veil
+  // must not subscribe via the hook (that's a setState during another
+  // component's render). Instead each store change just (re)arms a short
+  // timer, and the "is everything loaded?" decision is read fresh once the
+  // load queue has been quiet for a beat.
   useEffect(() => {
+    const settle = () => {
+      if (settled.current) return;
+      settled.current = true;
+      setFading(true);
+      setTimeout(() => setGone(true), LOAD_VEIL_FADE_MS);
+    };
+    // hard ceiling, set once — never postponed by later loading activity
     const hardStop = setTimeout(settle, LOAD_VEIL_MAX_WAIT_MS);
-    return () => clearTimeout(hardStop);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let quiet: ReturnType<typeof setTimeout> | null = null;
+    const poke = () => {
+      if (quiet) clearTimeout(quiet);
+      quiet = setTimeout(() => {
+        if (!useProgress.getState().active) settle();
+      }, 80);
+    };
+    const unsub = useProgress.subscribe(poke);
+    poke(); // everything may already be cached, with no loads ever starting
+    return () => {
+      clearTimeout(hardStop);
+      if (quiet) clearTimeout(quiet);
+      unsub();
+    };
   }, []);
-
-  useEffect(() => {
-    if (active) return;
-    // let anything that started loading in this same tick register as
-    // `active` before deciding the scene is actually already ready
-    const check = setTimeout(() => {
-      if (!useProgress.getState().active) settle();
-    }, 80);
-    return () => clearTimeout(check);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
 
   if (gone) return null;
   return (
@@ -148,31 +153,38 @@ function FlickeringLamp() {
 }
 
 const MOTE_COUNT = 90;
-/** Faint dust hanging in the lamp beam over the map — each mote hovers in
- *  place around its own anchor point on small independent sine waves, rather
- *  than drifting/falling and jumping back to the top once it settles. Being
- *  a function of elapsed time (not an accumulated velocity), the motion is
- *  self-bounded: nothing can wander off or scatter outward, and there's
- *  never a "recycle" pop. */
+/** How far a mote meanders sideways from its anchor. Anchors are spawned
+ *  inset from the table edges by at least this much, so the drift can never
+ *  carry a mote off the table area. */
+const MOTE_WANDER = 0.28;
+const MOTE_Y_MIN = 0.15;
+const MOTE_Y_MAX = 3.6;
+/** Faint dust drifting in the lamp beam over the map — each mote meanders
+ *  slowly sideways and sinks like real dust, then recycles to the top of the
+ *  beam. Every coordinate is a bounded function of elapsed time around a
+ *  fixed anchor (not an accumulated velocity), so motes keep moving forever
+ *  but can never wander off the table area. */
 function DustMotes() {
   const points = useRef<THREE.Points>(null);
   const still = useMemo(prefersReducedMotion, []);
   const { positions, anchors, seeds } = useMemo(() => {
     const positions = new Float32Array(MOTE_COUNT * 3);
     const anchors = new Float32Array(MOTE_COUNT * 3);
-    const seeds = new Float32Array(MOTE_COUNT * 2);
+    const seeds = new Float32Array(MOTE_COUNT * 3);
     for (let i = 0; i < MOTE_COUNT; i++) {
-      const x = THREE.MathUtils.randFloat(-3.5, 4.5);
-      const y = THREE.MathUtils.randFloat(0.15, 3.6);
-      const z = THREE.MathUtils.randFloat(-2.6, 3);
+      // table area, inset by the wander radius so drift stays over the table
+      const x = THREE.MathUtils.randFloat(-3.5 + MOTE_WANDER, 4.5 - MOTE_WANDER);
+      const y = THREE.MathUtils.randFloat(MOTE_Y_MIN, MOTE_Y_MAX);
+      const z = THREE.MathUtils.randFloat(-2.6 + MOTE_WANDER, 3 - MOTE_WANDER);
       anchors[i * 3] = x;
       anchors[i * 3 + 1] = y;
       anchors[i * 3 + 2] = z;
       positions[i * 3] = x;
       positions[i * 3 + 1] = y;
       positions[i * 3 + 2] = z;
-      seeds[i * 2] = Math.random() * Math.PI * 2; // bob phase
-      seeds[i * 2 + 1] = THREE.MathUtils.randFloat(0.06, 0.16); // bob speed
+      seeds[i * 3] = Math.random() * Math.PI * 2; // drift phase
+      seeds[i * 3 + 1] = THREE.MathUtils.randFloat(0.15, 0.4); // drift speed
+      seeds[i * 3 + 2] = THREE.MathUtils.randFloat(0.04, 0.1); // sink speed
     }
     return { positions, anchors, seeds };
   }, []);
@@ -182,12 +194,24 @@ function DustMotes() {
     const t = clock.elapsedTime;
     const pos = points.current.geometry.attributes.position;
     const arr = pos.array as Float32Array;
+    const amp = MOTE_WANDER / 1.6; // two summed sines peak at 1.6x
+    const range = MOTE_Y_MAX - MOTE_Y_MIN;
     for (let i = 0; i < MOTE_COUNT; i++) {
-      const phase = seeds[i * 2];
-      const speed = seeds[i * 2 + 1];
-      arr[i * 3] = anchors[i * 3] + Math.sin(t * speed + phase) * 0.09;
-      arr[i * 3 + 1] = anchors[i * 3 + 1] + Math.sin(t * speed * 0.8 + phase * 1.7) * 0.05;
-      arr[i * 3 + 2] = anchors[i * 3 + 2] + Math.cos(t * speed + phase) * 0.09;
+      const phase = seeds[i * 3];
+      const speed = seeds[i * 3 + 1];
+      const sink = seeds[i * 3 + 2];
+      // meandering sideways drift: two incommensurate sines so the path
+      // wanders rather than orbits, bounded by MOTE_WANDER either way
+      arr[i * 3] =
+        anchors[i * 3] +
+        (Math.sin(t * speed + phase) + 0.6 * Math.sin(t * speed * 2.3 + phase * 3.1)) * amp;
+      arr[i * 3 + 2] =
+        anchors[i * 3 + 2] +
+        (Math.cos(t * speed * 0.9 + phase) + 0.6 * Math.cos(t * speed * 1.7 + phase * 2.2)) * amp;
+      // slow steady sink, recycling to the top of the beam
+      let y = (anchors[i * 3 + 1] - MOTE_Y_MIN - t * sink) % range;
+      if (y < 0) y += range;
+      arr[i * 3 + 1] = MOTE_Y_MIN + y;
     }
     pos.needsUpdate = true;
   });
