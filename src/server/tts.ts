@@ -54,6 +54,16 @@ const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // error (see the ch3 note). ELEVENLABS_VOICE_CH5 overrides without a code
   // change.
   ch5: process.env.ELEVENLABS_VOICE_CH5 ?? 'pFZP5JQG7iQjIQuC4Bku',
+  // 'onwK4e9ZLuTAKqWW03F9' = ElevenLabs stock "Daniel" (deep, calm male) —
+  // Doctor Kenzo Sato, forty-four, measured and quiet. Deliberately the
+  // calmest, most level male stock voice on the account, and not one any
+  // other chapter uses: this chapter's restraint has to be audible.
+  // TODO(founder): audition it — "Bill" (pqHfZKP75CvOlQylNhV4) is an
+  // older-sounding alternate — and verify the id is listed as premade under
+  // GET /v1/voices on this account (a wrong or professional-tier id is
+  // silent subtitles with no on-screen error; see the ch3 note).
+  // ELEVENLABS_VOICE_CH6 overrides without a code change.
+  ch6: process.env.ELEVENLABS_VOICE_CH6 ?? 'onwK4e9ZLuTAKqWW03F9',
 };
 
 export function voiceFor(chapterId: ChapterId): string | undefined {

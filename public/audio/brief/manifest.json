@@ -202,6 +202,69 @@
           "end": 28.04
         }
       ]
+    },
+    "ch6": {
+      "track": "/audio/brief/narration/ch6.mp3?v=b54ba7462ebb",
+      "trackHash": "b54ba7462ebb",
+      "duration": 65.8,
+      "voiceName": "Elderon (recorded by hand)",
+      "lines": [
+        {
+          "text": "Summer, 1945. In Europe, the war has been over since May. Germany has surrendered. The crowds have already been in the streets.",
+          "start": 0.02,
+          "end": 9.58
+        },
+        {
+          "text": "In the Pacific, nothing has stopped.",
+          "start": 10.08,
+          "end": 12
+        },
+        {
+          "text": "Both sides are preparing for the same thing — an invasion of the Japanese home islands that everyone expects to be the hardest fighting of the entire war.",
+          "start": 12.84,
+          "end": 21.24
+        },
+        {
+          "text": "That invasion never comes. Something else does.",
+          "start": 22.22,
+          "end": 25.56
+        },
+        {
+          "text": "In a relief hospital on the northern edge of Hiroshima, a doctor named Kenzo Sato has been working without rest since the 6th of August. He was outside the city that morning. He walked into it afterwards.",
+          "start": 26.74,
+          "end": 38.36
+        },
+        {
+          "text": "Talk to him and learn why the war carried on for months after Germany surrendered.",
+          "start": 39.16,
+          "end": 43.94
+        },
+        {
+          "text": "Learn what both sides were preparing for, and why there was no ending left that came cheaply.",
+          "start": 44.64,
+          "end": 49.98
+        },
+        {
+          "text": "Learn what happened on the morning of the 6th of August, and why a single aircraft raised no alarm.",
+          "start": 51.54,
+          "end": 56.78
+        },
+        {
+          "text": "Learn what followed — for Japan, and for the world that came after.",
+          "start": 57.46,
+          "end": 61.34
+        },
+        {
+          "text": "Doctor Sato is waiting.",
+          "start": 62.08,
+          "end": 63.48
+        },
+        {
+          "text": "Do you accept the mission?",
+          "start": 64.04,
+          "end": 65.1
+        }
+      ]
     }
   }
 }
