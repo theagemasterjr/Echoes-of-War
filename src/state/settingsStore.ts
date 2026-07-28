@@ -40,6 +40,17 @@ export const useSettingsStore = create<SettingsState>()(
       setReadingFont: (readingFont) => set({ readingFont }),
       setTextSize: (textSize) => set({ textSize }),
     }),
-    { name: 'eow-settings-v1' },
+    {
+      name: 'eow-settings-v1',
+      // v1: 'main-theme-2' was removed — a saved pick of it must fall back to
+      // the one real track, or returning players would get silence forever
+      // (audioManager.play() no-ops on unknown ids).
+      version: 1,
+      migrate: (state) => {
+        const s = state as Partial<SettingsState>;
+        if (s.soundtrack !== 'main-theme') s.soundtrack = 'main-theme';
+        return s as SettingsState;
+      },
+    },
   ),
 );

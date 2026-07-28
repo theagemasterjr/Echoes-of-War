@@ -1,0 +1,41 @@
+- generic [active] [ref=f8e1]:
+  - generic [ref=f8e13]:
+    - generic:
+      - generic [ref=f8e160]:
+        - generic [ref=f8e161]:
+          - generic [ref=f8e162]: Sister Grace Ellery
+          - generic [ref=f8e163]: Fictional composite, based on documented experiences · Normandy, France, 1944
+        - generic [ref=f8e164]:
+          - generic [ref=f8e165]: Objectives
+          - list [ref=f8e166]:
+            - listitem [ref=f8e167]:
+              - generic [ref=f8e168]:
+                - generic [ref=f8e169]: ✓
+                - generic [ref=f8e170]: The Second Front
+            - listitem [ref=f8e171]:
+              - generic [ref=f8e172]:
+                - generic [ref=f8e173]: ○
+                - generic [ref=f8e174]: The Great Build-Up
+            - listitem [ref=f8e175]:
+              - generic [ref=f8e176]:
+                - generic [ref=f8e177]: ○
+                - generic [ref=f8e178]: The Deception
+            - listitem [ref=f8e179]:
+              - generic [ref=f8e180]:
+                - generic [ref=f8e181]: ○
+                - generic [ref=f8e182]: D-Day
+        - generic [ref=f8e200]:
+          - paragraph [ref=f8e218]: That's a good question.
+          - generic [ref=f8e204]:
+            - button "Open voice mode" [ref=f8e205]:
+              - generic [ref=f8e206]: 🎙
+              - generic [ref=f8e207]: VOICE
+            - textbox "Ask the character a question" [ref=f8e208]:
+              - /placeholder: Ask them anything…
+            - button "ASK" [ref=f8e209]
+            - button "CONTINUE →" [ref=f8e210]
+          - paragraph [ref=f8e211]: Character responses are AI-generated and may contain errors.
+      - button "← MAP" [ref=f8e197]
+      - button "Settings" [ref=f8e199]: ⚙
+  - button "Open Next.js Dev Tools" [ref=f8e8] [cursor=pointer]
+  - alert [ref=f8e12]

@@ -1,0 +1,26 @@
+- generic [ref=f7e1]:
+  - generic [ref=f7e13]:
+    - generic:
+      - generic [ref=f7e18]:
+        - generic [ref=f7e19]: 1939 – 1945
+        - heading [level=1] [ref=f7e20]:
+          - img "Echoes of War" [ref=f7e21]
+        - paragraph [ref=f7e22]: An interactive journey through the Second World War.
+        - button "BEGIN" [ref=f7e23]
+      - generic [ref=f7e24]:
+        - button "Settings" [active] [ref=f7e25]: ⚙
+        - generic [ref=f7e26]:
+          - generic [ref=f7e27]:
+            - generic [ref=f7e28]: Volume
+            - slider "Volume" [ref=f7e29]: "0.8"
+          - text: Reading
+          - switch "Easy-read font" [ref=f7e31]:
+            - generic [ref=f7e33]: "Off"
+          - generic [ref=f7e34]:
+            - text: Text size
+            - generic [ref=f7e35]:
+              - button "Normal" [pressed] [ref=f7e36]
+              - button "Large" [ref=f7e37]
+          - button "Reset progress" [ref=f7e39]
+  - button "Open Next.js Dev Tools" [ref=f7e8] [cursor=pointer]
+  - alert [ref=f7e12]

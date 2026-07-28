@@ -61,9 +61,11 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
     source: {
       kind: 'glb', url: '/models/ch1-journalist.glb',
       // both clips are seated with the top of her head at y 1.33 and her feet
-      // on the model's own origin; offset tuned against ch3/ch4 screenshots so
-      // her head sits on the same on-screen line, with the same slight ch4 turn
-      scale: 4.76, offset: [0, -3.6, -0.5], rotation: [0, -0.25, 0], castShadow: false,
+      // on the model's own origin. Dropped low on purpose (founder request):
+      // the bottom of the frame crops her at the upper body, so her lap, skirt
+      // and legs stay out of shot; near-frontal, just a hint of turn (founder
+      // found the ch4-style -0.25 too side-on for her)
+      scale: 4.76, offset: [0, -4.35, -0.5], rotation: [0, -0.1, 0], castShadow: false,
       // both clips are purpose-made loops, so each plays at its own pace
       clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
     },
@@ -139,7 +141,7 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'ch4.piece.german': { label: 'Soldier figure — German 6th Army', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.29 } },
   'ch4.piece.ally': { label: 'Soldier figure — Axis ally army (Romanian / Hungarian)', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.255 } },
   'ch5.character': {
-    label: 'Allied medical worker figure',
+    label: 'British nursing sister figure',
     source: {
       kind: 'glb', url: '/models/ch5-nurse.glb',
       // Meshy body on a Mixamo rig, metre-scale like ch1/ch4 — so it takes the
@@ -151,6 +153,24 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
     },
   },
+  // Chapter 5 "Show it or hide it" minigame — eight props the player sorts into
+  // the two English zones, plus the grey pin that stands for German command.
+  // Scales come from the measured bounds printed by scripts/build-ch5-pieces.mjs
+  // and are set on FOOTPRINT, not height: every piece takes up about 0.6 units
+  // of table so four of them sit inside a zone without touching, while a
+  // signpost stays tall and a camouflage net stays flat. Every file rests on its
+  // own origin (measured min y = 0), so no offset keeps it out of the tabletop.
+  'ch5.piece.inflatable-tank': { label: 'Inflatable rubber tank', source: { kind: 'glb', url: '/models/ch5-piece-inflatable-tank.glb', scale: 3.77 } },
+  'ch5.piece.dummy-landing-craft': { label: 'Dummy plywood landing craft', source: { kind: 'glb', url: '/models/ch5-piece-dummy-landing-craft.glb', scale: 3.53 } },
+  'ch5.piece.fake-hq-sign': { label: 'Fake headquarters signpost', source: { kind: 'glb', url: '/models/ch5-piece-fake-hq-sign.glb', scale: 5.77 } },
+  'ch5.piece.radio-truck': { label: 'Radio truck with tall aerial', source: { kind: 'glb', url: '/models/ch5-piece-radio-truck.glb', scale: 4.08 } },
+  'ch5.piece.camouflage-netting': { label: 'Camouflage netting over supplies', source: { kind: 'glb', url: '/models/ch5-piece-camouflage-netting.glb', scale: 3.57 } },
+  'ch5.piece.sealed-camp-gate': { label: 'Barbed-wire camp gate', source: { kind: 'glb', url: '/models/ch5-piece-sealed-camp-gate.glb', scale: 3.9 } },
+  'ch5.piece.mail-sack': { label: 'Censor’s mail sack', source: { kind: 'glb', url: '/models/ch5-piece-mail-sack.glb', scale: 4.84 } },
+  'ch5.piece.blackout-screen': { label: 'Blacked-out dock lamp', source: { kind: 'glb', url: '/models/ch5-piece-blackout-screen.glb', scale: 5.26 } },
+  // Drawn small and grey: it marks where German command is looking, and the
+  // same file stands in for the division markers that gather at Calais.
+  'ch5.pin.german-command': { label: 'Grey German command pin', source: { kind: 'glb', url: '/models/ch5-pin-german-command.glb', scale: 3.47 } },
   'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
 };
 

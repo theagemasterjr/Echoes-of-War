@@ -307,8 +307,6 @@ function SettingsMenu() {
   const [confirming, setConfirming] = useState(false);
   const volume = useSettingsStore((s) => s.volume);
   const setVolume = useSettingsStore((s) => s.setVolume);
-  const soundtrack = useSettingsStore((s) => s.soundtrack);
-  const setSoundtrack = useSettingsStore((s) => s.setSoundtrack);
   const readingFont = useSettingsStore((s) => s.readingFont);
   const setReadingFont = useSettingsStore((s) => s.setReadingFont);
   const textSize = useSettingsStore((s) => s.textSize);
@@ -355,24 +353,6 @@ function SettingsMenu() {
                 aria-label="Volume"
               />
             </label>
-            <div className="mt-3">
-              <span className="text-[10px] uppercase tracking-widest text-stone-400">Soundtrack</span>
-              <div className="mt-1.5 flex gap-2">
-                {([['main-theme', 'Theme I'], ['main-theme-2', 'Theme II']] as const).map(([id, label]) => (
-                  <button
-                    key={id}
-                    onClick={() => setSoundtrack(id)}
-                    className={`flex-1 rounded-sm border px-2 py-1.5 text-[10px] uppercase tracking-widest transition ${
-                      soundtrack === id
-                        ? 'border-amber-200/50 bg-amber-200/5 text-amber-200/90'
-                        : 'border-stone-700 hover:bg-stone-800'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
             <div className="my-3 h-px bg-stone-800" />
             {/* ---- reading: font + size. Both write to the settings store,
                 which useReadingPreferences mirrors onto <html>. ---- */}

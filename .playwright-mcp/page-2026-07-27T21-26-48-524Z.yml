@@ -1,0 +1,11 @@
+- generic [active] [ref=f5e1]:
+  - alert [ref=f5e2]
+  - generic [ref=f5e3]:
+    - generic:
+      - generic [ref=f5e8]:
+        - generic [ref=f5e9]: 1939 – 1945
+        - heading [level=1] [ref=f5e10]:
+          - img "Echoes of War" [ref=f5e11]
+        - paragraph [ref=f5e12]: An interactive journey through the Second World War.
+        - button "BEGIN" [ref=f5e13]
+      - button "Settings" [ref=f5e15]: ⚙

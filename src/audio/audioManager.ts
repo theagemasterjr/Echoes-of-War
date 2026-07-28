@@ -1,8 +1,9 @@
 /**
  * Audio layer. This fills in the previously-silent stub with the app's music
- * beds (public/audio/main-theme*.mp3, selectable in settings): looping playback,
- * smooth fade in/out, and the master volume slider. play()/stop() are still
- * the whole API — callers (MusicDirector, settingsStore) never changed.
+ * bed (public/audio/main-theme.mp3): looping playback, smooth fade in/out,
+ * and the master volume slider. play()/stop() are still the whole API —
+ * callers (MusicDirector, settingsStore) never changed. Adding another theme
+ * later = one TRACK_SRC row + widening MusicTrackId.
  *
  * Autoplay-safe by construction: play() always attempts playback, but if the
  * browser blocks it (no user gesture yet) the rejection is swallowed and a
@@ -10,12 +11,11 @@
  * file degrades to silence, not a crash.
  */
 
-export type MusicTrackId = 'main-theme' | 'main-theme-2';
+export type MusicTrackId = 'main-theme';
 type TrackId = MusicTrackId;
 
 const TRACK_SRC: Record<TrackId, string> = {
   'main-theme': '/audio/main-theme.mp3',
-  'main-theme-2': '/audio/main-theme-2.mp3',
 };
 
 export const MUSIC_TRACK_IDS = Object.keys(TRACK_SRC) as MusicTrackId[];
