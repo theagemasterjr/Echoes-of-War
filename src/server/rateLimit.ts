@@ -32,8 +32,13 @@ export function createLimiter({ hourlyPerIp, dailyGlobal }: LimiterConfig) {
   };
 }
 
-/** Character chat — unchanged limits and behavior. */
-export const checkRateLimit = createLimiter({ hourlyPerIp: 40, dailyGlobal: 800 });
+/** Character chat. Sized so one player can finish the WHOLE game in one
+ *  sitting with room to spare: a worst-case playthrough is ~156 requests
+ *  (6 chapter intros + ~25 questions a chapter), so 500/hour is ~3x that —
+ *  the old 40/hour cut a thorough player off inside chapter two. The global
+ *  daily ceiling covers ~15 full playthroughs a day. */
+export const checkRateLimit = createLimiter({ hourlyPerIp: 500, dailyGlobal: 2500 });
 
-/** Voice synthesis — separate, higher ceilings (one chat reply → one TTS call). */
-export const checkTtsRateLimit = createLimiter({ hourlyPerIp: 80, dailyGlobal: 1600 });
+/** Voice synthesis — separate, higher ceilings (one chat reply → one TTS
+ *  call, plus the odd replay), scaled with the chat limiter above. */
+export const checkTtsRateLimit = createLimiter({ hourlyPerIp: 1000, dailyGlobal: 5000 });

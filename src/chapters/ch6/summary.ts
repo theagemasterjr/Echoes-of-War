@@ -1,58 +1,39 @@
 import type { SummaryEntry } from '../types';
 
 /**
- * Chapter 6 closing summary — nine topics, per the founders' Part 1 spec.
- * The narrator reads the LINES only; the topic titles are on screen and are
- * not spoken. The lines below match the founders' recording
- * (public/audio/summary/ch6.mp3) word for word — transcribed with Whisper and
- * pinned to the take; the reveal timings live in src/audio/summaryNarration.ts
- * (TAKES.ch6) and were measured off that recording. Editing a line here means
- * re-recording and re-measuring that take.
+ * Chapter 6 closing summary — four topics, one per objective row, in the
+ * order the Objectives panel lists them (the same format every other chapter
+ * uses). The narrator reads the LINES only; the topic titles are on screen
+ * and are not spoken.
  *
- * (The recording opens with a spoken "Chapter 6. The Cost of Victory." header
- * before the first topic — the timing row accounts for it; nothing here needs
- * to.)
+ * ⚠ NO RECORDING IS WIRED for this wording yet. The previous take was
+ * retired when the summary was rewritten to the standard walk-the-objectives
+ * format (founder request, 2026-07-29); until the new recording lands at
+ * public/audio/summary/ch6.mp3 with a timed TAKES.ch6 row in
+ * src/audio/summaryNarration.ts (measure with
+ * scripts/lib/narration-segments.mjs), the screen shows the whole summary at
+ * once, silently — the shared screen's designed fallback.
  *
  * ⚠ TONE — this chapter's rules bind these lines hardest of all: no casualty
  * figures anywhere, no graphic description, no verdict on whether the
- * bombings were justified, no triumph. The final row leaves the question with
- * the player — that is the chapter's designed ending, not an evasion.
+ * bombings were justified, no triumph. See TONE_RULES in
+ * src/content/trees/ch6.ts.
  */
 export const SUMMARY: SummaryEntry[] = [
   {
-    topic: 'The War Goes On',
-    line: 'Germany surrendered in May. Japan did not.',
+    topic: 'Why the War Continues',
+    line: 'Germany surrendered in May 1945 and the war in Europe ended, but the war in the Pacific went on. In July the Allies set out their terms and demanded surrender, and Japan’s government gave no reply.',
   },
   {
-    topic: 'The Demand',
-    line: 'In July, the Allies set out their terms and demanded surrender. Japan’s government gave no reply.',
+    topic: 'The Impossible Choice',
+    line: 'An invasion of Japan was planned for the autumn, and Japan was preparing to resist it — down to training ordinary people. After the fighting on Okinawa, every way left of ending the war carried an enormous cost.',
   },
   {
-    topic: 'The Invasion That Never Came',
-    line: 'An invasion of Japan was planned for the autumn. Japan was preparing to meet it, down to training civilians. Both sides expected it to be worse than anything that had come before.',
+    topic: 'The Atomic Bomb',
+    line: 'The bomb had been built in secret over several years and tested exactly once, in the New Mexico desert. Hiroshima had been largely spared bombing, which was part of why it was chosen. On the morning of the 6th of August, a single plane dropped a single bomb, and almost nobody was in shelter.',
   },
   {
-    topic: 'No Easy Way',
-    line: 'There was no option left that was not terrible. Invade. Continue the blockade and the bombing. Or use a weapon that had been tested exactly once.',
-  },
-  {
-    topic: 'The Argument',
-    line: 'Some of the scientists who built it asked for a demonstration instead.',
-  },
-  {
-    topic: 'The Sixth of August',
-    line: 'One aircraft. One bomb. A quarter past eight in the morning. A single plane had never meant anything, so nobody took shelter.',
-  },
-  {
-    topic: 'The End of the War',
-    line: 'A second bomb fell on Nagasaki. On the 15th of August, Japan’s surrender was announced. The war was over.',
-  },
-  {
-    topic: 'The Illness After',
-    line: 'The harm did not end that morning. In the weeks that followed, people who had walked away from the blast fell ill from something no doctor had ever treated.',
-  },
-  {
-    topic: 'The World After',
-    line: 'No nuclear weapon has been used in war since — but the world that came after was one where they existed, and where more than one country would build them. Whether there was another way is a question people have argued over ever since. It is a fair question to keep asking.',
+    topic: 'The Effect of the Bomb',
+    line: 'A second bomb fell on Nagasaki, and the Soviet Union declared war on Japan the same week. Japan announced its surrender on the 15th of August. The harm did not end there — in the weeks that followed, people who had survived fell ill with a sickness doctors did not yet understand.',
   },
 ];

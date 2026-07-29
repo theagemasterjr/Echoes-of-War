@@ -6,6 +6,7 @@ import { chatComplete, CHARACTER_MODEL, REPLY_MAX_TOKENS } from '@/server/openai
 import { buildCharacterSystem, buildIntroInstruction } from '@/server/prompts';
 import { screenInput } from '@/server/screening';
 import { checkCoverage } from '@/server/coverage';
+import { classifyIntent } from '@/server/intent';
 import { checkRateLimit } from '@/server/rateLimit';
 import { readCacheFile, writeCacheFile } from '@/server/diskCache';
 
@@ -90,13 +91,19 @@ export async function POST(req: NextRequest) {
       content: String(m.text).slice(0, 1000),
     }));
 
-    const reply =
-      (await chatComplete({
+    // The character's reply and the intent classification of the player's
+    // question run side by side — the classifier (see server/intent.ts) is
+    // what ticks an Objectives row however the player words the question,
+    // and running it in parallel means it costs no latency at all.
+    const [reply, intentObjectiveIds] = await Promise.all([
+      chatComplete({
         model: CHARACTER_MODEL,
         maxTokens: REPLY_MAX_TOKENS,
         system: buildCharacterSystem(tree, node, covered),
         messages: [...history, { role: 'user', content: message }],
-      })) || '…';
+      }).then((r) => r || '…'),
+      classifyIntent(message, tree.objectives ?? []),
+    ]);
 
     // Grade the node's learning points (what lights up CONTINUE). The on-screen
     // objectives are NOT graded here — a row only ever ticks off client-side,
@@ -124,6 +131,7 @@ export async function POST(req: NextRequest) {
       guidedQuestions: tree.nodes[nextNodeId].guidedQuestions,
       nodeId: nextNodeId,
       objectives: tree.objectives ?? [],
+      intentObjectiveIds,
     };
     return NextResponse.json(response);
   } catch (e) {

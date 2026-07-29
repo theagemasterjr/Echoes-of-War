@@ -2,9 +2,11 @@
 /**
  * True while the character is delivering a line — drives the talking
  * animation on the 3D stage. The voiced audio (voicePlayer) is the source of
- * truth; when no voice is configured (no key / TTS error) it falls back to
- * miming for roughly the on-screen text-reveal window, matching the
- * Typewriter's 1.2s wait + ~80 chars/sec pacing.
+ * truth: while a line's audio is pending the animation holds, and opens on
+ * the 'start' event so mouth and sound begin together. When no voice comes
+ * (no key / TTS error / voice off) it mimes for roughly the on-screen
+ * text-reveal window instead, on the same hold-then-give-up gate the
+ * SubtitleLine uses (~80 chars/sec reveal pacing).
  */
 import { useEffect, useRef, useState } from 'react';
 import { voicePlayer } from '@/audio/voicePlayer';
@@ -38,8 +40,11 @@ export function useCharacterSpeaking(): boolean {
     };
   }, []);
 
-  // a character line just landed: if the voice hasn't started shortly, mime
-  // for the reveal window instead
+  // A character line just landed. If its audio is on its way
+  // (voicePlayer.pending), hold still and let the 'start' event open the
+  // mouth exactly when the sound begins — the same gate the subtitle uses,
+  // so words, voice and animation land together. Only when the voice gives
+  // up (fetch failed, voice off) does the mime carry the reveal window.
   const msgCount = messages.length;
   useEffect(() => {
     const last = messages[messages.length - 1];
@@ -47,15 +52,22 @@ export function useCharacterSpeaking(): boolean {
     const t = timers.current;
     clearTimeout(t.probe);
     clearTimeout(t.end);
-    t.probe = setTimeout(() => {
+    const t0 = performance.now();
+    const probe = () => {
       t.probe = undefined;
       if (voicePlayer.speaking) return; // voice took over — events drive it
-      setSpeaking(true);
+      const waited = performance.now() - t0;
+      if (voicePlayer.pending && waited < 8000) {
+        t.probe = setTimeout(probe, 150); // still coming — keep holding
+        return;
+      }
+      setSpeaking(true); // no voice for this line: mime the reveal window
       t.end = setTimeout(() => {
         t.end = undefined;
         setSpeaking(false);
       }, 600 + (last.text.length / 80) * 1000);
-    }, 1300);
+    };
+    t.probe = setTimeout(probe, 300);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [msgCount]);
 

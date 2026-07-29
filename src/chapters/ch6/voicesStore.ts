@@ -254,8 +254,12 @@ interface VoicesState {
   nudge: { text: string; at: number } | null;
   /** Tap-to-place: the current slip is picked up, waiting for a second tap. */
   selected: boolean;
-  /** When the ninth slip was first refused — starts the centre glow, and the
-   *  ~20 s clock for the fallback line. */
+  /** When the board reached the ninth-slip stage (all eight placed) — the
+   *  centre glow's clock: it appears the moment the eighth slip is placed,
+   *  showing where the last one belongs. */
+  ninthAt: number | null;
+  /** When the ninth slip was first refused — the ~20 s clock for the
+   *  fallback line. */
   ninthRefusedAt: number | null;
   /** When the ninth slip settled at the centre — the finale clock's zero. */
   finaleAt: number | null;
@@ -281,6 +285,7 @@ const fresh = () => ({
   feedback: null,
   nudge: null,
   selected: false,
+  ninthAt: null,
   ninthRefusedAt: null,
   finaleAt: null,
   labels: [] as ScreenLabel[],
@@ -399,7 +404,7 @@ export const useVoicesStore = create<VoicesState>((set, get) => ({
       setTimeout(() => {
         const now = get();
         if (now.placedCount === 8 && now.stage === 'play' && !now.finaleAt) {
-          set({ stage: 'ninth', feedback: null, nudge: null });
+          set({ stage: 'ninth', ninthAt: performance.now(), feedback: null, nudge: null });
           speakWhenQuiet(slipById('ninth').text);
         }
       }, NINTH_DEAL_MS);
@@ -431,6 +436,7 @@ export const useVoicesStore = create<VoicesState>((set, get) => ({
     set({
       placedCount: 8,
       stage: 'ninth',
+      ninthAt: performance.now(),
       selected: false,
       refused: null,
       feedback: null,

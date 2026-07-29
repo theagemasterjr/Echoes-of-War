@@ -26,6 +26,7 @@ let enabled = true;
 // stop() ends silently — a manual stop must not trigger "auto-listen next".
 type VoiceEvent = 'start' | 'end';
 let playing = false;
+let pending = false; // a speak() is fetching audio that has not started yet
 let durationSec = 0; // length of the line now playing — paces the on-screen text
 const listeners = new Set<(e: VoiceEvent) => void>();
 function emit(e: VoiceEvent) {
@@ -42,7 +43,14 @@ function ensureEl(): HTMLAudioElement | null {
   try {
     el = new Audio();
     el.preload = 'auto';
-    el.addEventListener('error', () => {});
+    // a clip failing MID-play must release the line like a natural end —
+    // otherwise the subtitle pacing and the talking animation freeze on it
+    el.addEventListener('error', () => {
+      if (!playing) return;
+      playing = false;
+      durationSec = 0;
+      emit('end');
+    });
     return el;
   } catch {
     return null;
@@ -82,6 +90,14 @@ export const voicePlayer = {
     return playing;
   },
 
+  /** Is a line's audio on its way (fetched, not yet playing)? The subtitle
+   *  and the talking animation hold for a pending line so words, mouth and
+   *  sound land together — and give up waiting the moment this goes false
+   *  without playback (the fetch failed, or voice is off). */
+  get pending() {
+    return pending;
+  },
+
   /** Seconds of the line now playing (0 if unknown) — paces the on-screen text. */
   get durationSec() {
     return durationSec;
@@ -105,6 +121,7 @@ export const voicePlayer = {
   stop() {
     token++;
     playing = false; // silent — no 'end' event for a manual stop
+    pending = false;
     durationSec = 0;
     try {
       if (el) el.onended = null; // the pause below must not read as a natural end
@@ -121,6 +138,7 @@ export const voicePlayer = {
     // A newer line supersedes whatever is still talking: cut it now, and clear
     // the old duration so the incoming subtitle never paces itself to it.
     playing = false;
+    pending = true; // the subtitle/animation hold for this line from here on
     durationSec = 0;
     try {
       audio.onended = null;
@@ -155,11 +173,17 @@ export const voicePlayer = {
       await audio.play();
       if (mine === token) {
         if (!durationSec && isFinite(audio.duration)) durationSec = audio.duration;
+        pending = false;
         playing = true;
         emit('start');
       }
     } catch {
       // Silent skip — subtitles carry the line regardless.
+    } finally {
+      // Whatever happened — started, failed, or errored — this call is no
+      // longer "on its way", and anyone holding for it may act. A superseded
+      // call leaves `pending` alone: it belongs to the newer speak() now.
+      if (mine === token) pending = false;
     }
   },
 };

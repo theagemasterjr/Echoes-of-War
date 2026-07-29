@@ -105,10 +105,21 @@ export const useConversation = create<ConvoState>((set, get) => {
       const movedNode = r.advanceTo !== null && r.advanceTo !== s.nodeId;
       const covered = Array.from(new Set([...s.covered, ...r.newlyCoveredIds]));
       const objectives = r.objectives ?? s.objectives;
-      // the second way a row ticks: everything it teaches has now been taught.
-      // The player's own words already ticked rows in send(); this adds the ones
-      // the character covered, so a topic explained in unforeseen wording lands.
-      const taught = coveredObjectives(objectives, covered);
+      // The other two ways a row ticks (the player's own words already ticked
+      // rows instantly in send()): the server's intent classifier read the
+      // player's QUESTION and said which rows it was about, and the coverage
+      // grader says which rows the CHARACTER has now fully taught — so a
+      // topic raised or explained in unforeseen wording still lands.
+      const taught = [
+        ...coveredObjectives(objectives, covered),
+        ...(r.intentObjectiveIds ?? []),
+      ];
+      // Fire-and-forget voice, started BEFORE the message is committed so the
+      // subtitle mounts with the fetch already marked in flight and can hold
+      // the text for the voice (see voicePlayer.pending / SubtitleLine).
+      // Deflections get voiced too (in character); fully additive, silent
+      // when no voice key is configured.
+      voicePlayer.speak(r.reply, req.chapterId);
       set({
         status: 'idle',
         nodeId: r.nodeId,
@@ -123,9 +134,6 @@ export const useConversation = create<ConvoState>((set, get) => {
             : s.objectivesDone,
         canContinue: s.canContinue || r.canContinue,
       });
-      // fire-and-forget voice — deflections get voiced too (in character);
-      // fully additive, silent when no voice key is configured
-      voicePlayer.speak(r.reply, req.chapterId);
     } catch {
       set({ status: 'error' });
     }

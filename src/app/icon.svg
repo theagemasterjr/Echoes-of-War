@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- The Echoes of War compass mark, rebuilt as vectors from the founder's
+       logo so the favicon stays crisp at every size. -->
+  <rect width="512" height="512" fill="#221b10"/>
+
+  <!-- outermost faint dashed ring -->
+  <circle cx="256" cy="256" r="216" fill="none" stroke="#6d5a32" stroke-width="5"
+          stroke-linecap="round" stroke-dasharray="14 22"/>
+
+  <!-- broken arc ring with beads -->
+  <circle cx="256" cy="256" r="172" fill="none" stroke="#c9a355" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="88 47" stroke-dashoffset="24"/>
+  <g fill="#eed393">
+    <circle cx="256" cy="84" r="9"/>
+    <circle cx="377.6" cy="134.4" r="9"/>
+    <circle cx="428" cy="256" r="9"/>
+    <circle cx="377.6" cy="377.6" r="9"/>
+    <circle cx="256" cy="428" r="9"/>
+    <circle cx="134.4" cy="377.6" r="9"/>
+    <circle cx="84" cy="256" r="9"/>
+    <circle cx="134.4" cy="134.4" r="9"/>
+  </g>
+
+  <!-- solid inner ring the star sits over -->
+  <circle cx="256" cy="256" r="103" fill="none" stroke="#d5b061" stroke-width="8"/>
+
+  <!-- four-point star, two facets per arm (lit side / shaded side) -->
+  <g>
+    <path d="M256 106 L233.4 233.4 L256 256 Z" fill="#ecd28c"/>
+    <path d="M256 106 L278.6 233.4 L256 256 Z" fill="#a8873f"/>
+    <path d="M406 256 L278.6 233.4 L256 256 Z" fill="#ecd28c"/>
+    <path d="M406 256 L278.6 278.6 L256 256 Z" fill="#a8873f"/>
+    <path d="M256 406 L278.6 278.6 L256 256 Z" fill="#ecd28c"/>
+    <path d="M256 406 L233.4 278.6 L256 256 Z" fill="#a8873f"/>
+    <path d="M106 256 L233.4 278.6 L256 256 Z" fill="#ecd28c"/>
+    <path d="M106 256 L233.4 233.4 L256 256 Z" fill="#a8873f"/>
+  </g>
+
+  <!-- dark hub -->
+  <circle cx="256" cy="256" r="17" fill="#17110a"/>
+</svg>

@@ -123,4 +123,8 @@ export interface ChatResponse {
   nodeId: string;
   /** The chapter's objectives — rides every response so the checklist is self-healing. */
   objectives?: ObjectiveDef[];
+  /** Objectives the PLAYER'S message was classified as asking about (see
+   *  server/intent.ts) — the accurate second pass behind the instant
+   *  client-side keyword match. Absent/empty means "none matched". */
+  intentObjectiveIds?: string[];
 }

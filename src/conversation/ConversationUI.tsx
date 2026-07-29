@@ -8,6 +8,45 @@ import { ObjectivesPanel } from '@/ui/ObjectivesPanel';
 import { voicePlayer } from '@/audio/voicePlayer';
 import { useSettingsStore } from '@/state/settingsStore';
 
+/** First name only — warmer, and short enough to sit beside the dots. The
+ *  ch5–ch6 skeletons still carry "Placeholder: …" names, so those fall back to
+ *  a plain label rather than printing the word Placeholder at a player. */
+function thinkingLabel(characterName: string): string {
+  const first = characterName.split(/[\s:]+/)[0];
+  if (!first || /placeholder/i.test(characterName)) return 'Thinking…';
+  return `${first} is thinking…`;
+}
+
+/**
+ * Shown while a reply is on its way. Loud on purpose: this used to be a small
+ * grey ellipsis, which read as nothing happening at all — and a player who
+ * believes the game has frozen starts clicking things. Naming the character and
+ * keeping the dots moving makes the wait obviously *her*, not a stall.
+ */
+function ThinkingIndicator({ characterName }: { characterName: string }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-16 flex-col items-center justify-center gap-3"
+    >
+      <span className="flex items-end gap-2" aria-hidden>
+        {[0, 1, 2].map((k) => (
+          <motion.span
+            key={k}
+            className="h-3 w-3 rounded-full bg-amber-200 shadow-[0_0_12px_rgba(252,211,77,0.6)]"
+            animate={{ opacity: [0.3, 1, 0.3], y: [0, -6, 0] }}
+            transition={{ duration: 1.1, repeat: Infinity, delay: k * 0.16, ease: 'easeInOut' }}
+          />
+        ))}
+      </span>
+      <span className="text-[15px] tracking-wide text-amber-100">
+        {thinkingLabel(characterName)}
+      </span>
+    </div>
+  );
+}
+
 /** Cinematic dialogue: character in the 3D stage, subtitle-style text below. */
 export function ConversationUI({
   chapterId, onContinue,
@@ -99,7 +138,11 @@ export function ConversationUI({
       )}
 
       {voiceMode ? (
-        <VoiceMode onExit={() => setVoiceMode(false)} onContinue={tryContinue} />
+        <VoiceMode
+          onExit={() => setVoiceMode(false)}
+          onContinue={tryContinue}
+          characterName={meta.characterName}
+        />
       ) : (
       <div className="mx-auto mb-4 w-full max-w-3xl px-4">
         {/* subtitle line */}
@@ -116,8 +159,8 @@ export function ConversationUI({
                 REPEAT
               </button>
             </div>
-          ) : convo.status === 'sending' && lastCharacterLine === '' ? (
-            <p className="animate-pulse text-stone-500">…</p>
+          ) : convo.status === 'sending' ? (
+            <ThinkingIndicator characterName={meta.characterName} />
           ) : (
             <SubtitleLine
               key={convo.messages.length}
@@ -126,9 +169,6 @@ export function ConversationUI({
               onDone={() => setLineDone(true)}
               hidden={!showSubtitleText}
             />
-          )}
-          {convo.status === 'sending' && lastCharacterLine !== '' && (
-            <span className="ml-1 inline-block animate-pulse text-stone-500">…</span>
           )}
         </div>
 
@@ -275,6 +315,10 @@ interface SpeechRecognitionLike {
   lang: string;
   start: () => void;
   stop: () => void;
+  /** Discards everything heard and ends; stop() would deliver (and send) it. */
+  abort?: () => void;
+  /** Fires when the mic is actually capturing — after the permission prompt. */
+  onaudiostart: (() => void) | null;
   onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
@@ -326,7 +370,13 @@ function VoiceModeButton({ onOpen }: { onOpen: () => void }) {
  * the words appear on screen. The 3D character stays visible — this overlay
  * only owns the bottom of the screen.
  */
-function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () => void }) {
+function VoiceMode({
+  onExit, onContinue, characterName,
+}: {
+  onExit: () => void;
+  onContinue: () => void;
+  characterName: string;
+}) {
   const convo = useConversation();
   const subtitlesEnabled = useSettingsStore((s) => s.subtitlesEnabled);
   const voiceEnabled = useSettingsStore((s) => s.voiceEnabled);
@@ -360,23 +410,70 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
     voicePlayer.stop(); // your turn — cut the character's audio
     try {
       const rec = new Ctor();
-      rec.continuous = false;
+      // Continuous, with our own silence window. The browser's built-in
+      // endpointer (continuous=false) sends after barely a second of quiet,
+      // which cut players off mid-thought — a kid pausing to find a word is
+      // not finished. Now the mic stays open until SILENCE_MS passes with
+      // nothing new heard (or the player taps to send, unchanged).
+      const SILENCE_MS = 2800; // the pause a thinking player is allowed
+      const FIRST_SPEECH_MS = 8000; // give up if nothing is ever heard at all
+      rec.continuous = true;
       rec.interimResults = true;
       rec.lang = 'en-US';
       finalRef.current = '';
+      let silence: ReturnType<typeof setTimeout> | null = null;
+      const armSilence = (ms: number) => {
+        if (silence) clearTimeout(silence);
+        silence = setTimeout(() => {
+          try {
+            rec.stop(); // onend below sends whatever was heard
+          } catch {}
+        }, ms);
+      };
+      // The give-up clock must not start until the mic is actually capturing:
+      // rec.start() first has to get through the permission prompt and the
+      // recognizer warm-up, when nothing can possibly be heard — a kid taking
+      // ten seconds to read the prompt and press Allow must not open onto a
+      // dead mic. And when it fires, it aborts rather than stops: nothing was
+      // understood, so nothing should be flushed mid-word and sent.
+      let giveUp: ReturnType<typeof setTimeout> | null = null;
+      rec.onaudiostart = () => {
+        giveUp = setTimeout(() => {
+          try {
+            (rec.abort ?? rec.stop).call(rec);
+          } catch {}
+        }, FIRST_SPEECH_MS);
+      };
       rec.onresult = (e) => {
+        if (giveUp) {
+          clearTimeout(giveUp);
+          giveUp = null; // something was heard — the quiet clock takes over
+        }
+        // e.results is cumulative for the whole session: with continuous=true
+        // a finished segment stays in the list and is delivered again with
+        // every later event. Rebuild the transcript from scratch each time —
+        // appending would repeat every finished segment once per new event.
+        let final = '';
         let interim = '';
         for (let i = 0; i < e.results.length; i++) {
           const r = e.results[i];
           const t = r[0]?.transcript ?? '';
-          if (r.isFinal) finalRef.current += (finalRef.current ? ' ' : '') + t.trim();
+          if (r.isFinal) final += (final ? ' ' : '') + t.trim();
           else interim += t;
         }
-        setHeard(finalRef.current || interim);
+        finalRef.current = final;
+        setHeard(final || interim);
+        armSilence(SILENCE_MS); // every new word restarts the quiet clock
       };
-      rec.onerror = () => setMode('ready');
+      rec.onerror = () => {
+        if (silence) clearTimeout(silence);
+        if (giveUp) clearTimeout(giveUp);
+        setMode('ready');
+      };
       rec.onend = () => {
-        // the recognizer stops when you finish talking — only then do we send
+        // we stopped it (silence window) or the player tapped — send now
+        if (silence) clearTimeout(silence);
+        if (giveUp) clearTimeout(giveUp);
         if (modeRef.current !== 'listening') return;
         const text = finalRef.current.trim();
         setHeard('');
@@ -386,7 +483,7 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
         } else setMode('ready');
       };
       recRef.current = rec;
-      rec.start();
+      rec.start(); // the FIRST_SPEECH_MS clock arms in onaudiostart, not here
       setMode('listening');
       setHeard('');
     } catch {
@@ -441,12 +538,26 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
     [],
   );
 
+  /** The one thing that matters here: is this microphone hearing you? */
+  const micOn = mode === 'listening';
+
+  /**
+   * A reply is still on its way. `mode` alone misses the opening line — that
+   * request is in flight before the player has done anything, so voice mode
+   * used to sit on "tap the microphone to speak" while the character was in
+   * fact thinking, and a tap there started recording a question the engine
+   * would then drop (it refuses a send while one is in flight, which left the
+   * mic stuck on "thinking" with nothing ever coming back).
+   */
+  const waiting = !micOn && (mode === 'thinking' || convo.status === 'sending');
+
   const tap = () => {
     if (convo.status === 'error') {
       convo.retry();
       setMode('thinking');
       return;
     }
+    if (waiting) return; // let her finish answering before taking a question
     if (mode === 'listening') {
       try {
         recRef.current?.stop(); // onend sends what was heard
@@ -456,41 +567,27 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
     }
   };
 
-  /** The one thing that matters here: is this microphone hearing you? */
-  const micOn = mode === 'listening';
-
   const hint =
     convo.status === 'error'
       ? 'Something broke — tap to try again'
       : micOn
         ? 'Listening… tap when you finish'
-        : mode === 'thinking'
-          ? 'Thinking…'
+        : waiting
+          ? 'Wait for the answer'
           : mode === 'speaking'
             ? 'Tap the microphone to talk'
             : 'Tap the microphone to speak';
 
   return (
     <div className="pointer-events-auto flex flex-col items-center pb-8">
-      {/* the way out for anyone who would rather type — always visible,
-          plainly worded, and big enough to find at a glance */}
-      <button
-        onClick={onExit}
-        title="Switch to typing your questions"
-        className="absolute right-4 top-16 flex items-center gap-2 rounded-sm border border-amber-200/40 bg-stone-950/80 px-4 py-2.5 text-xs tracking-wide text-amber-100 backdrop-blur-sm transition hover:bg-amber-200/10"
-      >
-        <span className="text-base leading-none">⌨</span>
-        <span>Type instead</span>
-      </button>
-
       {/* the words, as they are spoken. The line stays on screen after the
           voice ends — the mic is off and waiting, so there is nothing to
           hurry the reader along. */}
       <div className="mb-6 min-h-16 w-full max-w-2xl px-6 text-center">
         {micOn ? (
           heard && <p className="text-[15px] leading-relaxed text-sky-200/90">{heard}</p>
-        ) : mode === 'thinking' ? (
-          <p className="animate-pulse text-stone-500">…</p>
+        ) : waiting ? (
+          <ThinkingIndicator characterName={characterName} />
         ) : (
           lastCharacterLine &&
           showSubtitleText && (
@@ -508,13 +605,20 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
           not. Never ambiguous, never on by itself. */}
       <button
         onClick={tap}
-        aria-label={micOn ? 'Microphone on — tap to stop and send' : 'Tap to turn the microphone on'}
+        disabled={waiting}
+        aria-label={
+          micOn
+            ? 'Microphone on — tap to stop and send'
+            : waiting
+              ? 'Waiting for the answer'
+              : 'Tap to turn the microphone on'
+        }
         aria-pressed={micOn}
         className={`relative flex h-20 w-20 items-center justify-center rounded-full border-2 text-2xl transition ${
           micOn
             ? 'border-amber-300 bg-amber-200/25 text-amber-100 shadow-[0_0_28px_rgba(252,211,77,0.45)]'
             : 'border-stone-600 bg-stone-950/80 text-stone-500 hover:border-amber-200/50 hover:text-stone-300'
-        }`}
+        } disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-stone-600 disabled:hover:text-stone-500`}
       >
         {micOn && (
           <span className="absolute inset-0 animate-ping rounded-full border-2 border-amber-300/60" />
@@ -537,12 +641,25 @@ function VoiceMode({ onExit, onContinue }: { onExit: () => void; onContinue: () 
       </p>
       <p className="mt-1 text-xs text-stone-400">{hint}</p>
 
-      <button
-        onClick={onContinue}
-        className="mt-4 rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 py-1.5 text-xs tracking-widest text-amber-100 transition hover:bg-amber-200/20"
-      >
-        CONTINUE →
-      </button>
+      {/* the way out for anyone who would rather type sits right beside
+          CONTINUE — one row at the bottom, where every control lives, so
+          nobody has to hunt the corners of the screen for it */}
+      <div className="mt-4 flex items-center gap-2">
+        <button
+          onClick={onExit}
+          title="Switch to typing your questions"
+          className="flex items-center gap-2 rounded-sm border border-amber-200/40 bg-stone-950/80 px-4 py-1.5 text-xs tracking-wide text-amber-100 backdrop-blur-sm transition hover:bg-amber-200/10"
+        >
+          <span className="text-base leading-none">⌨</span>
+          <span>Type instead</span>
+        </button>
+        <button
+          onClick={onContinue}
+          className="rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 py-1.5 text-xs tracking-widest text-amber-100 transition hover:bg-amber-200/20"
+        >
+          CONTINUE →
+        </button>
+      </div>
       <p className="mt-2 text-center text-[10px] text-stone-600">
         Character responses are AI-generated and may contain errors.
       </p>
@@ -578,12 +695,18 @@ function SubtitleLine({
   const sentences = useMemo(() => splitSentences(text), [text]);
   const [i, setI] = useState(0);
   const [tapMode, setTapMode] = useState(false);
+  // The line is HELD — nothing rendered — until its audio actually starts, so
+  // words, voice and the talking animation land together. Held is released
+  // three ways: the voice starts (follow it), the voice gives up (fetch
+  // failed / voice off — reader sets the pace), or the hard cap passes.
+  const [held, setHeld] = useState(true);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
   useEffect(() => {
     setI(0);
     setTapMode(false);
+    setHeld(true);
     if (!text) return;
 
     // Where in the clip each sentence ends, as a fraction. Characters stand in
@@ -598,19 +721,20 @@ function SubtitleLine({
     }
 
     let follow: ReturnType<typeof setInterval> | null = null;
-    let waitForVoice: ReturnType<typeof setTimeout> | null = null;
+    let waitForVoice: ReturnType<typeof setInterval> | null = null;
     const stopFollow = () => {
       if (follow) clearInterval(follow);
       follow = null;
     };
     const stopWaiting = () => {
-      if (waitForVoice) clearTimeout(waitForVoice);
+      if (waitForVoice) clearInterval(waitForVoice);
       waitForVoice = null;
     };
 
     const startFollowing = () => {
       stopWaiting();
       setTapMode(false);
+      setHeld(false); // the voice is playing — show the words with it
       if (follow) return;
       follow = setInterval(() => {
         const dur = voicePlayer.durationSec;
@@ -635,10 +759,20 @@ function SubtitleLine({
     if (voicePlayer.speaking) {
       startFollowing();
     } else {
-      // give the voice a moment to arrive; if it doesn't, the reader sets the pace
-      waitForVoice = setTimeout(() => {
-        if (!voicePlayer.speaking) setTapMode(true);
-      }, 1400);
+      // Hold the words for the voice. While the line's audio is still on its
+      // way (voicePlayer.pending) keep holding — up to a hard cap — so the
+      // text never runs ahead of the sound; the moment the voice gives up
+      // (fetch failed, voice off) the reader takes over immediately.
+      const t0 = performance.now();
+      waitForVoice = setInterval(() => {
+        if (voicePlayer.speaking) return; // 'start' already handed over
+        const waited = performance.now() - t0;
+        if (waited > (voicePlayer.pending ? 8000 : 300)) {
+          stopWaiting();
+          setHeld(false);
+          setTapMode(true);
+        }
+      }, 120);
     }
     return () => {
       stopFollow();
@@ -650,8 +784,13 @@ function SubtitleLine({
 
   const last = i >= sentences.length - 1;
   useEffect(() => {
-    if (last) doneRef.current?.();
-  }, [last]);
+    // a held line hasn't been shown yet — a one-sentence reply must not
+    // count as delivered while it is still waiting for its audio
+    if (last && !held) doneRef.current?.();
+  }, [last, held]);
+
+  // still waiting for the voice to begin: nothing on screen yet
+  if (held) return null;
 
   // `hidden` assumes the voice is carrying the line. If the voice never
   // arrived (tapMode — no key, rate limit, network), the text is the only

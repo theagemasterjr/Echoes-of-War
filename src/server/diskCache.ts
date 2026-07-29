@@ -19,6 +19,11 @@ export async function readCacheFile(name: string): Promise<Buffer | null> {
 export async function writeCacheFile(name: string, data: Buffer | string): Promise<void> {
   try {
     await fs.mkdir(DIR, { recursive: true });
-    await fs.writeFile(path.join(DIR, name), data);
+    // Write to a temp name, then rename: readCacheFile serves any non-empty
+    // file forever, so a process killed mid-write must never be able to
+    // leave a half-written file behind under the real name.
+    const tmp = path.join(DIR, `.${name}.${process.pid}.tmp`);
+    await fs.writeFile(tmp, data);
+    await fs.rename(tmp, path.join(DIR, name));
   } catch {}
 }

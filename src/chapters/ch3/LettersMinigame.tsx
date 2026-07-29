@@ -79,17 +79,24 @@ export function LettersMinigame({ chapterId, onComplete }: MinigameProps) {
   /* ---- the table: banner, feedback, and whichever letter is open ---- */
   return (
     <div className="pointer-events-none absolute inset-0">
-      <div className="absolute left-1/2 top-10 w-full max-w-2xl -translate-x-1/2 px-6 text-center">
-        <div className="text-[10px] uppercase tracking-[0.3em] text-amber-200/50">
-          Letters of December · Round {roundIndex + 1} of {ROUNDS.length} · {round.eyebrow}
+      {/* The banner hides while a letter is open. The opened page is 3D —
+          inside the canvas, which ALWAYS paints beneath this DOM layer, so no
+          z-index can put the banner behind it; the tall page reaches up under
+          the banner and the headline was printing straight across the paper.
+          Same gating the wrong-choice card below already uses. */}
+      {!openId && (
+        <div className="absolute left-1/2 top-10 w-full max-w-2xl -translate-x-1/2 px-6 text-center">
+          <div className="text-[10px] uppercase tracking-[0.3em] text-amber-200/50">
+            Letters of December · Round {roundIndex + 1} of {ROUNDS.length} · {round.eyebrow}
+          </div>
+          <h2 className="mt-2 text-base font-light leading-snug text-stone-100 md:text-lg">
+            {round.banner}
+          </h2>
+          <p className="mt-2 text-xs text-stone-400">
+            They look identical. Open one to read it, then choose the one you believe is real.
+          </p>
         </div>
-        <h2 className="mt-2 text-base font-light leading-snug text-stone-100 md:text-lg">
-          {round.banner}
-        </h2>
-        <p className="mt-2 text-xs text-stone-400">
-          They look identical. Open one to read it, then choose the one you believe is real.
-        </p>
-      </div>
+      )}
 
       <div className="absolute inset-x-0 bottom-0 flex justify-center p-6 pb-8">
         {solvedId ? (

@@ -325,11 +325,24 @@ export function MissionBrief({
     if (clip?.file && el) {
       setSource(el, clip.file);
       const started = performance.now();
+      // Follow the audio clock while it is genuinely moving; hand over to the
+      // wall clock when it is not. The old guard trusted the audio clock the
+      // moment currentTime was above zero — a blocked or stalled clip whose
+      // clock had ticked once then froze would strand the briefing on that
+      // line forever (the single-take path below solved this long ago with
+      // the same stall window used here).
+      let lastAudioT = 0;
+      let lastMove = started;
       const tick = () => {
         if (cancelled) return;
-        // follow the audio clock where we have it, the wall clock if playback
-        // never started (a blocked autoplay must not freeze the briefing)
-        const t = el.currentTime > 0 ? el.currentTime : (performance.now() - started) / 1000;
+        const now = performance.now();
+        const audioT = el.currentTime;
+        if (audioT > lastAudioT + 0.005) {
+          lastAudioT = audioT;
+          lastMove = now;
+        }
+        const audioAlive = lastAudioT > 0 && now - lastMove <= AUDIO_STALL_MS;
+        const t = audioAlive ? lastAudioT : (now - started) / 1000;
         setRevealed(Math.min(text.length, reducedMotion ? text.length : charsAt(t)));
         if (t >= (clip.duration || 0)) {
           holdThenAdvance();
@@ -385,9 +398,13 @@ export function MissionBrief({
   const lineRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const acceptRef = useRef<HTMLButtonElement>(null);
   const [scrollY, setScrollY] = useState(0);
+  // Finished-by-listening and finished-by-skipping must read the same: the
+  // whole brief on screen, scrollable, nothing dimmed — so a player who let
+  // the narration run can still scroll back and re-read every line.
+  const readable = skipped || finished;
   useLayoutEffect(() => {
-    // once skipped, the page scrolls normally — the stack sits where it is
-    if (skipped) {
+    // once readable, the page scrolls normally — the stack sits where it is
+    if (readable) {
       setScrollY(0);
       return;
     }
@@ -420,7 +437,7 @@ export function MissionBrief({
   return (
     <div
       className={`pointer-events-auto absolute inset-0 flex flex-col items-center bg-black px-6 ${
-        skipped ? 'justify-start overflow-y-auto py-14' : 'justify-center overflow-hidden'
+        readable ? 'justify-start overflow-y-auto py-14' : 'justify-center overflow-hidden'
       }`}
     >
       {/* The whole stack slides up as the narrator moves on (see the
@@ -433,9 +450,9 @@ export function MissionBrief({
         ref={stackRef}
         initial={false}
         animate={{ y: scrollY }}
-        transition={{ duration: reducedMotion || skipped ? 0 : 0.7, ease: 'easeOut' }}
+        transition={{ duration: reducedMotion || readable ? 0 : 0.7, ease: 'easeOut' }}
         className={`flex w-full max-w-2xl flex-col items-center gap-5 text-center ${
-          skipped ? 'my-auto' : ''
+          readable ? 'my-auto' : ''
         }`}
         role="region"
         aria-label="Mission brief"
@@ -461,7 +478,7 @@ export function MissionBrief({
               aria-hidden={upcoming}
               initial={false}
               animate={{
-                opacity: skipped
+                opacity: readable
                   ? 1
                   : upcoming
                     ? 0
