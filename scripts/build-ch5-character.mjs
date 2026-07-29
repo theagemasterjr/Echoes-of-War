@@ -192,25 +192,11 @@ async function main() {
   }
   console.log(`wired ${wired} mesh(es) to ${matCache.size} material(s)`);
 
-  /* -- 4b. flip V ------------------------------------------------------ */
-  // This export carries OBJ/OpenGL-convention UVs (v = 0 at the BOTTOM of the
-  // image); glTF puts v = 0 at the top, and three.js follows the spec. Left
-  // alone, every island samples the mirrored row of its texture. Same fix as
-  // the previous ch5 model (see that build's note for the diagnostic).
-  const flipped = new Set();
-  for (const mesh of root.listMeshes())
-    for (const prim of mesh.listPrimitives()) {
-      const uv = prim.getAttribute('TEXCOORD_0');
-      if (!uv || flipped.has(uv)) continue; // primitives can share an accessor
-      flipped.add(uv);
-      const el = [];
-      for (let i = 0; i < uv.getCount(); i++) {
-        uv.getElement(i, el);
-        el[1] = 1 - el[1];
-        uv.setElement(i, el);
-      }
-    }
-  console.log(`flipped V on ${flipped.size} UV set(s)`);
+  /* -- 4b. no V-flip here --------------------------------------------- */
+  // Unlike the previous ch5 model (a raw OBJ->Mixamo round-trip), this export
+  // came back through imagetostl.com already in glTF's V-convention (v = 0 at
+  // the TOP) — flipping it, as that build did, rendered every texture upside
+  // down. Confirmed visually; leave TEXCOORD_0 exactly as exported.
 
   /* -- 5. shrink and write -------------------------------------------- */
   await doc.transform(

@@ -187,7 +187,7 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
       // own 4.76 × 1.108 (≈5.27), which keeps him the same apparent size as
       // every other character; the offset that follows is then ch4's
       // unchanged. Same −0.25 turn and −0.5 depth as the other chapters.
-      scale: 2.86, offset: [0, -3.79, -0.5], rotation: [0, -0.25, 0], castShadow: false,
+      scale: 2.86, offset: [0, -2.9, -0.5], rotation: [0, -0.25, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
     },
   },
