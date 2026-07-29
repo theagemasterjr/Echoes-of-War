@@ -97,7 +97,14 @@ const clipDuration = (a) =>
  * build — only the mesh/primitive -> material NAME assignment below is new.
  * ------------------------------------------------------------------ */
 const RECIPES = [
-  { m: 'Std_Skin_Head', size: 2048, normal: 1024, rough: 0.55 },
+  // no normal map: the head mesh's UV is mirrored left/right (CC texture-
+  // space saving) and this glTF has no baked TANGENT attribute, so three.js
+  // falls back to screen-space derivative tangents — those don't know about
+  // the mirror seam and get its handedness backwards on one whole half of
+  // the face, reading as a hard dark diagonal "shadow" from hairline to jaw.
+  // The bump detail this map added was subtle; dropping it removes the
+  // artifact outright instead of adding a tangent-generation step for it.
+  { m: 'Std_Skin_Head', size: 2048, rough: 0.55 },
   { m: 'Std_Skin_Body', size: 1024, rough: 0.55 },
   { m: 'Std_Skin_Arm', size: 1024, rough: 0.55 },
   { m: 'Std_Skin_Leg', size: 512, rough: 0.55 },
