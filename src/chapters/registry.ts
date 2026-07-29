@@ -99,7 +99,7 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch6', index: 6, title: 'The Cost of Victory', subtitle: 'The Pacific war ends',
     dates: '1945', location: 'Hiroshima, Japan',
-    characterName: 'Doctor Kenzo Sato', characterRole: 'Doctor, relief hospital',
+    characterName: 'Dr. Walter Hale', characterRole: 'US Army doctor, medical survey team',
     /* Verified against the current map texture (2026-07-28) by extracting the
      * world-map GLB's texture and plotting this position on it: the lantern
      * sits on south-western Honshu at the Seto Inland Sea — the Hiroshima
@@ -109,9 +109,7 @@ export const CHAPTERS: ChapterMeta[] = [
      * the styled placeholder frame and its CONTINUE goes on to the brief.
      * Dropping ch6-intro.mp4 into public/video/ needs no code change at all. */
     introVideo: '/video/ch6-intro.mp4',
-    /* TODO(founder): conversation backdrop — leave commented out until the
-     * image file physically exists (an empty reference hangs the 3D scene):
-     * conversationBackdrop: '/img/ch6-hospital.jpg', */
+    conversationBackdrop: '/img/ch6-hospital.jpg',
     /* Looking down on "The Voices" table — four pieces around a clear centre,
      * the slip stack along the near edge. Setting this is also what pins the
      * camera: SceneRouter places it absolutely every frame and ignores the

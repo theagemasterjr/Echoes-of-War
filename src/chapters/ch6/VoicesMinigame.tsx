@@ -153,7 +153,7 @@ export function VoicesMinigame({ chapterId, onComplete }: MinigameProps) {
   /* ── play and ninth-slip stages ── */
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* the cut from Doctor Sato to the war table */}
+      {/* the cut from Dr. Hale to the war table */}
       <motion.div
         initial={{ opacity: 1 }}
         animate={{ opacity: 0 }}
@@ -189,7 +189,7 @@ export function VoicesMinigame({ chapterId, onComplete }: MinigameProps) {
         </motion.div>
       ))}
 
-      {/* the current slip, readable at the bottom, spoken by Doctor Sato */}
+      {/* the current slip, readable at the bottom, spoken by Dr. Hale */}
       <AnimatePresence mode="wait">
         {liveSlip && (
           <motion.div

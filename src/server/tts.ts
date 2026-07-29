@@ -57,7 +57,7 @@ const VOICE_IDS: Partial<Record<ChapterId, string>> = {
   // Ellery. ELEVENLABS_VOICE_CH5 overrides without a code change.
   ch5: process.env.ELEVENLABS_VOICE_CH5 ?? 'CwhRBWXzGAHq8TQ4Fs17',
   // 'onwK4e9ZLuTAKqWW03F9' = ElevenLabs stock "Daniel" (deep, calm male) —
-  // Doctor Kenzo Sato, forty-four, measured and quiet. Deliberately the
+  // Dr. Walter Hale, forty-two, measured and quiet. Deliberately the
   // calmest, most level male stock voice on the account, and not one any
   // other chapter uses: this chapter's restraint has to be audible.
   // TODO(founder): audition it — "Bill" (pqHfZKP75CvOlQylNhV4) is an

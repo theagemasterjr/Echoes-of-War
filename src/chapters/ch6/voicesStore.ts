@@ -287,7 +287,7 @@ const fresh = () => ({
   stripTop: 66,
 });
 
-/** Doctor Sato's chapter voice reads the slips, feedback and nudges. Silent
+/** Dr. Hale's chapter voice reads the slips, feedback and nudges. Silent
  *  and harmless when no voice is configured — the text is on screen either
  *  way — and the same line is never spoken twice in a row. */
 let lastSpoken = '';

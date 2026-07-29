@@ -209,7 +209,17 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   // Drawn small and grey: it marks where German command is looking, and the
   // same file stands in for the division markers that gather at Calais.
   'ch5.pin.german-command': { label: 'Grey German command pin', source: { kind: 'glb', url: '/models/ch5-pin-german-command.glb', scale: 3.47 } },
-  'ch6.character': { label: 'Hiroshima doctor figure', source: { kind: 'placeholder', component: P.CharacterBust } },
+  'ch6.character': {
+    label: 'Hiroshima relief hospital doctor figure',
+    source: {
+      kind: 'glb', url: '/models/ch6-doctor.glb',
+      // Metre-scale rig like ch1/ch4/ch5, so the same 4.76. Both clips are
+      // seated with the head bone at y 1.132 — 4.76 × 1.132 − 3.90 puts the
+      // head on ~1.49, the line ch2/ch3/ch4/ch5 all sit on.
+      scale: 4.76, offset: [0, -3.90, -0.5], rotation: [0, 0.1, 0], castShadow: false,
+      clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
+    },
+  },
   // Chapter 6 "The Voices" minigame — four pieces stand for four people, plus
   // the paper crane (hidden until the end) and the paper slip the quotes ride
   // on. Scales are set from each file's measured bounds (build-ch6-pieces.mjs
