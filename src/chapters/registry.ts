@@ -74,7 +74,7 @@ export const CHAPTERS: ChapterMeta[] = [
   {
     id: 'ch5', index: 5, title: 'The Road Back', subtitle: 'D-Day and the liberation of Europe',
     dates: '1944', location: 'Normandy, France',
-    characterName: 'Sister Grace Ellery', characterRole: 'Nursing sister, field surgical unit',
+    characterName: 'Corporal Ted Marsh', characterRole: 'Medical orderly, field surgical unit',
     /* recalibrated to the current map texture (the old [-0.23, 0, -1.32] was
      * from the pre-retexture survey): interpolated from the three known-good
      * markers (ch1 Warsaw, ch3 Pearl Harbor, ch4 Stalingrad), which puts the

@@ -4,7 +4,7 @@
  *
  * Every word in the game lives up here: the one question the game turns on, the
  * label under each piece and beside each place, the line a correct drop earns,
- * Grace's hint after a second miss, and the closing card. The board itself —
+ * Ted's hint after a second miss, and the closing card. The board itself —
  * table, map, pieces, the payoff — is the 3D scene (ShowOrHideScene), which
  * measures where each labelled thing lands on screen and publishes it, so the
  * pairing holds at any window size. Root is pointer-events-none so drags reach
@@ -32,7 +32,7 @@ import {
 
 /** A feedback line has said its piece after this long. */
 const FEEDBACK_MS = 9000;
-/** So has one of Grace's hints, if the player leaves it alone. */
+/** So has one of Ted's hints, if the player leaves it alone. */
 const NUDGE_MS = 14000;
 /** The closing card holds this long before it offers to move on, so nobody
  *  clicks past it before they have read it. */
@@ -63,7 +63,7 @@ export function ShowOrHideMinigame({ chapterId, onComplete }: MinigameProps) {
     !feedback && !nudge ? null
       : !nudge || (feedback && feedback.at > nudge.at)
         ? { key: feedback!.at, text: feedback!.text, from: null as string | null }
-        : { key: nudge.at, text: nudge.text, from: 'Grace' };
+        : { key: nudge.at, text: nudge.text, from: 'Ted' };
 
   // the closing card only offers CONTINUE once it has been on screen long
   // enough to read
@@ -87,7 +87,7 @@ export function ShowOrHideMinigame({ chapterId, onComplete }: MinigameProps) {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* the cut from Grace to the war-room table */}
+      {/* the cut from Ted to the war-room table */}
       <motion.div
         className="absolute inset-0 bg-black"
         initial={{ opacity: 1 }}
@@ -166,7 +166,7 @@ export function ShowOrHideMinigame({ chapterId, onComplete }: MinigameProps) {
 
       {/*
         THE STRIP. Everything the board says to the player is drawn here and
-        nowhere else: the line a correct piece earns, and Grace's hint after a
+        nowhere else: the line a correct piece earns, and Ted's hint after a
         second miss. One line at a time — a new one replaces the last rather
         than stacking.
 

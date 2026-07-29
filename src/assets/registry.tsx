@@ -170,15 +170,24 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
   'ch4.piece.german': { label: 'Soldier figure — German 6th Army', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.29 } },
   'ch4.piece.ally': { label: 'Soldier figure — Axis ally army (Romanian / Hungarian)', source: { kind: 'glb', url: '/models/ch4-piece-soldier.glb', scale: 0.255 } },
   'ch5.character': {
-    label: 'British nursing sister figure',
+    label: 'British Army medical orderly figure',
     source: {
       kind: 'glb', url: '/models/ch5-nurse.glb',
-      // Meshy body on a Mixamo rig, metre-scale like ch1/ch4 — so it takes the
-      // same 4.76. Both clips are seated with the head bone at y 1.138 (a shade
-      // taller in the seat than ch4's 1.109), and the offset is set from that:
-      // 4.76 × 1.138 − 3.93 puts the head on ~1.49, the line ch2/ch3/ch4 all
-      // sit on. Same −0.25 turn and −0.5 depth as the other chapters.
-      scale: 4.76, offset: [0, -3.93, -0.5], rotation: [0, -0.25, 0], castShadow: false,
+      // "Army Character 3" (July 2026 replacement for the original Meshy
+      // nurse body). Its source GLB carried an extra, erroneous 0.01 scale on
+      // the Armature root (stripped in build-ch5-character.mjs — see that
+      // file's step 0); measured AFTER that fix, both clips are seated with
+      // the head top at y 1.845 in RIG units — but unlike every other
+      // chapter's rig, this one's rig units really are metres (confirmed by
+      // its inverse bind matrices), so it does NOT take the standard 4.76
+      // (that constant converts every other founder rig's own, smaller,
+      // non-metre unit — applying it here rendered him roughly 65% too big,
+      // easily confirmed on screen: shoulders filling the frame, only the cap
+      // visible). Scale is picked instead so scale × headTop matches ch4's
+      // own 4.76 × 1.108 (≈5.27), which keeps him the same apparent size as
+      // every other character; the offset that follows is then ch4's
+      // unchanged. Same −0.25 turn and −0.5 depth as the other chapters.
+      scale: 2.86, offset: [0, -3.79, -0.5], rotation: [0, -0.25, 0], castShadow: false,
       clips: { idle: 'Idle_Loop', talking: 'Talking_Loop' },
     },
   },
