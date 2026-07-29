@@ -8,7 +8,9 @@ export type View =
   | { kind: 'title' }
   | { kind: 'map' }
   | { kind: 'prologue' }
-  | { kind: 'chapter'; chapterId: ChapterId; beat: Beat };
+  | { kind: 'chapter'; chapterId: ChapterId; beat: Beat }
+  /** The end-of-game screen — shown once chapter 6 completes, before the map. */
+  | { kind: 'ending' };
 
 export type TransitionPhase = 'idle' | 'out' | 'titleCard' | 'in';
 
@@ -88,7 +90,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     const v = get().view;
     if (v.kind !== 'chapter') return;
     useProgressStore.getState().markComplete(v.chapterId);
-    get().returnToMap();
+    // Finishing the LAST chapter earns the ending — the whole game looked
+    // back at once, and the congratulations — before the map returns.
+    if (v.chapterId === 'ch6') set({ pending: { kind: 'ending' }, phase: 'out' });
+    else get().returnToMap();
   },
 
   returnToMap: (instant = false) => {

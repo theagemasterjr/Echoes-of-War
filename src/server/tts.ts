@@ -100,16 +100,24 @@ function cacheSet(key: string, buf: ArrayBuffer) {
 }
 
 /**
- * Synthesize `text` for a chapter's voice. Returns the mp3 bytes, or null on
- * any failure. Buffered (not streamed) — replies are ≤110 words, so the whole
- * clip fits in one short response. (Streaming alternative: hit the
- * `/stream` endpoint and pipe its body straight through as a ReadableStream —
- * lower time-to-first-byte, more moving parts; not worth it at this length.)
+ * Synthesize `text` for a chapter's voice.
+ *
+ * Returns the mp3 bytes when the line is already cached (memory or disk — the
+ * fastest possible path), or a live ReadableStream of the clip when it has to
+ * be synthesized fresh. The stream comes from ElevenLabs' `/stream` endpoint
+ * and is piped straight through to the player, so the browser starts
+ * receiving audio while ElevenLabs is still generating the tail of it —
+ * previously the whole clip was synthesized, then downloaded to the server,
+ * then downloaded again by the client, three fully serial waits. A tee'd
+ * branch of the same stream fills both caches in the background, so the
+ * repeat of any line is still served from memory/disk as bytes.
+ *
+ * Returns null on any failure.
  */
 export async function synthesize(
   text: string,
   chapterId: ChapterId,
-): Promise<ArrayBuffer | null> {
+): Promise<ArrayBuffer | ReadableStream<Uint8Array> | null> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const voiceId = voiceFor(chapterId);
   if (!apiKey || !voiceId) return null;
@@ -133,7 +141,7 @@ export async function synthesize(
 
   try {
     const res = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=mp3_22050_32`,
       {
         method: 'POST',
         headers: {
@@ -144,7 +152,7 @@ export async function synthesize(
         body: JSON.stringify({ text: clean, model_id: TTS_MODEL }),
       },
     );
-    if (!res.ok) {
+    if (!res.ok || !res.body) {
       // The player still just gets silent subtitles, but "the voice is gone"
       // must never again be a mystery: record why. Every past silence (an
       // exhausted key, a voice the account can't use, a mistyped key) showed
@@ -152,14 +160,41 @@ export async function synthesize(
       noteFailure(`ElevenLabs ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
       return null;
     }
-    const buf = await res.arrayBuffer();
-    if (!buf.byteLength) {
-      noteFailure('ElevenLabs returned an empty clip');
-      return null;
-    }
-    cacheSet(key, buf);
-    writeCacheFile(file, Buffer.from(buf)); // fire-and-forget
-    return buf;
+
+    // One branch goes straight to the player; the other quietly fills the
+    // caches once the clip is complete, so every repeat of this line is bytes
+    // from memory. An empty or broken stream just means this line goes
+    // uncached — never a failure the player sees.
+    const [toClient, toCache] = res.body.tee();
+    void (async () => {
+      try {
+        const chunks: Uint8Array[] = [];
+        const reader = toCache.getReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) chunks.push(value);
+        }
+        const whole = Buffer.concat(chunks);
+        // A stream can end cleanly and still be incomplete: an upstream
+        // failure mid-generation closes the chunked body politely, and that
+        // is indistinguishable from a finished clip. The disk cache is
+        // forever, so a cut clip must never get in — at 32 kbps this voice
+        // runs ~250+ bytes per character of text, so anything far below that
+        // is a truncation. Skip both caches and let the next play of the
+        // line synthesize fresh (which then caches the complete clip).
+        const minPlausible = 800 + clean.length * 80;
+        if (whole.byteLength >= minPlausible) {
+          const buf = whole.buffer.slice(whole.byteOffset, whole.byteOffset + whole.byteLength);
+          cacheSet(key, buf);
+          writeCacheFile(file, Buffer.from(whole)); // fire-and-forget
+        }
+      } catch {
+        /* cache miss next time — nothing the player notices */
+      }
+    })();
+
+    return toClient;
   } catch (err) {
     noteFailure(`could not reach ElevenLabs: ${(err as Error)?.message ?? 'unknown'}`);
     return null;

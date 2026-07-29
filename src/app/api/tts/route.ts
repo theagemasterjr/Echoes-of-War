@@ -35,8 +35,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'rate limited' }, { status: 429 });
   }
 
-  const buf = await synthesize(text, chapterId);
-  if (!buf) {
+  // Cached line → bytes; fresh line → a live stream piped straight from
+  // ElevenLabs, so audio reaches the player while it is still being made.
+  const clip = await synthesize(text, chapterId);
+  if (!clip) {
     // the reason travels only while developing — the live site says no more
     // than it has to, and the player degrades to silent subtitles either way
     return NextResponse.json(
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return new Response(buf, {
+  return new Response(clip, {
     headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' },
   });
 }

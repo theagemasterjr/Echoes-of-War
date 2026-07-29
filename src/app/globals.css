@@ -12,17 +12,37 @@ body {
 }
 
 /* ---- reading accessibility -------------------------------------------- *
- * Both settings are mirrored onto <html> as data attributes by UiLayer (from
+ * These settings are mirrored onto <html> as data attributes by UiLayer (from
  * the settings store), so every screen picks them up without knowing they
  * exist. Easy-read swaps the whole game over to Lexend; large text raises the
- * root font-size, and Tailwind's rem-based sizes grow with it. */
+ * root font-size, and Tailwind's rem-based sizes grow with it; wide spacing
+ * opens every line up. */
+
+/* Easy-read: OpenDyslexic — the same face school tools like Canvas use for
+ * their dyslexia mode, unmistakable the moment it switches on — plus a gentle
+ * opening of the letters and words. Lexend stands behind it as the fallback.
+ * The spacing here is deliberately mild; the Wide spacing toggle below goes
+ * much further and (declared later) wins wherever both are on. */
 html[data-reading-font="lexend"],
 html[data-reading-font="lexend"] * {
-  font-family: var(--font-lexend), system-ui, sans-serif !important;
+  font-family: var(--font-opendyslexic), var(--font-lexend), system-ui, sans-serif !important;
+  letter-spacing: 0.05em !important;
+  word-spacing: 0.1em !important;
 }
 
 html[data-text-size="large"] {
   font-size: 115%;
+}
+
+/* Wide spacing: taller lines, wider letter and word gaps — the WCAG
+ * text-spacing treatment, applied to every word in the game. The line height
+ * only ever grows (1.65 is above every leading the UI uses), so nothing gets
+ * tighter when it switches on. Works with either font. */
+html[data-text-spacing="wide"],
+html[data-text-spacing="wide"] * {
+  line-height: 1.7 !important;
+  letter-spacing: 0.12em !important;
+  word-spacing: 0.2em !important;
 }
 
 /* keyboard focus must always be visible — core controls are reachable by tab */

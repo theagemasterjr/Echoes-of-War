@@ -11,6 +11,7 @@ import { ChapterIntroVideo } from '@/ui/ChapterIntroVideo';
 import { BufferedVideo } from '@/media/BufferedVideo';
 import { PROLOGUE_VIDEO } from '@/media/VideoPreloader';
 import { MissionBrief } from '@/ui/MissionBrief';
+import { EndOfGame } from '@/ui/EndOfGame';
 import { ErrorBoundary } from '@/core/ErrorBoundary';
 
 export function UiLayer() {
@@ -24,24 +25,29 @@ export function UiLayer() {
         <ChapterBeats key={view.chapterId} chapterId={view.chapterId} beat={view.beat} />
       )}
       {view.kind === 'map' && <YearTicker />}
+      {view.kind === 'ending' && <EndOfGame />}
       <Hud />
     </div>
   );
 }
 
-/** Mirrors the two reading settings onto <html> as data attributes, which is
+/** Mirrors the reading settings onto <html> as data attributes, which is
  *  all the global rules in globals.css need: `data-reading-font="lexend"`
- *  swaps the whole game over to the easy-read face, `data-text-size="large"`
- *  raises the root font-size so every rem-based size grows with it. Kept here
- *  because UiLayer is mounted for the entire session. */
+ *  swaps the whole game over to the easy-read face (and opens its spacing a
+ *  touch, so the flip is visible), `data-text-size="large"` raises the root
+ *  font-size so every rem-based size grows with it, and
+ *  `data-text-spacing="wide"` opens every line up further. Kept here because
+ *  UiLayer is mounted for the entire session. */
 function useReadingPreferences() {
   const readingFont = useSettingsStore((s) => s.readingFont);
   const textSize = useSettingsStore((s) => s.textSize);
+  const textSpacing = useSettingsStore((s) => s.textSpacing);
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.readingFont = readingFont;
     root.dataset.textSize = textSize;
-  }, [readingFont, textSize]);
+    root.dataset.textSpacing = textSpacing;
+  }, [readingFont, textSize, textSpacing]);
 }
 
 /** Fullscreen prologue film. Plays /video/prologue.mp4 once, then hands off to
@@ -315,7 +321,10 @@ function SettingsMenu() {
   const setVoiceEnabled = useSettingsStore((s) => s.setVoiceEnabled);
   const subtitlesEnabled = useSettingsStore((s) => s.subtitlesEnabled);
   const setSubtitlesEnabled = useSettingsStore((s) => s.setSubtitlesEnabled);
+  const textSpacing = useSettingsStore((s) => s.textSpacing);
+  const setTextSpacing = useSettingsStore((s) => s.setTextSpacing);
   const easyRead = readingFont === 'lexend';
+  const wideSpacing = textSpacing === 'wide';
 
   const resetProgress = () => {
     useProgressStore.getState().reset();
@@ -418,7 +427,7 @@ function SettingsMenu() {
                   : 'border-stone-600 text-stone-200 hover:bg-stone-800'
               }`}
             >
-              <span>Easy-read font</span>
+              <span>Dyslexia-friendly font</span>
               <span
                 aria-hidden
                 className={`rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${
@@ -426,6 +435,30 @@ function SettingsMenu() {
                 }`}
               >
                 {easyRead ? 'On' : 'Off'}
+              </span>
+            </button>
+            {/* Wide spacing: taller lines, wider letter and word gaps, on every
+                word in the game — many dyslexic readers find this helps more
+                than any font. Independent of the font toggle; they stack. */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={wideSpacing}
+              onClick={() => setTextSpacing(wideSpacing ? 'normal' : 'wide')}
+              className={`mt-1.5 flex w-full items-center justify-between gap-2 rounded-sm border px-3 py-2.5 text-left text-xs transition ${
+                wideSpacing
+                  ? 'border-amber-200/70 bg-amber-200/15 text-amber-100'
+                  : 'border-stone-600 text-stone-200 hover:bg-stone-800'
+              }`}
+            >
+              <span>Wide spacing</span>
+              <span
+                aria-hidden
+                className={`rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${
+                  wideSpacing ? 'bg-amber-200/90 text-stone-950' : 'bg-stone-700 text-stone-200'
+                }`}
+              >
+                {wideSpacing ? 'On' : 'Off'}
               </span>
             </button>
             <div className="mt-3">

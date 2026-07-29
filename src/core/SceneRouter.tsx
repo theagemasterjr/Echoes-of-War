@@ -232,6 +232,9 @@ function presetFor(view: View): Preset {
   // the prologue video covers the screen; the camera waits at the title shot
   // so the glide down to the map can play when the film ends
   if (view.kind === 'prologue') return PRESETS.title;
+  // the ending screen is opaque black — the camera just parks at the map
+  // shot underneath it, ready for the return
+  if (view.kind === 'ending') return PRESETS.map;
   return PRESETS[view.kind];
 }
 
@@ -314,16 +317,27 @@ function CameraDirector() {
         // duration in sync with TransitionLayer's glideToMap ms.
         gsap.to(camera.position, { x: PRESETS.map.pos[0], y: PRESETS.map.pos[1], z: PRESETS.map.pos[2], duration: 1.7, delay: 1.0, ease: 'power2.inOut' });
         gsap.to(target.current, { x: PRESETS.map.target[0], y: PRESETS.map.target[1], z: PRESETS.map.target[2], duration: 1.7, delay: 1.0, ease: 'power2.inOut' });
-      } else if (view.kind !== 'title' && view.kind !== 'prologue') {
-        // leaving a chapter: gentle pull back
+      } else if (view.kind !== 'title' && view.kind !== 'prologue' && view.kind !== 'ending') {
+        // leaving a chapter: gentle pull back. NOT for the ending screen —
+        // it is opaque DOM parked over the map preset, and the map return
+        // does no settle for it ('in' only settles prev === 'chapter'), so a
+        // pull-back here would reveal the map 1.2 too far out and the idle
+        // self-heal would then snap it forward in full view.
         gsap.to(camera.position, { z: camera.position.z + 1.2, duration: 1.0, ease: 'power2.in' });
       }
     }
 
     if (phase === 'titleCard') {
-      // hidden under the black overlay — safe to jump straight to the preset
+      // hidden under the black overlay — safe to jump straight to the preset.
+      // ⚠ Kill the TARGET tween too: the map→chapter dive tweens target.current
+      // for exactly as long as the transition lasts, so it can still be alive
+      // here — one more gsap tick after this snap would drag the look-at back
+      // to the map marker and leave the whole chapter framed low and off to
+      // one side (the character bug: right in the normal flow, wrong only
+      // when arriving through a transition — a debug jump never dives).
       const p = presetFor(view);
       gsap.killTweensOf(camera.position);
+      gsap.killTweensOf(target.current);
       camera.position.set(...p.pos);
       target.current.set(...p.target);
     }
@@ -334,6 +348,7 @@ function CameraDirector() {
         if (viewTrail.current.prev === 'chapter') {
           // returning to map: settle from slightly higher for a soft landing
           gsap.killTweensOf(camera.position);
+          gsap.killTweensOf(target.current);
           camera.position.set(p.pos[0], p.pos[1] + 0.7, p.pos[2] + 0.5);
           gsap.to(camera.position, { x: p.pos[0], y: p.pos[1], z: p.pos[2], duration: 1.2, ease: 'power2.out' });
           target.current.set(...p.target);
@@ -341,7 +356,9 @@ function CameraDirector() {
         // arriving from the title: the opening glide already landed exactly
         // here (and may still be finishing) — don't touch the camera
       } else {
+        // see the titleCard note: the dive's target tween MUST die here too
         gsap.killTweensOf(camera.position);
+        gsap.killTweensOf(target.current);
         camera.position.set(...p.pos);
         target.current.set(...p.target);
       }
@@ -349,11 +366,16 @@ function CameraDirector() {
 
     if (phase === 'idle') {
       // catch instant jumps (debug menu) without cutting a still-running
-      // glide/settle tween short — only snap when actually out of place
+      // glide/settle tween short — only snap when actually out of place. The
+      // look-target is checked as well as the position, so a stale target
+      // (however it survived) self-heals on the next beat or view change.
       const p = presetFor(view);
+      const positionOff = camera.position.distanceTo(new THREE.Vector3(...p.pos)) > 0.6;
+      const targetOff = target.current.distanceTo(new THREE.Vector3(...p.target)) > 0.35;
       if (
         !gsap.isTweening(camera.position) &&
-        camera.position.distanceTo(new THREE.Vector3(...p.pos)) > 0.6
+        !gsap.isTweening(target.current) &&
+        (positionOff || targetOff)
       ) {
         camera.position.set(...p.pos);
         target.current.set(...p.target);
@@ -373,6 +395,32 @@ function CameraDirector() {
       parallax.current.y = 0;
       camera.position.set(g.pos[0], g.pos[1], g.pos[2]);
       camera.lookAt(g.target[0], g.target[1], g.target[2]);
+      applied.current.set(0, 0, 0);
+      amp.current = 0;
+      return;
+    }
+
+    // Chapter stage (overview/conversation): absolute placement every frame,
+    // with the camera dollied in by exactly as much as the portrait fov rule
+    // widened the lens. On a narrow window the vertical fov grows to protect
+    // the horizontal field (see SceneRouter's fov block) — which, uncorrected,
+    // shrinks the character and sinks him toward the bottom of the frame. The
+    // compensation k = tan(base/2)/tan(fov/2) keeps him the same on-screen
+    // size, dead centre, at every window shape. 16:9 and wider: k = 1, and
+    // this is exactly the preset.
+    if (view.kind === 'chapter' && phase === 'idle' && !gsap.isTweening(camera.position)) {
+      const p = PRESETS.chapter;
+      const persp = camera as THREE.PerspectiveCamera;
+      const k =
+        Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2)) /
+        Math.tan(THREE.MathUtils.degToRad(persp.fov / 2));
+      camera.position.set(
+        p.target[0] + (p.pos[0] - p.target[0]) * k,
+        p.target[1] + (p.pos[1] - p.target[1]) * k,
+        p.target[2] + (p.pos[2] - p.target[2]) * k,
+      );
+      target.current.set(...p.target);
+      camera.lookAt(target.current);
       applied.current.set(0, 0, 0);
       amp.current = 0;
       return;

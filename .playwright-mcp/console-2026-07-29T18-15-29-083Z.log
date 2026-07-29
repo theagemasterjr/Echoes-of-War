@@ -1,0 +1,40 @@
+[     114ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     125ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     263ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     269ms] [LOG] [Fast Refresh] done in 106ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     381ms] [WARNING] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     422ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[    1740ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[    1747ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[    2002ms] [WARNING] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[    2023ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[    3418ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  136761ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  136770ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  137011ms] [WARNING] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  137026ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  139864ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  139871ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  140126ms] [WARNING] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  140140ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  175547ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  176486ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  177488ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  178491ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  179493ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  180495ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  185498ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  190500ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  195503ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  200506ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  205509ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  210512ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  215515ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Z2i3_y93Bv-RMJGRwdi51' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:13422
+[  311851ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  311864ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  312101ms] [WARNING] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  312128ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  738022ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  738057ms] [LOG] [Fast Refresh] done in 136ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  863202ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  864548ms] [LOG] [Fast Refresh] done in 1421ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489

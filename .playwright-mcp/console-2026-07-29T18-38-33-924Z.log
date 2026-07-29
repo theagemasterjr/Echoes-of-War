@@ -1,0 +1,5 @@
+[     106ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     116ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     390ms] [WARNING] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     409ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[    2413ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489

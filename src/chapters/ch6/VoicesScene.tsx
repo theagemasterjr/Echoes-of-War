@@ -99,7 +99,7 @@ export function VoicesScene() {
   const selected = useVoicesStore((s) => s.selected);
   const refused = useVoicesStore((s) => s.refused);
   const finaleAt = useVoicesStore((s) => s.finaleAt);
-  const ninthRefusedAt = useVoicesStore((s) => s.ninthRefusedAt);
+  const ninthAt = useVoicesStore((s) => s.ninthAt);
 
   // a fresh board every time the player arrives
   useEffect(() => reset(), [reset]);
@@ -250,10 +250,12 @@ export function VoicesScene() {
         />
       )}
 
-      {/* the centre: refuses everything until the ninth slip, then takes it */}
+      {/* The centre: refuses everything until the ninth slip, then takes it.
+          Its glow starts the moment the eighth slip is placed (ninthAt) — it
+          marks where the last one belongs before anyone has to guess wrong. */}
       <Centre
         active={stage === 'ninth'}
-        glowFrom={ninthRefusedAt}
+        glowFrom={ninthAt}
         finaleAt={finaleAt}
         onTap={placeTapped('centre')}
       />
