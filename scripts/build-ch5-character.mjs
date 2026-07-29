@@ -1,25 +1,29 @@
 /**
- * Bakes the founder-exported Ch5 Red Cross field medical worker into a
- * web-ready GLB.
+ * Bakes the founder-exported Ch5 field medical orderly ("Army Character 3")
+ * into a web-ready GLB.
  *
- * Input (defaults; override with --idle / --talking / --texture):
- *   - Two GLB exports of the same Mixamo-rigged Meshy body, one animation each
- *     (the real clip in both files is named "mixamo.com"). Both are seated —
- *     hips sit at y 0.61 / 0.68 against a ~0.98 standing hip height.
- *   - Unlike every earlier chapter, these came through FBX and carry NO
- *     textures at all: the single material is "__DEFAULT", a flat grey. The
- *     Meshy base-colour map ships beside the OBJ instead, so it is wired onto
- *     the material here. The UVs survived the round-trip (the mesh node is
- *     still named after the texture file, and TEXCOORD_0 spans a full 0..1).
- *   - The FBX converter also stripped the colons out of the Mixamo bone names
- *     ("mixamorigHips", not "mixamorig:Hips"). That is harmless — both source
- *     files agree, so the clip retarget below still matches by name.
+ * Input (defaults; override with --idle / --talking):
+ *   - Two GLB exports of the same Mixamo-rigged body, one animation each (the
+ *     real clip in both files is named "Armature|mixamo.com|Layer0"), coming
+ *     through imagetostl.com from an FBX. Bone names carry the colon
+ *     ("mixamorig:Hips"), unlike the previous ch5 model.
+ *   - Eight meshes, one per body part, each named "Object_<key>.jpgmesh" and
+ *     carrying NO material at all — every material is built here from the
+ *     matching jpg in TEXDIR. The uniform texture's OBJ material name was
+ *     "navy" (see mat_2-navy.jpg in the source .obj), but the founder's
+ *     texture folder ships it as "camouflage.jpg" — TEXTURE_MAP below is
+ *     where that rename is bridged.
+ *   - Same OBJ round-trip as the previous ch5 model, so the same OpenGL/OBJ
+ *     V-flip applies (see step 4b below) — left alone, every texture samples
+ *     its mirrored row.
  *
  * Output:
  *   - public/models/ch5-nurse.glb  (both clips merged: "Idle_Loop" +
- *     "Talking_Loop", texture compressed, welded, meshopt-compressed)
+ *     "Talking_Loop", textures compressed, welded, meshopt-compressed) —
+ *     filename kept from the previous character so nothing else in the
+ *     registry needs to change.
  *
- * Run:  node scripts/build-ch5-character.mjs
+ * Run:  node --max-old-space-size=8192 scripts/build-ch5-character.mjs
  */
 // sharp MUST be imported before @gltf-transform/functions. Something functions
 // pulls in loads a conflicting native library first, and sharp's own .node
@@ -34,22 +38,42 @@ import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
 import { copyToDocument, dedup, weld, resample, prune, meshopt, unpartition, textureCompress } from '@gltf-transform/functions';
 import { MeshoptEncoder } from 'meshoptimizer';
 import { bakeRestPoseFromClip } from './lib/rest-pose.mjs';
+import { yawClip, closeLoop } from './lib/clip-fixes.mjs';
 
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
   return i > -1 ? process.argv[i + 1] : dflt;
 };
-const SRCDIR = 'C:/Users/padma/Downloads';
-const IDLE = arg('idle', `${SRCDIR}/Sitting Idle.fbx.glb`);
-const TALKING = arg('talking', `${SRCDIR}/Talking.fbx.glb`);
-const TEXTURE = arg(
-  'texture',
-  `${SRCDIR}/claude use this folder/claude use this folder/Meshy_AI_World_War_II_Red_Cros_0727230656_texture.png`,
-);
+const SRCDIR = 'C:/Users/sagar/Music/chapter 5 new model';
+const IDLE = arg('idle', `${SRCDIR}/source/extracted/Sitting Idle (5).glb`);
+const TALKING = arg('talking', `${SRCDIR}/source/extracted/Sitting Talking (3).glb`);
+const TEXDIR = arg('textures', `${SRCDIR}/textures`);
 const OUT_GLB = 'public/models/ch5-nurse.glb';
 
-/* one Meshy mesh, one material: cloth-ish, never shiny */
+/* mesh name (Object_<key>.jpgmesh) -> texture file in TEXDIR. The OBJ's own
+ * material name for the uniform was "navy"; the founder's texture folder
+ * ships that map as "camouflage.jpg". */
+const TEXTURE_MAP = {
+  body: 'body.jpg',
+  eye: 'eye.jpg',
+  feet: 'feet.jpg',
+  hand: 'hand.jpg',
+  head: 'head.jpg',
+  lowr_diff: 'lowr_diff.jpg',
+  navy: 'camouflage.jpg',
+  sumka: 'sumka.jpg',
+};
+
+/* cloth/skin mix, never shiny — same flat value every other chapter's
+ * founder-sourced body uses */
 const ROUGHNESS = 0.82;
+
+/* First build measured idle gaze yaw +1.7°, talking gaze yaw -39.3° — he
+ * talks to someone off to the side, same as ch4/ch6's takes. Corrected the
+ * same way (see docs/character-animation-guide.md step 4/5). */
+const TALK_YAW_FIX = 41;
+const YAW_BONES = ['mixamorig:Neck', 'mixamorig:Head'];
+const TALK_LOOP_BLEND = 0.6;
 
 const realClip = (doc) =>
   doc.getRoot().listAnimations().find((a) => a.listChannels().length > 0);
@@ -63,6 +87,24 @@ async function main() {
   const doc = await io.read(IDLE);
   const root = doc.getRoot();
   doc.createExtension(EXTTextureWebP).setRequired(true);
+
+  /* -- 0. undo an extra 0.01 scale imagetostl.com baked onto the scene's
+          root nodes ("Armature" and its sibling empty node) on top of an
+          otherwise correctly-scaled rig: mesh vertex data and the skin's
+          inverseBindMatrices already compensate each other (vertex bboxes
+          ~0.01 units, inverseBindMatrix rotation blocks carrying a built-in
+          ×100), and the joint chain's own local translations are already
+          proper metre-scale (~1.5-1.8m head height) — this ancestor scale is
+          pure double-counting that shrinks the whole character to ~1.5cm.
+          Fixing it here (rather than in the registry) keeps this model on
+          the same scale=4.76 convention as every other chapter. ------------ */
+  for (const n of root.getDefaultScene().listChildren()) {
+    const [sx, sy, sz] = n.getScale();
+    if (Math.abs(sx - 0.01) < 1e-4 && Math.abs(sy - 0.01) < 1e-4 && Math.abs(sz - 0.01) < 1e-4) {
+      n.setScale([1, 1, 1]);
+      console.log(`reset "${n.getName()}" scale 0.01 -> 1 (redundant unit conversion)`);
+    }
+  }
 
   /* -- 1. safety: attach any orphaned skeleton roots to the scene ----- */
   const scene = root.listScenes()[0];
@@ -95,15 +137,19 @@ async function main() {
   for (const a of root.listAnimations())
     if (a !== idleClip && a !== talkClip) a.dispose();
 
-  /* -- 2b. idle frame 0 becomes the rest pose (no more T-pose fallback) */
+  /* -- 2b. bring the talking clip's gaze round to the camera, and make it
+           loop cleanly (see TALK_YAW_FIX / closeLoop above) -------------- */
+  if (TALK_YAW_FIX) yawClip(talkClip, doc, YAW_BONES, TALK_YAW_FIX);
+  closeLoop(talkClip, TALK_LOOP_BLEND);
+
+  /* -- 2c. idle frame 0 becomes the rest pose (no more T-pose fallback) */
   bakeRestPoseFromClip(idleClip);
 
-  /* -- 2c. report the seated head height, for the registry's scale/offset */
-  for (const bone of ['mixamorigHeadTop_End', 'mixamorigHead', 'mixamorigHips']) {
-    const n = byName.get(bone);
-    if (!n) continue;
-    const m = n.getWorldMatrix();
-    console.log(`seated ${bone} (rig units): x ${m[12].toFixed(3)}, y ${m[13].toFixed(3)}, z ${m[14].toFixed(3)}`);
+  /* -- 2d. report the seated head height, for the registry's scale/offset */
+  const head = byName.get('mixamorig:HeadTop_End');
+  if (head) {
+    const m = head.getWorldMatrix();
+    console.log(`seated head top (rig units): x ${m[12].toFixed(3)}, y ${m[13].toFixed(3)}, z ${m[14].toFixed(3)}`);
   }
 
   /* -- 3. drop unused vertex attributes ------------------------------- */
@@ -116,29 +162,41 @@ async function main() {
           acc?.dispose();
         }
 
-  /* -- 4. material: wire the Meshy base-colour map onto __DEFAULT ------ */
-  // The FBX round-trip left the material a flat 0.60 grey with no maps. The
-  // grey is a baseColorFactor, which MULTIPLIES the texture — left alone it
-  // would darken the whole character by 40%, so it goes back to white.
-  const image = fs.readFileSync(TEXTURE);
-  const tex = doc
-    .createTexture('ch5-basecolor')
-    .setImage(image)
-    .setMimeType('image/png');
-  for (const mat of root.listMaterials()) {
-    mat.setBaseColorTexture(tex);
-    mat.setBaseColorFactor([1, 1, 1, 1]);
-    mat.setMetallicFactor(0).setRoughnessFactor(ROUGHNESS);
-    mat.setAlphaMode('OPAQUE').setDoubleSided(false);
+  /* -- 4. materials: build one per mesh from TEXTURE_MAP -------------- */
+  const texCache = new Map(); // texture file -> gltf-transform Texture
+  const matCache = new Map(); // texture file -> gltf-transform Material
+  let wired = 0;
+  for (const mesh of root.listMeshes()) {
+    const key = mesh.getName().match(/^Object_(.+)\.jpgmesh$/)?.[1];
+    const file = key && TEXTURE_MAP[key];
+    if (!file) {
+      console.warn(`no texture mapping for mesh "${mesh.getName()}" — left untextured`);
+      continue;
+    }
+    if (!matCache.has(file)) {
+      let tex = texCache.get(file);
+      if (!tex) {
+        tex = doc.createTexture(file).setImage(fs.readFileSync(path.join(TEXDIR, file))).setMimeType('image/jpeg');
+        texCache.set(file, tex);
+      }
+      const mat = doc.createMaterial(key)
+        .setBaseColorTexture(tex)
+        .setBaseColorFactor([1, 1, 1, 1])
+        .setMetallicFactor(0).setRoughnessFactor(ROUGHNESS)
+        .setAlphaMode('OPAQUE').setDoubleSided(false);
+      matCache.set(file, mat);
+    }
+    const mat = matCache.get(file);
+    for (const prim of mesh.listPrimitives()) prim.setMaterial(mat);
+    wired++;
   }
+  console.log(`wired ${wired} mesh(es) to ${matCache.size} material(s)`);
 
   /* -- 4b. flip V ------------------------------------------------------ */
   // This export carries OBJ/OpenGL-convention UVs (v = 0 at the BOTTOM of the
   // image); glTF puts v = 0 at the top, and three.js follows the spec. Left
-  // alone, every island samples the mirrored row of the atlas: the face lands
-  // on uniform cloth and she reads as olive camo from head to foot. The tell
-  // is that sampling the hands the file's way gives 91% skin, the spec's way
-  // 27%. One flip here beats fixing it per-consumer forever.
+  // alone, every island samples the mirrored row of its texture. Same fix as
+  // the previous ch5 model (see that build's note for the diagnostic).
   const flipped = new Set();
   for (const mesh of root.listMeshes())
     for (const prim of mesh.listPrimitives()) {
@@ -155,8 +213,6 @@ async function main() {
   console.log(`flipped V on ${flipped.size} UV set(s)`);
 
   /* -- 5. shrink and write -------------------------------------------- */
-  // weld() matters more here than in the other chapters: this mesh arrives as
-  // an unindexed 307k-vertex triangle soup.
   await doc.transform(
     dedup(), weld(), resample(), prune(), unpartition(),
     textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 85, resize: [2048, 2048] }),
@@ -164,9 +220,6 @@ async function main() {
   await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
   console.log('clips:', root.listAnimations().map((a) => a.getName()).join(', '));
   console.log('materials:', root.listMaterials().map((m) => `${m.getName()} ${m.getAlphaMode()} tex=${!!m.getBaseColorTexture()}`).join(', '));
-  for (const mesh of root.listMeshes())
-    for (const prim of mesh.listPrimitives())
-      console.log(`verts: ${prim.getAttribute('POSITION').getCount()} indices: ${prim.getIndices()?.getCount()}`);
 
   fs.mkdirSync(path.dirname(OUT_GLB), { recursive: true });
   await io.write(OUT_GLB, doc);

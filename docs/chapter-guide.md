@@ -267,9 +267,9 @@ Already done and not to be re-done by hand: the mission brief lines
 pixel-aligned on purpose, which is what makes phase 3's wipe work) and all six table pieces.
 
 ## Chapter 5 — same pattern, told from a hospital tent
-Chapter 5 (The Road Back — **Sister Grace Ellery**, a twenty-six-year-old British nursing
-sister with a field surgical unit outside Bayeux, in late July 1944, seven weeks after
-D-Day) follows the ch4 shape: one open conversation node with all seventeen learning
+Chapter 5 (The Road Back — **Corporal Ted Marsh**, a twenty-six-year-old British Army
+medical orderly with a field surgical unit outside Bayeux, in late July 1944, seven weeks
+after D-Day) follows the ch4 shape: one open conversation node with all seventeen learning
 points live from the first turn, and **four** objectives, in this order:
 
 1. **The Second Front** · 2. **The Great Build-Up** · 3. **The Deception** · 4. **D-Day**
@@ -278,19 +278,19 @@ Those four names are the objectives panel, the four "Learn" lines of the mission
 the four topics of the closing summary — one order, three places. Change one and change all
 three (and re-record and re-time the two recordings).
 
-**Two things make Grace work, and both are constraints, not colour:**
+**Two things make Ted work, and both are constraints, not colour:**
 
-- **She was not there on 6 June.** She landed on the 10th, onto a beach already working as
-  a port. Every account she gives of the landing morning is attributed — what the men she
-  nursed told her — and she says so out loud at least once. What she saw with her own eyes
+- **He was not there on 6 June.** He landed on the 10th, onto a beach already working as
+  a port. Every account he gives of the landing morning is attributed — what the men he
+  treated told him — and he says so out loud at least once. What he saw with his own eyes
   starts on D+4.
-- **She knows the deception happened, not how it was done.** She lived it: sealed camp,
+- **He knows the deception happened, not how it was done.** He lived it: sealed camp,
   real maps with false place names, assuming Calais like everyone, learning "Normandy"
-  days before sailing and telling no one. She has never heard of inflatable tanks, dummy
-  landing craft, a fake army, or double agents — still secret in July 1944. Asked how, she
-  says she doesn't know how they did it, only that it was done — **and that it fooled her
+  days before sailing and telling no one. He has never heard of inflatable tanks, dummy
+  landing craft, a fake army, or double agents — still secret in July 1944. Asked how, he
+  says he doesn't know how they did it, only that it was done — **and that it fooled his
   own side too.** That line is the best moment in the chapter; the machinery itself is
-  taught by the brief and the minigame (Elderon is not time-locked; Grace is).
+  taught by the brief and the minigame (Elderon is not time-locked; Ted is).
 
 **The tone rules are part of the content**, exactly as in ch4 — they live at the top of
 `src/content/trees/ch5.ts` (`TONE_RULES`): honest never graphic, never dramatic about
@@ -306,8 +306,9 @@ Her time-lock is late July 1944: no Paris, no May 1945, no atomic bomb, the Paci
 Already real: both narrations — the mission brief (`src/content/briefs.json` +
 `public/audio/brief/narration/ch5.mp3`, timed into the manifest) and the closing summary
 (`src/chapters/ch5/summary.ts` + `public/audio/summary/ch5.mp3`, timed into
-`src/audio/summaryNarration.ts`). Grace's voice is stock "Lily" in `src/server/tts.ts`
-(`ELEVENLABS_VOICE_CH5` overrides; audition it — she must not sound like Tom).
+`src/audio/summaryNarration.ts`). Ted's voice is stock "Roger" in `src/server/tts.ts`
+(`ELEVENLABS_VOICE_CH5` overrides; audition it — he must not sound like Tom, Nikolai or
+Kenzo).
 The map marker sits on the Normandy coast, recalibrated against ch1/ch3/ch4.
 
 ### The minigame — "Show it or hide it"
@@ -326,7 +327,7 @@ decides — Kent to Pas de Calais, the south-west to Normandy — and both are d
 first frame. That pairing is the whole lesson: what you do on your own coast decides where
 the enemy looks on theirs. A correct piece locks in and earns one line explaining why. A
 piece put in the other region shakes gently and slides home — no penalty, no score, no red,
-and the counter does not move; after a second miss on the same piece Grace offers the
+and the counter does not move; after a second miss on the same piece Ted offers the
 reasoning, never the answer. The two French places are labels, not targets: a piece let go
 on France simply goes back, with nothing said.
 
@@ -350,10 +351,13 @@ pinned by `minigameCamera` on the ch5 registry row and never answers the mouse.
 Still placeholders, and the chapter plays start to finish with all of them missing:
 - `public/video/ch5-intro.mp4` — the intro beat holds on the styled "coming soon" frame;
   dropping the file in needs nothing but the file.
-- Grace's model — the shared bust placeholder holds the stage; the drop-in block is ready
-  in `src/assets/registry.tsx` (`ch5.character`).
 - The conversation backdrop — the registry line stays commented out until the image file
   exists (an empty reference hangs the 3D scene).
+
+Already in place (was a placeholder, now real): Ted's model — "Army Character 3" (a
+July 2026 replacement for the original Meshy-generated nurse body; same shape as
+ch4/ch6, see `scripts/build-ch5-character.mjs`), wired in `src/assets/registry.tsx`
+(`ch5.character`).
 
 ## Rules of the road
 - Don't edit files outside your chapter's tree file, chapter folder, and the asset registry.

@@ -11,7 +11,7 @@
  * you do on your coast decides where the enemy looks on theirs.
  *
  * There is no score, no timer, no lose state and no penalty. A wrong drop slides
- * home and the player tries again; after two of them on the same piece Grace
+ * home and the player tries again; after two of them on the same piece Ted
  * offers the reasoning, never the answer. The game ends when all eight pieces
  * are placed.
  *
@@ -167,7 +167,7 @@ export interface Piece {
   note: string;
   /** The one line that appears when the piece lands in the right place. */
   feedback: string;
-  /** Grace, after two wrong drops on this piece. The reasoning, never the
+  /** Ted, after two wrong drops on this piece. The reasoning, never the
    *  answer — it re-asks the question rather than settling it. */
   nudge: string;
 }
@@ -407,7 +407,7 @@ interface ShowOrHideState {
   refused: { id: PieceId; at: number } | null;
   /** The line a correct drop earned. */
   feedback: { text: string; at: number } | null;
-  /** Grace's hint, after two wrong drops on one piece. */
+  /** Ted's hint, after two wrong drops on one piece. */
   nudge: { text: string; at: number } | null;
   stage: Stage;
   labels: ScreenLabel[];
@@ -438,7 +438,7 @@ const fresh = () => ({
   stripTop: 62,
 });
 
-/** Grace's hints go through the same voice the conversation uses. Silent and
+/** Ted's hints go through the same voice the conversation uses. Silent and
  *  harmless when no voice is configured for the chapter — the hint is on screen
  *  either way — and the same line is never spoken twice in a row. */
 let lastSpoken = '';

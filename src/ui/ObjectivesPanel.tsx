@@ -71,9 +71,9 @@ const OBJECTIVE_DETAILS: Record<string, string> = {
   'The Turning Point':
     'Ask how the battle ended. Trapped and cut off from supplies, an entire German army was forced to surrender — and Germany never advanced east again.',
 
-  // Chapter 5 — Sister Grace
+  // Chapter 5 — Corporal Ted Marsh
   'The Second Front':
-    'Ask Sister Grace why the Allies needed to invade France at all. Opening a new front in the west took pressure off the Soviet Union, which had been fighting Germany alone in the east for years.',
+    'Ask Corporal Marsh why the Allies needed to invade France at all. Opening a new front in the west took pressure off the Soviet Union, which had been fighting Germany alone in the east for years.',
   'The Great Build-Up':
     'Ask how the invasion was prepared. Troops, ships and even artificial harbours had to be gathered in Britain, and the whole plan hinged on picking exactly the right day and weather.',
   'The Deception':
