@@ -4,7 +4,7 @@
 
 > *World War II history you don't just read. You speak to it.*
 
-**▶ Play it now: [echoes-of-war-chi.vercel.app](https://echoes-of-war-chi.vercel.app)**
+**▶ Play it now: [echoes-of-war-chi.vercel.app](https://echoes-of-war-sand.vercel.app)**
 Nothing to install, no sign-up. Best in Chrome and desktop, with sound on.
 
 ---
