@@ -6,16 +6,19 @@
  * and a quiet celebration — drifting gold sparks over black, in the game's
  * own palette, never confetti-noisy. Reduced motion gets a still page.
  *
- * The rows reveal on a stagger (no narration is recorded for this screen
- * yet; when the founders record one, wire it the way summaryNarration wires
- * the chapter summaries and reveal rows on its clock instead).
+ * The founder's recording reads the intro paragraph and then the six chapter
+ * lines (never the heading, titles or footer), so the screen reveals each
+ * block as the narrator reaches it — same clock, same fallback and same skip
+ * as the chapter summaries (see audio/summaryNarration). The footer arrives
+ * when the take ends.
  */
 import { useMemo, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAppStore } from '@/state/appStore';
+import { useNarratedReveal, type SummaryTake } from '@/audio/summaryNarration';
 
-/** One row per chapter — the titles are on screen; the lines are written to
- *  be readable AND recordable (the future narration reads the lines only). */
+/** One row per chapter — the titles are on screen; the lines are what the
+ *  narration reads (re-measure TAKE below if a line's wording changes). */
 const CHAPTERS: { title: string; line: string }[] = [
   {
     title: 'The Spark',
@@ -43,6 +46,24 @@ const CHAPTERS: { title: string; line: string }[] = [
   },
 ];
 
+/**
+ * The founder's 2026-07-30 recording: the intro paragraph, then the six
+ * chapter lines, in order. Measured with scripts/lib/narration-segments.mjs
+ * (10.9–13.8 characters a second across all seven segments).
+ */
+const TAKE: SummaryTake = {
+  track: '/audio/ending.mp3?v=1',
+  topics: [
+    { start: 0.08, end: 12.46 }, // intro paragraph
+    { start: 12.92, end: 21.92 },
+    { start: 22.7, end: 29.2 },
+    { start: 29.94, end: 38.62 },
+    { start: 39.6, end: 48.34 },
+    { start: 49.3, end: 58.58 },
+    { start: 59.9, end: 67.46 },
+  ],
+};
+
 /** Deterministic pseudo-random spark layout — stable across renders. */
 function sparks(n: number) {
   const out: { left: number; delay: number; duration: number; size: number; drift: number }[] = [];
@@ -69,11 +90,16 @@ export function EndOfGame() {
   const dots = useMemo(() => sparks(26), []);
   const backRef = useRef<HTMLButtonElement>(null);
 
+  // segment 0 is the intro paragraph, segments 1–6 the chapter rows
+  const reveal = useNarratedReveal(TAKE, CHAPTERS.length + 1, true);
+  const introShown = reveal.revealed > 0;
+
   return (
     <div
       className="pointer-events-auto absolute inset-0 overflow-y-auto bg-black"
       role="region"
       aria-label="You finished the game"
+      aria-live="polite"
     >
       {/* the celebration: slow golden sparks rising like the war room's dust
           motes — present, warm, never loud. Skipped under reduced motion. */}
@@ -112,55 +138,83 @@ export function EndOfGame() {
           <div className="text-[10px] uppercase tracking-[0.35em] text-amber-200/60">
             Echoes of War · 1938–1945
           </div>
-          <h1 className="mt-4 text-4xl font-light tracking-wide text-amber-100">
+          <h1 className="mt-4 text-3xl font-light tracking-wide text-amber-100 sm:text-4xl">
             You made it through the war.
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-stone-300">
+          <motion.p
+            initial={false}
+            animate={{ opacity: introShown ? 1 : 0, y: introShown || reduced ? 0 : 10 }}
+            transition={{ duration: reduced ? 0 : 0.7, ease: 'easeOut' }}
+            aria-hidden={!introShown}
+            className="mt-4 text-base leading-relaxed text-stone-300"
+          >
             Great job. You met six people who lived it, asked your own questions, and pieced the
             whole story together yourself. That is real history work.
-          </p>
+          </motion.p>
         </motion.div>
 
         <ul className="mt-12 w-full space-y-7">
-          {CHAPTERS.map((c, i) => (
-            <motion.li
-              key={c.title}
-              initial={{ opacity: 0, y: reduced ? 0 : 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: reduced ? 0 : 0.7, delay: reduced ? 0 : 0.6 + i * 0.45 }}
-            >
-              <div className="text-[11px] uppercase tracking-[0.25em] text-amber-200/70">
-                Chapter {i + 1} · {c.title}
-              </div>
-              <p className="mt-1.5 text-base leading-relaxed text-stone-200">{c.line}</p>
-            </motion.li>
-          ))}
+          {CHAPTERS.map((c, i) => {
+            const shown = reveal.revealed > i + 1;
+            const speaking = reveal.current === i + 1 && !reveal.finished;
+            return (
+              <motion.li
+                key={c.title}
+                initial={false}
+                animate={{
+                  opacity: shown ? (speaking || reveal.finished ? 1 : 0.4) : 0,
+                  y: shown || reduced ? 0 : 10,
+                }}
+                transition={{ duration: reduced ? 0 : 0.7, ease: 'easeOut' }}
+                aria-hidden={!shown}
+              >
+                <div
+                  className={`text-[11px] uppercase tracking-[0.25em] ${
+                    speaking ? 'text-amber-200' : 'text-amber-200/70'
+                  }`}
+                >
+                  Chapter {i + 1} · {c.title}
+                </div>
+                <p className="mt-1.5 text-base leading-relaxed text-stone-200">{c.line}</p>
+              </motion.li>
+            );
+          })}
         </ul>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: reduced ? 0 : 0.9, delay: reduced ? 0 : 0.6 + CHAPTERS.length * 0.45 }}
-          // NO autoFocus on the button: it is mounted (invisibly) from the
-          // first frame, and focusing it at mount scrolls this overflow
-          // container straight to the footer — the whole reveal would play
-          // off-screen. Focus it when it has actually faded in, and without
-          // scrolling (same hazard MissionBrief documents).
-          onAnimationComplete={() => backRef.current?.focus({ preventScroll: true })}
-          className="mt-12 flex flex-col items-center pb-6"
-        >
-          <p className="text-sm text-stone-400">
-            The map is still yours — every chapter can be played again.
-          </p>
-          <button
-            ref={backRef}
-            onClick={() => returnToMap()}
-            className="mt-5 rounded-sm border border-amber-200/50 px-8 py-3 text-xs tracking-[0.3em] text-amber-100 transition hover:bg-amber-200/10"
+        {reveal.finished && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: reduced ? 0 : 0.9 }}
+            // NO autoFocus on the button: focusing while this overflow
+            // container is mid-reveal would scroll the page to the footer.
+            // Focus only once the footer has fully faded in, and without
+            // scrolling (same hazard MissionBrief documents).
+            onAnimationComplete={() => backRef.current?.focus({ preventScroll: true })}
+            className="mt-12 flex flex-col items-center pb-6"
           >
-            BACK TO THE MAP →
-          </button>
-        </motion.div>
+            <p className="text-sm text-stone-400">
+              The map is still yours — every chapter can be played again.
+            </p>
+            <button
+              ref={backRef}
+              onClick={() => returnToMap()}
+              className="mt-5 rounded-sm border border-amber-200/50 px-8 py-3 text-xs tracking-[0.3em] text-amber-100 transition hover:bg-amber-200/10"
+            >
+              BACK TO THE MAP →
+            </button>
+          </motion.div>
+        )}
       </div>
+
+      {!reveal.finished && (
+        <button
+          onClick={reveal.skip}
+          className="fixed bottom-6 right-6 rounded-sm border border-stone-700/70 px-5 py-2 text-[10px] uppercase tracking-[0.25em] text-stone-500 transition hover:border-amber-200/40 hover:text-amber-100/80"
+        >
+          Skip →
+        </button>
+      )}
     </div>
   );
 }

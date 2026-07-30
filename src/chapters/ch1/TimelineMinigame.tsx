@@ -41,7 +41,7 @@ export function TimelineMinigame({ chapterId, onComplete }: MinigameProps) {
 
   return (
     <div className="pointer-events-none absolute inset-0">
-      <div className="absolute left-1/2 top-12 -translate-x-1/2 text-center">
+      <div className="absolute left-1/2 top-12 w-full -translate-x-1/2 px-6 text-center">
         <div className="text-[10px] uppercase tracking-[0.3em] text-amber-200/50">
           Road to War · Timeline
         </div>

@@ -46,3 +46,7 @@ AGENTS.md
 
 # synthesized fixed-line audio (regenerates itself)
 .tts-cache/
+
+# browser-automation debug logs (MCP tooling scratch)
+.playwright-mcp/
+.claude-screenshots/

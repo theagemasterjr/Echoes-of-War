@@ -102,7 +102,13 @@ export async function POST(req: NextRequest) {
         system: buildCharacterSystem(tree, node, covered),
         messages: [...history, { role: 'user', content: message }],
       }).then((r) => r || '…'),
-      classifyIntent(message, tree.objectives ?? []),
+      classifyIntent(
+        message,
+        tree.objectives ?? [],
+        // follow-ups ("why?", "what happened next?") only mean something read
+        // against the character's last line — see server/intent.ts
+        [...fullHistory].reverse().find((m) => m.role === 'character')?.text ?? '',
+      ),
     ]);
 
     // Grade the node's learning points (what lights up CONTINUE). The on-screen

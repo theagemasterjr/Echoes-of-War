@@ -100,8 +100,13 @@ function ChapterStage({ chapterId, beat }: { chapterId: ChapterId; beat: Beat })
     <group>
       <fog attach="fog" args={['#0a0c10', 8, 22]} />
       <color attach="background" args={['#0a0c10']} />
-      <ambientLight intensity={0.55} color="#c9d4e6" />
-      <spotLight position={[2.2, 3.5, 2.8]} angle={0.55} penumbra={0.7} intensity={48} color="#ffe3b8" castShadow />
+      {/* Flat, even portrait light. The key used to hang high off to the right
+          with shadow-casting on, which carved dark shadows across the
+          characters' faces (Zofia worst of all) — now it sits nearer the
+          camera line, a soft front fill lifts the face, and nothing casts. */}
+      <ambientLight intensity={0.85} color="#cfd8e6" />
+      <spotLight position={[1.4, 2.9, 3.6]} angle={0.6} penumbra={0.8} intensity={40} color="#ffe3b8" />
+      <directionalLight position={[0, 1.7, 6]} intensity={0.8} color="#f2e7d5" />
       <directionalLight position={[-3, 2, -2]} intensity={0.7} color="#7d8aa3" />
 
       {photo ? (

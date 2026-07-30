@@ -88,9 +88,13 @@ const DEFAULT_DETAIL = 'Talk to find out what this is about and why it mattered.
 export function ObjectivesPanel({
   objectives,
   doneIds,
+  mobileTop = 'top-16',
 }: {
   objectives: { id: string; label: string }[];
   doneIds: string[];
+  /** Where the phone-size counter pill sits (Tailwind top-* class) — each
+   *  screen passes a spot clear of its own header text. */
+  mobileTop?: string;
 }) {
   const doneSet = useMemo(() => new Set(doneIds), [doneIds]);
   // which row just completed — drives the one-off celebration
@@ -115,15 +119,20 @@ export function ObjectivesPanel({
       return next;
     });
 
-  return (
-    <div className="absolute left-4 top-16 hidden w-56 rounded-md border border-stone-800 bg-stone-950/70 p-4 backdrop-blur-sm md:block">
-      <div className="text-[10px] uppercase tracking-widest text-amber-200/70">Objectives</div>
-      <ul className="mt-3 space-y-2.5">
+  // phones: the panel would sit on top of the character, so it starts closed
+  // behind a small counter pill and opens (over the stage, scrollable) on tap
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Rendered twice (desktop panel + phone overlay) — both copies stay in the
+  // DOM with only `display` differing, so each needs its own id namespace or
+  // every row's detail id (and its aria-controls target) would be duplicated.
+  const list = (idPrefix: string) => (
+    <ul className="mt-3 space-y-2.5">
         {objectives.map((o) => {
           const done = doneSet.has(o.id);
           const celebrating = justDone === o.id;
           const open = expanded.has(o.id);
-          const detailId = `objective-detail-${o.id}`;
+          const detailId = `${idPrefix}-objective-detail-${o.id}`;
           const detail = OBJECTIVE_DETAILS[o.label] ?? DEFAULT_DETAIL;
           return (
             <motion.li
@@ -190,6 +199,33 @@ export function ObjectivesPanel({
           );
         })}
       </ul>
-    </div>
+  );
+
+  return (
+    <>
+      {/* laptops and up: the panel as it has always been, open on the left */}
+      <div className="pointer-events-auto absolute left-4 top-16 hidden w-56 rounded-md border border-stone-800 bg-stone-950/70 p-4 backdrop-blur-sm md:block">
+        <div className="text-[10px] uppercase tracking-widest text-amber-200/70">Objectives</div>
+        {list('desk')}
+      </div>
+
+      {/* phones and small tablets: a counter pill that opens the same panel */}
+      <div className={`absolute left-4 ${mobileTop} flex flex-col items-start md:hidden`}>
+        <button
+          type="button"
+          onClick={() => setMobileOpen((o) => !o)}
+          aria-expanded={mobileOpen}
+          className="pointer-events-auto rounded-sm border border-stone-700 bg-stone-950/70 px-3 py-2 text-[10px] uppercase tracking-widest text-amber-200/80 backdrop-blur-sm transition hover:bg-stone-800"
+        >
+          Objectives {objectives.filter((o) => doneSet.has(o.id)).length}/{objectives.length}{' '}
+          {mobileOpen ? '▴' : '▾'}
+        </button>
+        {mobileOpen && (
+          <div className="pointer-events-auto mt-2 max-h-[50vh] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md border border-stone-800 bg-stone-950/90 p-4 backdrop-blur-sm">
+            {list('mobile')}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

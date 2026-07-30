@@ -67,11 +67,14 @@ export const ASSETS: Record<AssetId, { label: string; source: AssetSource }> = {
       kind: 'glb', url: '/models/ch1-journalist.glb',
       // Rebuilt July 2026 on a Mixamo rig (mixamorig:* bones) — a metre-scale
       // rig like ch4/ch5, so the same 4.76 scale applies. headBone measured
-      // (node scripts/inspect-pose.mjs) at y 1.078; 1.078 x 4.76 - 3.64 = 1.49,
-      // matching ch4's on-screen head line. rotation 0.1 rad (~5.7°) plus this
-      // take's own ~1.7° gaze yaw lands her on-screen facing at ~7° toward the
-      // player's right, same as ch4.
-      scale: 4.76, offset: [0, -3.64, -0.5], rotation: [0, 0.1, 0], castShadow: false,
+      // (node scripts/inspect-pose.mjs) at y 1.078. She used to sit on ch4's
+      // -3.64 head line, but her take holds more upright than the others and
+      // her legs cleared the bottom of the frame — -3.84 drops her the touch
+      // that keeps the frame cutting at her waist (founder request, July 2026;
+      // the fov compensation keeps that crop identical at every window shape).
+      // rotation 0.1 rad (~5.7°) plus this take's own ~1.7° gaze yaw lands her
+      // on-screen facing at ~7° toward the player's right, same as ch4.
+      scale: 4.76, offset: [0, -3.84, -0.5], rotation: [0, 0.1, 0], castShadow: false,
       // both clips are purpose-made loops, so each plays at its own pace
       clips: { idle: 'Idle_Loop', talking: 'Idle_Talking_Loop' },
       // no headTilt needed this time — both clips already read close to ch4's

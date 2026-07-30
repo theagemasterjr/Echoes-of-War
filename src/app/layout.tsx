@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Lexend } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -18,6 +18,18 @@ const openDyslexic = localFont({
     { path: "../fonts/OpenDyslexic-Bold.woff2", weight: "700", style: "normal" },
   ],
 });
+
+// Phones: the game is a fixed full-screen stage, so pinch/double-tap zoom only
+// ever fires by accident mid-drag (the reading settings cover text size);
+// viewport-fit lets the black stage extend under notches and home bars.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#000000",
+};
 
 export const metadata: Metadata = {
   title: "Echoes of War",

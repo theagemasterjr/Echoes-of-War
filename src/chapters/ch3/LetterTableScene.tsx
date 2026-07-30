@@ -104,6 +104,21 @@ export function LetterTableScene() {
 
       <Asset assetId="warroom.table" position={[0, -0.01, 0]} />
 
+      {/* Warm-up: parse the letter font and compile the open-sheet shaders the
+          moment the table appears, not on the first tap — the first open used
+          to hitch (font parse + first-time shader compile in one frame) and
+          the lift animation jumped with it. Parked under the tabletop, culling
+          off so it genuinely renders once; invisible on screen either way. */}
+      <group position={[0, -3, 0]}>
+        <mesh frustumCulled={false}>
+          <planeGeometry args={[0.01, 0.01]} />
+          <meshBasicMaterial color="#e7d8b4" transparent opacity={0} depthWrite={false} />
+        </mesh>
+        <Text fontSize={0.05} frustumCulled={false} fillOpacity={0}>
+          warm
+        </Text>
+      </group>
+
       {/* the score screen and the summary are black DOM takeovers — the table
           keeps rendering under them, but the round's documents are done */}
       {stage === 'rounds' && source &&
@@ -305,8 +320,10 @@ function DocumentSlot({
       snapped.current = true;
       return;
     }
-    // ~0.5s to settle into the reading pose, and the same back down again
-    const k = 1 - Math.exp(-8 * delta);
+    // ~0.5s to settle into the reading pose, and the same back down again.
+    // delta is clamped so one slow frame (a tab-switch, a shader compile)
+    // moves the document a step, never teleports it.
+    const k = 1 - Math.exp(-8 * Math.min(delta, 0.05));
     g.position.x += (tx - g.position.x) * k;
     g.position.y += (ty - g.position.y) * k;
     g.position.z += (tz - g.position.z) * k;
@@ -336,8 +353,15 @@ function DocumentSlot({
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
         {/* the warm reading lamp that follows a hovered document — a hint, not
-            a spotlight */}
-        {lit && <pointLight position={[0, 0.9, 0.4]} intensity={2.2} distance={2.4} color="#ffcf7d" />}
+            a spotlight. Always mounted: adding/removing a light changes the
+            scene's light count and forces every material to recompile, which
+            is a visible hitch the first time — so it dims to nothing instead */}
+        <pointLight
+          position={[0, 0.9, 0.4]}
+          intensity={lit ? 2.2 : 0}
+          distance={2.4}
+          color="#ffcf7d"
+        />
       </group>
 
       {/* the rings stay on the table in the document's own place, so a lifted

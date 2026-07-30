@@ -19,7 +19,7 @@ import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { ASSETS } from '@/assets/registry';
+import { ASSETS, Asset } from '@/assets/registry';
 import {
   BOARD, FINALE, FINALE_REDUCED, VOICES, slipById, useVoicesStore, voiceById,
   type DropTarget, type ScreenLabel, type SlipId, type VoiceId,
@@ -106,7 +106,7 @@ export function VoicesScene() {
 
   // warm every model the board needs, so nothing pops in late
   useEffect(() => {
-    const ids = [...VOICES.map((v) => v.assetId), 'ch6.piece.crane', 'ch6.piece.slip'];
+    const ids = [...VOICES.map((v) => v.assetId), 'ch6.piece.crane', 'ch6.piece.slip', 'warroom.table'];
     for (const id of ids) {
       const src = glbSource(id);
       if (src) useGLTF.preload(src.url);
@@ -206,18 +206,21 @@ export function VoicesScene() {
       <spotLight position={[2.5, 6.5, 3.5]} angle={0.6} penumbra={0.8} intensity={140} color="#ffd9a0" castShadow />
       <directionalLight position={[-4, 5, -3]} intensity={0.5} color="#8d99b5" />
 
-      {/* the bare war table */}
+      {/* the war-room table — the same prop every other minigame stands on
+          (its top surface is exactly y = 0, like the map scene) */}
+      <Asset assetId="warroom.table" position={[0, -0.01, 0]} />
+      {/* invisible click-catcher over the tabletop: tapping empty wood puts a
+          lifted slip back down (the old visible plane's other job) */}
       <mesh
-        receiveShadow
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0.2]}
+        position={[0, 0.001, 0.2]}
         onClick={(e) => {
           e.stopPropagation();
           if (!dragMoved.current) useVoicesStore.getState().setSelected(false);
         }}
       >
         <planeGeometry args={[20, 15]} />
-        <meshStandardMaterial color="#2a1d12" roughness={0.92} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
       {/* the four voices */}
@@ -484,7 +487,11 @@ function Crane({ finaleAt }: { finaleAt: number }) {
       0, 1,
     );
     const e = 1 - Math.pow(1 - t, 3); // ease-out — it rises, slows, and rests
-    g.position.y = REDUCED ? 0.14 : -0.35 + e * 0.49;
+    // Rest height chosen so the crane finishes fully ON the table: the outer
+    // group sits at -0.35, the crane model's base is its own origin (min-y 0,
+    // measured), so inner 0.39 puts that base at world +0.04 — on top of the
+    // ninth slip, never sunk into the wood.
+    g.position.y = REDUCED ? 0.39 : -0.35 + e * 0.74;
     g.visible = REDUCED ? age >= 0 : true;
   });
 

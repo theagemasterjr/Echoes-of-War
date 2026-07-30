@@ -108,7 +108,9 @@ export function UranusMinigame({ chapterId, onComplete }: MinigameProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.4 }}
-            className="mt-1 text-lg font-light text-stone-100"
+            // phones: the objectives pill sits top-left — start the wrapped
+            // instruction below it so the two never cross
+            className="mt-16 text-lg font-light text-stone-100 md:mt-1"
           >
             {INSTRUCTION[phase]}
           </motion.h2>

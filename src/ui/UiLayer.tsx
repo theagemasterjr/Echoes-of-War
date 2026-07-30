@@ -27,6 +27,57 @@ export function UiLayer() {
       {view.kind === 'map' && <YearTicker />}
       {view.kind === 'ending' && <EndOfGame />}
       <Hud />
+      <SmallScreenNotice />
+    </div>
+  );
+}
+
+/**
+ * Shown once, over everything, when the game opens on a phone (or a very small
+ * tablet): a plain recommendation to play on a computer, with a CONTINUE that
+ * carries straight on here. Dismissal is remembered for the visit, so an
+ * in-page error recovery never shows it twice. Detection runs after mount —
+ * the server render must stay deterministic — and keys on a touch-first
+ * pointer plus a genuinely small screen, so a touch-screen laptop never sees it.
+ */
+function SmallScreenNotice() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('eow-small-screen-ok')) return;
+    } catch {}
+    const touchFirst = window.matchMedia('(pointer: coarse)').matches;
+    const small = Math.min(window.innerWidth, window.innerHeight) < 768;
+    if (touchFirst && small) setShow(true);
+  }, []);
+  if (!show) return null;
+  const dismiss = () => {
+    try {
+      sessionStorage.setItem('eow-small-screen-ok', '1');
+    } catch {}
+    setShow(false);
+  };
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="small-screen-title"
+      className="pointer-events-auto absolute inset-0 z-40 flex flex-col items-center justify-center bg-black px-8 text-center"
+    >
+      <div className="text-xs uppercase tracking-[0.5em] text-amber-200/60">Echoes of War</div>
+      <h2 id="small-screen-title" className="mt-5 max-w-[22ch] text-2xl font-light leading-snug text-stone-100">
+        This game works best on a computer.
+      </h2>
+      <p className="mt-4 max-w-[34ch] text-sm leading-relaxed text-stone-400">
+        You can still play here. Things will just look smaller.
+      </p>
+      <button
+        autoFocus
+        onClick={dismiss}
+        className="mt-9 rounded-sm border border-amber-200/40 px-8 py-3 text-sm tracking-[0.25em] text-amber-100/90 transition hover:bg-amber-200/10"
+      >
+        CONTINUE →
+      </button>
     </div>
   );
 }
@@ -174,7 +225,7 @@ function TitleIntro() {
   const phase = useAppStore((s) => s.phase);
   return (
     <motion.div
-      className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-start pt-[9vh] text-center"
+      className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-start overflow-y-auto pb-8 pt-[9vh] text-center"
       // fade the title away first — the camera glide waits for this (its 1.0s
       // delay in SceneRouter), so nothing moves while the text is still up
       animate={{ opacity: phase === 'out' ? 0 : 1 }}
@@ -188,7 +239,7 @@ function TitleIntro() {
           <img
             src="/ui/title-logo.png"
             alt="Echoes of War"
-            className="mx-auto w-[min(560px,80vw)]"
+            className="mx-auto max-h-[32vh] w-[min(560px,80vw)] object-contain"
             style={{
               filter:
                 'drop-shadow(0 0 14px rgba(255,196,90,0.4)) drop-shadow(0 0 46px rgba(255,160,40,0.2))',

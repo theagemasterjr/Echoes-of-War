@@ -93,12 +93,19 @@ const TAKES: Record<string, SummaryTake> = {
       { start: 35.8, end: 47.82 },
     ],
   },
-  // ch6: the summary was rewritten to the standard four-objective format on
-  // 2026-07-29 and its old nine-topic recording retired with it. When the new
-  // take lands at public/audio/summary/ch6.mp3, add its row here: four topics,
-  // in the order src/chapters/ch6/summary.ts lists them, measured with
-  // scripts/lib/narration-segments.mjs like ch4/ch5. Until then the summary
-  // shows whole and silent (the designed fallback).
+  // Four topics, in the order src/chapters/ch6/summary.ts lists them.
+  // Measured off the founder's 2026-07-30 recording with
+  // scripts/lib/narration-segments.mjs: 15.7–19.4 characters a second across
+  // all four. ?v=3 so no browser serves the retired nine-topic take.
+  ch6: {
+    track: '/audio/summary/ch6.mp3?v=3',
+    topics: [
+      { start: 0.08, end: 10.74 },
+      { start: 11.26, end: 24.68 },
+      { start: 25.16, end: 41.7 },
+      { start: 42.02, end: 56.46 },
+    ],
+  },
 };
 
 /** The take recorded for a chapter, or null if it has none. */
@@ -136,8 +143,20 @@ export function useSummaryNarration(
   topicCount: number,
   active: boolean,
 ): SummaryReveal {
-  const take = summaryTake(chapterId);
-  // no recording for this chapter: the whole summary is simply there
+  return useNarratedReveal(summaryTake(chapterId), topicCount, active);
+}
+
+/**
+ * The same reveal for any narrated screen that isn't a chapter summary (the
+ * end-of-game screen wires its own take through here). Pass null to show
+ * everything at once, silently.
+ */
+export function useNarratedReveal(
+  take: SummaryTake | null,
+  topicCount: number,
+  active: boolean,
+): SummaryReveal {
+  // no recording: the whole screen is simply there
   const silent = !take;
 
   const [revealed, setRevealed] = useState(silent ? topicCount : 0);

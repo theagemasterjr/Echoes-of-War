@@ -93,7 +93,7 @@ export function MatchMinigame({ chapterId, onComplete }: MinigameProps) {
                     }`}
                   >
                     <p
-                      className={`text-sm leading-snug ${
+                      className={`text-[11px] leading-snug sm:text-sm ${
                         matched ? 'text-amber-100/90' : 'text-stone-200'
                       }`}
                     >

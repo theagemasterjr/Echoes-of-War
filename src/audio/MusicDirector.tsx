@@ -26,9 +26,13 @@ export function MusicDirector() {
 
   const effectiveView = pending ?? view;
   // the theme belongs to the title screen and the map. It fades the moment a
-  // chapter is chosen: the intro film carries its own sound, and the mission
-  // brief's narration needs the room to itself.
-  const shouldPlay = effectiveView.kind !== 'prologue' && effectiveView.kind !== 'chapter';
+  // chapter is chosen: the intro film carries its own sound, the mission
+  // brief's narration needs the room to itself, and the ending screen is the
+  // founder's recorded farewell — only that voice plays there.
+  const shouldPlay =
+    effectiveView.kind !== 'prologue' &&
+    effectiveView.kind !== 'chapter' &&
+    effectiveView.kind !== 'ending';
 
   useEffect(() => {
     // fade out whichever track isn't selected (covers switching in settings)

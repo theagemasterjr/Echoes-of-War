@@ -18,6 +18,56 @@ function thinkingLabel(characterName: string): string {
 }
 
 /**
+ * True from the moment a character line lands until its audio actually starts
+ * playing. The reply text arriving is NOT the character answering — her voice
+ * is; so the thinking dots hold through the TTS fetch and hand over the very
+ * moment the sound begins (the same 'start' event that opens her mouth on the
+ * 3D stage — see useCharacterSpeaking, which uses this exact gate). When no
+ * voice is coming (voice off, no key, fetch failed) it gives up quickly so
+ * the words are never held hostage.
+ */
+function useAwaitingVoice(): boolean {
+  const messages = useConversation((s) => s.messages);
+  const [awaiting, setAwaiting] = useState(false);
+  const probe = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    const un = voicePlayer.subscribe(() => {
+      // 'start': the voice is speaking — hand the screen to the subtitle.
+      // 'end': nothing left to wait for either way.
+      clearTimeout(probe.current);
+      setAwaiting(false);
+    });
+    return () => {
+      un();
+      clearTimeout(probe.current);
+    };
+  }, []);
+
+  const msgCount = messages.length;
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'character') return;
+    setAwaiting(true);
+    const t0 = performance.now();
+    const check = () => {
+      if (voicePlayer.speaking) return setAwaiting(false); // started — done here
+      const waited = performance.now() - t0;
+      if (voicePlayer.pending && waited < 8000) {
+        probe.current = setTimeout(check, 120); // audio still on its way — hold
+        return;
+      }
+      setAwaiting(false); // no voice for this line: show the words now
+    };
+    probe.current = setTimeout(check, 200);
+    return () => clearTimeout(probe.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [msgCount]);
+
+  return awaiting;
+}
+
+/**
  * Shown while a reply is on its way. Loud on purpose: this used to be a small
  * grey ellipsis, which read as nothing happening at all — and a player who
  * believes the game has frozen starts clicking things. Naming the character and
@@ -72,6 +122,8 @@ export function ConversationUI({
   }, []);
   const [lineDone, setLineDone] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  // the reply text has landed but her voice hasn't begun — still "thinking"
+  const awaitingVoice = useAwaitingVoice();
   const started = useRef(false);
   const msgCount = convo.messages.length;
   // Every row ticked? Then CONTINUE just goes. Otherwise it asks first — this
@@ -113,8 +165,9 @@ export function ConversationUI({
 
   return (
     <div className="absolute inset-0 flex flex-col justify-end">
-      {/* name plate */}
-      <div className="absolute left-1/2 top-6 -translate-x-1/2 text-center">
+      {/* name plate — on phones it wraps inside the gap between the MAP
+          button and the settings gear instead of running underneath them */}
+      <div className="absolute left-1/2 top-6 w-[calc(100%-9.5rem)] -translate-x-1/2 text-center sm:w-auto">
         <div className="text-sm tracking-wide text-stone-200">{meta.characterName}</div>
         <div className="text-[11px] text-stone-500">
           Fictional composite, based on documented experiences · {meta.location}, {meta.dates}
@@ -126,7 +179,12 @@ export function ConversationUI({
           points) once the character has taught all of them.
           Hidden when there are no objectives (no-key case, ch5–ch6 skeletons). */}
       {convo.objectives.length > 0 && (
-        <ObjectivesPanel objectives={convo.objectives} doneIds={convo.objectivesDone} />
+        <ObjectivesPanel
+          objectives={convo.objectives}
+          doneIds={convo.objectivesDone}
+          // phones: below the name plate, which wraps taller there
+          mobileTop="top-44"
+        />
       )}
 
       {confirming && (
@@ -159,7 +217,9 @@ export function ConversationUI({
                 REPEAT
               </button>
             </div>
-          ) : convo.status === 'sending' ? (
+          ) : convo.status === 'sending' || awaitingVoice ? (
+            /* holds until the voice actually starts — text arriving is not
+               her answering; her voice beginning is */
             <ThinkingIndicator characterName={meta.characterName} />
           ) : (
             <SubtitleLine
@@ -179,7 +239,7 @@ export function ConversationUI({
               <button
                 key={q}
                 onClick={() => convo.send(q)}
-                className="rounded-full border border-stone-700 bg-stone-950/60 px-4 py-1.5 text-xs text-stone-300 backdrop-blur-sm transition hover:border-amber-200/40 hover:text-amber-100"
+                className="rounded-full border border-stone-700 bg-stone-950/60 px-4 py-2 text-xs text-stone-300 backdrop-blur-sm transition hover:border-amber-200/40 hover:text-amber-100 sm:py-1.5"
               >
                 {q}
               </button>
@@ -187,9 +247,10 @@ export function ConversationUI({
           </div>
         )}
 
-        {/* input row */}
-        <div className="mt-3 flex gap-2">
-          <VoiceModeButton onOpen={() => setVoiceMode(true)} />
+        {/* input row — one line on desktop; on phones the text box takes its
+            own full-width line (16px so iOS never zoom-jumps onto it) and the
+            buttons share the line below */}
+        <div className="mt-3 flex flex-wrap gap-2 sm:flex-nowrap">
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -197,12 +258,13 @@ export function ConversationUI({
             placeholder="Ask them anything…"
             aria-label="Ask the character a question"
             maxLength={300}
-            className="flex-1 rounded-sm border border-stone-800 bg-stone-950/70 px-4 py-2.5 text-sm text-stone-100 placeholder-stone-600 outline-none backdrop-blur-sm focus:border-amber-200/40"
+            className="order-1 w-full rounded-sm border border-stone-800 bg-stone-950/70 px-4 py-2.5 text-base text-stone-100 placeholder-stone-600 outline-none backdrop-blur-sm focus:border-amber-200/40 sm:order-2 sm:w-auto sm:flex-1 sm:text-sm"
           />
+          <VoiceModeButton onOpen={() => setVoiceMode(true)} className="order-2 sm:order-1" />
           <button
             onClick={submit}
             disabled={convo.status !== 'idle'}
-            className="rounded-sm border border-stone-700 px-5 text-xs tracking-widest text-stone-300 transition hover:bg-stone-800 disabled:opacity-40"
+            className="order-3 flex-1 whitespace-nowrap rounded-sm border border-stone-700 px-5 py-2.5 text-xs tracking-widest text-stone-300 transition hover:bg-stone-800 disabled:opacity-40 sm:flex-none sm:py-0"
           >
             ASK
           </button>
@@ -217,7 +279,7 @@ export function ConversationUI({
                 ? 'Continue the chapter'
                 : 'You still have objectives left — we’ll check first'
             }
-            className="rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 text-xs tracking-widest text-amber-100 transition hover:bg-amber-200/20"
+            className="order-4 flex-1 whitespace-nowrap rounded-sm border border-amber-200/50 bg-amber-200/10 px-5 py-2.5 text-xs tracking-widest text-amber-100 transition hover:bg-amber-200/20 sm:flex-none sm:py-0"
           >
             CONTINUE →
           </motion.button>
@@ -335,7 +397,7 @@ function getSpeechCtor(): SpeechRecognitionCtor | null {
 }
 
 /** Opens voice mode. Hidden where speech recognition isn't available (e.g. Firefox). */
-function VoiceModeButton({ onOpen }: { onOpen: () => void }) {
+function VoiceModeButton({ onOpen, className }: { onOpen: () => void; className?: string }) {
   const [supported, setSupported] = useState(false);
   useEffect(() => {
     if (getSpeechCtor()) setSupported(true);
@@ -347,7 +409,7 @@ function VoiceModeButton({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       title="Talk with your voice instead of typing"
       aria-label="Open voice mode"
-      className="flex shrink-0 items-center gap-2 rounded-sm border border-amber-200/50 bg-amber-200/10 px-4 text-amber-100 transition hover:bg-amber-200/20"
+      className={`flex shrink-0 items-center gap-2 rounded-sm border border-amber-200/50 bg-amber-200/10 px-4 py-2.5 text-amber-100 transition hover:bg-amber-200/20 sm:py-0 ${className ?? ''}`}
     >
       <span className="text-lg leading-none">🎙</span>
       <span className="text-xs tracking-widest">VOICE</span>
@@ -384,6 +446,8 @@ function VoiceMode({
   const [mode, setMode] = useState<'ready' | 'listening' | 'thinking' | 'speaking'>(
     voicePlayer.speaking ? 'speaking' : 'ready',
   );
+  // reply text landed, voice not yet playing — still her "thinking" time
+  const awaitingVoice = useAwaitingVoice();
   const [heard, setHeard] = useState('');
   const modeRef = useRef(mode);
   modeRef.current = mode;
@@ -548,8 +612,11 @@ function VoiceMode({
    * fact thinking, and a tap there started recording a question the engine
    * would then drop (it refuses a send while one is in flight, which left the
    * mic stuck on "thinking" with nothing ever coming back).
+   * `awaitingVoice` keeps the thinking dots up through the TTS fetch too —
+   * she is "thinking" until the very moment her voice begins.
    */
-  const waiting = !micOn && (mode === 'thinking' || convo.status === 'sending');
+  const waiting =
+    !micOn && (mode === 'thinking' || convo.status === 'sending' || awaitingVoice);
 
   const tap = () => {
     if (convo.status === 'error') {
